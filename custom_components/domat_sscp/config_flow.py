@@ -20,7 +20,14 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import selector
 
 from .sscp_connection import sscp_connection
-from .sscp_const import CONF_CONNECTION_NAME, CONF_SSCP_ADDRESS, DOMAIN
+from .sscp_const import (
+    CONF_CONNECTION_NAME,
+    CONF_SSCP_ADDRESS,
+    #    DEFAULT_SCAN_INTERVAL,
+    DEFAULT_SSCP_ADDRESS,
+    DEFAULT_SSCP_PORT,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,18 +46,6 @@ _ADDR_SELECTOR = vol.All(
         ),
     ),
     vol.Coerce(int),
-)
-# Connection parameters
-STEP_USER_DATA_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_CONNECTION_NAME): str,
-        vol.Required(CONF_IP_ADDRESS): str,
-        vol.Required(CONF_PORT, default=12346): _PORT_SELECTOR,
-        vol.Required(CONF_USERNAME): str,
-        vol.Required(CONF_PASSWORD): str,
-        vol.Required(CONF_SSCP_ADDRESS, default=1): _ADDR_SELECTOR,
-        #        vol.Optional(CONF_SCAN_INTERVAL, default=60): int,
-    }
 )
 
 
@@ -102,7 +97,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     return {"title": data[CONF_CONNECTION_NAME], "serial": serial}
 
 
-class ConfigFlow(ConfigFlow, domain=DOMAIN):
+class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Domat SSCP."""
 
     VERSION = 1
@@ -111,7 +106,21 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the initial step."""
+        user_schema = vol.Schema(
+            {
+                vol.Required(CONF_CONNECTION_NAME): str,
+                vol.Required(CONF_IP_ADDRESS): str,
+                vol.Required(CONF_PORT, default=DEFAULT_SSCP_PORT): _PORT_SELECTOR,
+                vol.Required(CONF_USERNAME): str,
+                vol.Required(CONF_PASSWORD): str,
+                vol.Required(
+                    CONF_SSCP_ADDRESS, default=DEFAULT_SSCP_ADDRESS
+                ): _ADDR_SELECTOR,
+                # vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): int,
+            }
+        )
         errors: dict[str, str] = {}
+
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
@@ -130,7 +139,62 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(title=info["title"], data=user_input)
 
         return self.async_show_form(
-            step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
+            step_id="user", data_schema=user_schema, errors=errors
+        )
+
+    #    async def async_step_reconfigure(
+    #        self, user_input: dict[str, Any] | None = None
+    #    ) -> ConfigFlowResult:
+    #        """Handle reconfiguration."""
+    #        return await self.async_step_user(user_input)
+    #                if self.source == SOURCE_RECONFIGURE:
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle reconfiguration of an existing entry."""
+        entry = self._get_reconfigure_entry()
+        reconfigure_schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_CONNECTION_NAME, default=entry.data[CONF_CONNECTION_NAME]
+                ): str,
+                vol.Required(CONF_IP_ADDRESS, default=entry.data[CONF_IP_ADDRESS]): str,
+                vol.Required(CONF_PORT, default=entry.data[CONF_PORT]): _PORT_SELECTOR,
+                vol.Required(CONF_USERNAME, default=entry.data[CONF_USERNAME]): str,
+                vol.Required(CONF_PASSWORD, default=entry.data[CONF_PASSWORD]): str,
+                vol.Required(
+                    CONF_SSCP_ADDRESS, default=entry.data[CONF_SSCP_ADDRESS]
+                ): _ADDR_SELECTOR,
+                # vol.Optional(CONF_SCAN_INTERVAL, default=entry.data[CONF_SCAN_INTERVAL]): int,
+            }
+        )
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            _LOGGER.debug("Reconfigure - old data: %s", entry.data)
+            _LOGGER.debug("Reconfigure - new data: %s", user_input)
+            try:
+                info = await validate_input(self.hass, user_input)
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except Timeout:
+                errors["base"] = "timeout_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except Exception:
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
+            else:
+                await self.async_set_unique_id(str(info["serial"]))
+                self._abort_if_unique_id_mismatch(reason="wrong_plc")
+                return self.async_update_reload_and_abort(
+                    entry,
+                    data_updates=user_input,
+                )
+
+        return self.async_show_form(
+            step_id="reconfigure", data_schema=reconfigure_schema, errors=errors
         )
 
 
