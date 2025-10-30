@@ -1,0 +1,13 @@
+{
+  "domain": "domat_sscp",
+  "name": "Domat SSCP",
+  "codeowners": [
+    "@julian-coleman"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/julian-coleman/domat_sscp",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.0.1"
+}
