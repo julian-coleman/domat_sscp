@@ -49,6 +49,41 @@ _ADDR_SELECTOR = vol.All(
 )
 
 
+def get_user_schema(
+    input: dict[str, Any] | None = None,
+) -> vol.Schema:
+    """Return a schema with defaults based on the step and user input."""
+
+    # Fill in defaults from initial defaults or input
+    if input is None:
+        default_connection_name = ""
+        default_ip_address = ""
+        default_port = DEFAULT_SSCP_PORT
+        default_username = ""
+        default_password = ""
+        default_sscp_address = DEFAULT_SSCP_ADDRESS
+    else:
+        default_connection_name = input.get(CONF_CONNECTION_NAME, "")
+        default_ip_address = input.get(CONF_IP_ADDRESS, "")
+        default_port = input.get(CONF_PORT, DEFAULT_SSCP_PORT)
+        default_username = input.get(CONF_USERNAME, "")
+        default_password = input.get(CONF_PASSWORD, "")
+        default_sscp_address = input.get(CONF_SSCP_ADDRESS, DEFAULT_SSCP_ADDRESS)
+    return vol.Schema(
+        {
+            vol.Required(CONF_CONNECTION_NAME, default=default_connection_name): str,
+            vol.Required(CONF_IP_ADDRESS, default=default_ip_address): str,
+            vol.Required(CONF_PORT, default=default_port): _PORT_SELECTOR,
+            vol.Required(CONF_USERNAME, default=default_username): str,
+            vol.Required(CONF_PASSWORD, default=default_password): str,
+            vol.Required(
+                CONF_SSCP_ADDRESS, default=default_sscp_address
+            ): _ADDR_SELECTOR,
+            # vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): int,
+        }
+    )
+
+
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate that the user input allows us to connect using the values provided by the user."""
 
@@ -63,13 +98,13 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         )
     except ValueError as error:
         _LOGGER.error("Could not create a connection object")
-        raise InvalidAuth from error
+        raise CannotConnect from error
 
     try:
         await conn.login()
         if conn.socket is None:
             _LOGGER.debug("Login failed")
-            raise InvalidAuth
+            raise InvalidAuth from None
     except TimeoutError:
         _LOGGER.debug("Login timeout")
         raise InvalidAuth from None
@@ -101,45 +136,44 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Domat SSCP."""
 
     VERSION = 1
+    MINOR_VERSION = 1
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the initial step."""
-        user_schema = vol.Schema(
-            {
-                vol.Required(CONF_CONNECTION_NAME): str,
-                vol.Required(CONF_IP_ADDRESS): str,
-                vol.Required(CONF_PORT, default=DEFAULT_SSCP_PORT): _PORT_SELECTOR,
-                vol.Required(CONF_USERNAME): str,
-                vol.Required(CONF_PASSWORD): str,
-                vol.Required(
-                    CONF_SSCP_ADDRESS, default=DEFAULT_SSCP_ADDRESS
-                ): _ADDR_SELECTOR,
-                # vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): int,
-            }
-        )
         errors: dict[str, str] = {}
 
-        if user_input is not None:
-            try:
-                info = await validate_input(self.hass, user_input)
-            except CannotConnect:
-                errors["base"] = "cannot_connect"
-            except Timeout:
-                errors["base"] = "timeout_connect"
-            except InvalidAuth:
-                errors["base"] = "invalid_auth"
-            except Exception:
-                _LOGGER.exception("Unexpected exception")
-                errors["base"] = "unknown"
-            else:
-                await self.async_set_unique_id(str(info["serial"]))
-                self._abort_if_unique_id_configured()
-                return self.async_create_entry(title=info["title"], data=user_input)
+        # Ask for input - initial defaults
+        if user_input is None:
+            return self.async_show_form(
+                step_id="user",
+                data_schema=get_user_schema(),
+                errors=errors,
+            )
 
+        # Validate the user input and create an entry
+        try:
+            info = await validate_input(self.hass, user_input)
+        except CannotConnect:
+            errors["base"] = "cannot_connect"
+        except Timeout:
+            errors["base"] = "timeout_connect"
+        except InvalidAuth:
+            errors["base"] = "invalid_auth"
+        except Exception:
+            _LOGGER.exception("Unexpected exception")
+            errors["base"] = "unknown"
+        else:
+            await self.async_set_unique_id(str(info["serial"]))
+            self._abort_if_unique_id_configured()
+            return self.async_create_entry(title=info["title"], data=user_input)
+
+        # There was some validation problem - previous input as defaults
         return self.async_show_form(
-            step_id="user", data_schema=user_schema, errors=errors
+            step_id="user",
+            data_schema=get_user_schema(input=user_input),
+            errors=errors,
         )
 
     #    async def async_step_reconfigure(
@@ -154,47 +188,41 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle reconfiguration of an existing entry."""
         entry = self._get_reconfigure_entry()
-        reconfigure_schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_CONNECTION_NAME, default=entry.data[CONF_CONNECTION_NAME]
-                ): str,
-                vol.Required(CONF_IP_ADDRESS, default=entry.data[CONF_IP_ADDRESS]): str,
-                vol.Required(CONF_PORT, default=entry.data[CONF_PORT]): _PORT_SELECTOR,
-                vol.Required(CONF_USERNAME, default=entry.data[CONF_USERNAME]): str,
-                vol.Required(CONF_PASSWORD, default=entry.data[CONF_PASSWORD]): str,
-                vol.Required(
-                    CONF_SSCP_ADDRESS, default=entry.data[CONF_SSCP_ADDRESS]
-                ): _ADDR_SELECTOR,
-                # vol.Optional(CONF_SCAN_INTERVAL, default=entry.data[CONF_SCAN_INTERVAL]): int,
-            }
-        )
         errors: dict[str, str] = {}
 
-        if user_input is not None:
-            _LOGGER.debug("Reconfigure - old data: %s", entry.data)
-            _LOGGER.debug("Reconfigure - new data: %s", user_input)
-            try:
-                info = await validate_input(self.hass, user_input)
-            except CannotConnect:
-                errors["base"] = "cannot_connect"
-            except Timeout:
-                errors["base"] = "timeout_connect"
-            except InvalidAuth:
-                errors["base"] = "invalid_auth"
-            except Exception:
-                _LOGGER.exception("Unexpected exception")
-                errors["base"] = "unknown"
-            else:
-                await self.async_set_unique_id(str(info["serial"]))
-                self._abort_if_unique_id_mismatch(reason="wrong_plc")
-                return self.async_update_reload_and_abort(
-                    entry,
-                    data_updates=user_input,
-                )
+        # Ask for input - initial defaults
+        if user_input is None:
+            return self.async_show_form(
+                step_id="user",
+                data_schema=get_user_schema(input=entry.data),
+                errors=errors,
+            )
+
+        _LOGGER.debug("Reconfigure - old data: %s", entry.data)
+        _LOGGER.debug("Reconfigure - new data: %s", user_input)
+        try:
+            info = await validate_input(self.hass, user_input)
+        except CannotConnect:
+            errors["base"] = "cannot_connect"
+        except Timeout:
+            errors["base"] = "timeout_connect"
+        except InvalidAuth:
+            errors["base"] = "invalid_auth"
+        except Exception:
+            _LOGGER.exception("Unexpected exception")
+            errors["base"] = "unknown"
+        else:
+            await self.async_set_unique_id(str(info["serial"]))
+            self._abort_if_unique_id_mismatch(reason="wrong_plc")
+            return self.async_update_reload_and_abort(
+                entry,
+                data_updates=user_input,
+            )
 
         return self.async_show_form(
-            step_id="reconfigure", data_schema=reconfigure_schema, errors=errors
+            step_id="reconfigure",
+            data_schema=get_user_schema(input=user_input),
+            errors=errors,
         )
 
 
