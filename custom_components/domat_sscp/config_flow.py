@@ -7,7 +7,11 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    SOURCE_RECONFIGURE,
+    ConfigFlow,
+    ConfigFlowResult,
+)
 from homeassistant.const import (
     CONF_IP_ADDRESS,
     CONF_PASSWORD,
@@ -50,12 +54,12 @@ _ADDR_SELECTOR = vol.All(
 
 
 def get_user_schema(
-    input: dict[str, Any] | None = None,
+    input_data: dict[str, Any] | None = None,
 ) -> vol.Schema:
     """Return a schema with defaults based on the step and user input."""
 
     # Fill in defaults from initial defaults or input
-    if input is None:
+    if input_data is None:
         default_connection_name = ""
         default_ip_address = ""
         default_port = DEFAULT_SSCP_PORT
@@ -63,12 +67,12 @@ def get_user_schema(
         default_password = ""
         default_sscp_address = DEFAULT_SSCP_ADDRESS
     else:
-        default_connection_name = input.get(CONF_CONNECTION_NAME, "")
-        default_ip_address = input.get(CONF_IP_ADDRESS, "")
-        default_port = input.get(CONF_PORT, DEFAULT_SSCP_PORT)
-        default_username = input.get(CONF_USERNAME, "")
-        default_password = input.get(CONF_PASSWORD, "")
-        default_sscp_address = input.get(CONF_SSCP_ADDRESS, DEFAULT_SSCP_ADDRESS)
+        default_connection_name = input_data.get(CONF_CONNECTION_NAME, "")
+        default_ip_address = input_data.get(CONF_IP_ADDRESS, "")
+        default_port = input_data.get(CONF_PORT, DEFAULT_SSCP_PORT)
+        default_username = input_data.get(CONF_USERNAME, "")
+        default_password = input_data.get(CONF_PASSWORD, "")
+        default_sscp_address = input_data.get(CONF_SSCP_ADDRESS, DEFAULT_SSCP_ADDRESS)
     return vol.Schema(
         {
             vol.Required(CONF_CONNECTION_NAME, default=default_connection_name): str,
@@ -142,13 +146,22 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the initial step."""
+
         errors: dict[str, str] = {}
+
+        if self.source == SOURCE_RECONFIGURE:
+            entry = self._get_reconfigure_entry()
+            input_data = entry.data
+            step = "reconfigure"
+        else:
+            input_data = None
+            step = "user"
 
         # Ask for input - initial defaults
         if user_input is None:
             return self.async_show_form(
-                step_id="user",
-                data_schema=get_user_schema(),
+                step_id=step,
+                data_schema=get_user_schema(input_data),
                 errors=errors,
             )
 
@@ -165,65 +178,30 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
             _LOGGER.exception("Unexpected exception")
             errors["base"] = "unknown"
         else:
-            await self.async_set_unique_id(str(info["serial"]))
-            self._abort_if_unique_id_configured()
-            return self.async_create_entry(title=info["title"], data=user_input)
+            if self.source == SOURCE_RECONFIGURE:
+                await self.async_set_unique_id(str(info["serial"]))
+                self._abort_if_unique_id_mismatch(reason="wrong_plc")
+                return self.async_update_reload_and_abort(
+                    entry,
+                    data_updates=user_input,
+                )
+            else:
+                await self.async_set_unique_id(str(info["serial"]))
+                self._abort_if_unique_id_configured()
+                return self.async_create_entry(title=info["title"], data=user_input)
 
         # There was some validation problem - previous input as defaults
         return self.async_show_form(
-            step_id="user",
-            data_schema=get_user_schema(input=user_input),
+            step_id=step,
+            data_schema=get_user_schema(user_input),
             errors=errors,
         )
-
-    #    async def async_step_reconfigure(
-    #        self, user_input: dict[str, Any] | None = None
-    #    ) -> ConfigFlowResult:
-    #        """Handle reconfiguration."""
-    #        return await self.async_step_user(user_input)
-    #                if self.source == SOURCE_RECONFIGURE:
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle reconfiguration of an existing entry."""
-        entry = self._get_reconfigure_entry()
-        errors: dict[str, str] = {}
-
-        # Ask for input - initial defaults
-        if user_input is None:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=get_user_schema(input=entry.data),
-                errors=errors,
-            )
-
-        _LOGGER.debug("Reconfigure - old data: %s", entry.data)
-        _LOGGER.debug("Reconfigure - new data: %s", user_input)
-        try:
-            info = await validate_input(self.hass, user_input)
-        except CannotConnect:
-            errors["base"] = "cannot_connect"
-        except Timeout:
-            errors["base"] = "timeout_connect"
-        except InvalidAuth:
-            errors["base"] = "invalid_auth"
-        except Exception:
-            _LOGGER.exception("Unexpected exception")
-            errors["base"] = "unknown"
-        else:
-            await self.async_set_unique_id(str(info["serial"]))
-            self._abort_if_unique_id_mismatch(reason="wrong_plc")
-            return self.async_update_reload_and_abort(
-                entry,
-                data_updates=user_input,
-            )
-
-        return self.async_show_form(
-            step_id="reconfigure",
-            data_schema=get_user_schema(input=user_input),
-            errors=errors,
-        )
+        """Handle reconfiguration."""
+        return await self.async_step_user(user_input)
 
 
 class CannotConnect(HomeAssistantError):
