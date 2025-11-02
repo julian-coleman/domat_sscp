@@ -1,10 +1,4 @@
-"""Constants for the Domat SSCP integration."""
-
-DOMAIN = "domat_sscp"
-
-# Configuration flow constants
-CONF_CONNECTION_NAME = "connection_name"
-CONF_SSCP_ADDRESS = "sscp_address"
+"""SSCP Constants."""
 
 # SSCP packet format constants
 # Wire endianness
@@ -129,8 +123,3 @@ IEEE755_MANT_LEN = IEEE754_EXP_SHIFT
 # Timeout defaults
 SSCP_TIMEOUT_CONNECT = 30
 SSCP_TIMEOUT_DATA = 10
-
-# Configuration defaults
-DEFAULT_SCAN_INTERVAL = 60
-DEFAULT_SSCP_PORT = 12346
-DEFAULT_SSCP_ADDRESS = 1
