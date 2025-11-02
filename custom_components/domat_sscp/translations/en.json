@@ -33,5 +33,45 @@
                 }
             }
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Add a device",
+                "menu_options": {
+                    "temp_hum": "Temperature and humidity",
+                    "energy": "Energy usage",
+                    "air": "Air recuperation"
+                }
+            },
+            "temp_hum": {
+                "title": "Add a temperature and humidity device",
+                "data": {
+                    "description": "Description"
+                },
+                "sections": {
+                    "temperature": {
+                        "name": "Temperature variable:",
+                        "data": {
+                            "uid": "UID",
+                            "length": "Length",
+                            "offset": "Offset"
+                        }
+                    },
+                    "humidity": {
+                        "name": "Humidity variable:",
+                        "data": {
+                            "uid": "UID",
+                            "length": "Length",
+                            "offset": "Offset"
+                        }
+                    }
+                }
+            }
+        },
+        "error": {
+             "variable_length": "Variable(s) have wrong length: {variables}",
+             "variable_missing": "No such variable(s) : {variables}"
+        }
     }
 }
