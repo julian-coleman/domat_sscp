@@ -18,13 +18,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .sscp_connection import sscp_connection
-from .sscp_const import (
+from .const import (
     CONF_CONNECTION_NAME,
     CONF_SSCP_ADDRESS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
+from .sscp_connection import sscp_connection
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -82,19 +82,15 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             await conn.login()
             if conn.socket is None:
                 _LOGGER.debug("Login failed")
-                _LOGGER.error("Login failed")
                 raise ConfigEntryAuthFailed from None
         except TimeoutError:
             _LOGGER.debug("Login timeout")
-            _LOGGER.error("Login timeout")
             raise ConfigEntryAuthFailed from None
         except (ValueError, OSError):
             _LOGGER.debug("Login connection error")
-            _LOGGER.error("Login connection error")
             raise UpdateFailed from None
 
         data = ["dummy", "dummy"]
 
         await conn.logout()
-        _LOGGER.error("All OK")
         return data

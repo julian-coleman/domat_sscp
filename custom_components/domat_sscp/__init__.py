@@ -24,8 +24,10 @@ async def async_setup_entry(
     await coordinator.async_config_entry_first_refresh()
     if not coordinator.data:
         raise ConfigEntryNotReady
+    # Store the coordinator for later uses.
+    config_entry.runtime_data = coordinator
 
-    # await hass.config_entries.async_forward_entry_setups(entry, _PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(config_entry, _PLATFORMS)
 
     _LOGGER.info("Setup done")
     return True
