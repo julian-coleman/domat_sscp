@@ -70,8 +70,10 @@
             }
         },
         "error": {
-             "variable_length": "Variable(s) have wrong length: {variables}",
-             "variable_missing": "No such variable(s) : {variables}"
+            "cannot_connect": "Failed to connect",
+            "invalid_auth": "Invalid authentication",
+            "timeout_connect": "Timeout establishing connection",
+            "variable_error": "Error ({error}) with variable(s): {variables}"
         }
     }
 }

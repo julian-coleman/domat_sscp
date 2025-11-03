@@ -70,8 +70,10 @@
       }
     },
     "error": {
-      "variable_length": "Variable(s) have wrong length: {variables}",
-      "variable_missing": "No such variable(s) : {variables}"
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "timeout_connect": "[%key:common::config_flow::error::timeout_connect%]",
+      "variable_error": "Error ({error}) with variable(s): {variables}"
     }
   }
 }
