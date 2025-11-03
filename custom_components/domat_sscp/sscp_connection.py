@@ -12,9 +12,15 @@ import select
 import socket
 
 from .sscp_const import (
+    SSCP_DATA_MAX_VAR,
     SSCP_DATA_ORDER,
     SSCP_DATALEN_END,
     SSCP_DATALEN_START,
+    SSCP_ERROR_CODE_END,
+    SSCP_ERROR_CODE_START,
+    SSCP_ERROR_VARS_END,
+    SSCP_ERROR_VARS_START,
+    SSCP_ERRORS,
     SSCP_GROUP_END,
     SSCP_GROUP_START,
     SSCP_GUID_END,
@@ -35,13 +41,23 @@ from .sscp_const import (
     SSCP_MAXDATA_END,
     SSCP_MAXDATA_START,
     SSCP_PROTOCOL_VERSION,
+    SSCP_READ_DATA_FLAGS,
+    SSCP_READ_DATA_REQUEST,
+    SSCP_READ_DATA_SUCCESS,
     SSCP_RECV_MAX,
     SSCP_RECV_MAX_BYTES,
+    SSCP_STATUS_END,
+    SSCP_STATUS_START,
     SSCP_TIMEOUT_CONNECT,
     SSCP_TIMEOUT_DATA,
     SSCP_VERSION_END,
     SSCP_VERSION_START,
+    SSCP_WRITE_DATA_1VARIABLE,
+    SSCP_WRITE_DATA_FLAGS,
+    SSCP_WRITE_DATA_REQUEST,
+    SSCP_WRITE_DATA_SUCCESS,
 )
+from .sscp_variable import sscp_variable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,13 +70,13 @@ class sscp_connection:
 
     def __init__(
         self,
-        name,
-        ip_address,
-        port,
-        user_name,
-        sscp_address,
-        password=None,
-        md5_hash=None,
+        name: str,
+        ip_address: str,
+        port: int,
+        user_name: str,
+        sscp_address: int,
+        password: str | None = None,
+        md5_hash: str | None = None,
     ) -> None:
         """Configure the SSCP connection with individual parameters.
 
@@ -99,13 +115,32 @@ class sscp_connection:
     def from_yaml(cls, yaml) -> None:
         "Configure the SSCP connection with paramaters via YAML."
 
+        try:
+            name = yaml["name"]
+            ip_address = yaml["ipAddress"]
+            port = yaml["port"]
+            sscp_address = yaml["sscpAddress"]
+            user_name = yaml["userName"]
+        except KeyError as e:
+            e_str = "Missing parameter" + str(e)
+            raise ValueError(e_str) from e
+        if "password" in yaml:
+            password = yaml["password"]
+        else:
+            password = None
+        if "md5" in yaml:
+            md5_hash = yaml["md5"]
+        else:
+            md5_hash = None
+
         cls(
-            name=yaml["name"],
-            ip_address=yaml["ipAddress"],
-            port=yaml["port"],
-            sscp_address=yaml["sscpAddress"],
-            user_name=yaml["userName"],
-            md5_hash=yaml["md5"],
+            name=name,
+            ip_address=ip_address,
+            port=port,
+            sscp_address=sscp_address,
+            user_name=user_name,
+            password=password,
+            md5_hash=md5_hash,
         )
 
     async def login(self) -> bool:
@@ -171,7 +206,7 @@ class sscp_connection:
         request += data
 
         # Pass exceptions back to our caller
-        reply = await self.sscp_sendrecv(request, "Login")
+        reply = await self._sscp_sendrecv(request, "Login")
         if len(reply) == 0:
             if self.socket is not None:
                 self.socket.close()
@@ -202,7 +237,7 @@ class sscp_connection:
         request += SSCP_LOGOUT_REQUEST
         request += SSCP_LOGOUT_DATA_LEN
 
-        await self.sscp_sendrecv(request, "Logout", close_after_send=True)
+        await self._sscp_sendrecv(request, "Logout", close_after_send=True)
 
     async def get_info(self):
         """Get basic info about the SSCP server/PLC.
@@ -228,7 +263,7 @@ class sscp_connection:
         request += data
 
         # Pass exceptions back to our caller
-        reply = await self.sscp_sendrecv(request, "Info ")
+        reply = await self._sscp_sendrecv(request, "Info ")
         if len(reply) == 0:
             return False
 
@@ -257,8 +292,140 @@ class sscp_connection:
 
         return True
 
-    async def sscp_sendrecv(
-        self, request, prefix="Socket", close_after_send=False
+    async def sscp_read_variables(self, vars: list[sscp_variable]):
+        """Read variable(s) via the connection.
+
+        Retries the read if some of the variables have errors.
+        Returns a list of variables with errors and the error codes
+        Can raise exceptions from sendrecv().
+        """
+        _LOGGER.debug(
+            "Read limits: %d, %d, %d", self.send_max, SSCP_RECV_MAX, SSCP_DATA_MAX_VAR
+        )
+        send_max = self.send_max - SSCP_DATALEN_END
+        # Unclear if recv_max inclues the data header or not, so reduce it in case
+        recv_max = SSCP_RECV_MAX - SSCP_DATALEN_END
+
+        header = bytearray()
+        header += self.addr_byte
+        header += SSCP_READ_DATA_REQUEST
+
+        err_vars = []
+        err_codes = []
+
+        for reply_len, var_start, var_end in _sscp_read_variables_generator(
+            vars=vars, send_max=send_max, recv_max=recv_max
+        ):
+            while True:
+                data = bytearray()
+                data += SSCP_READ_DATA_FLAGS
+                for var in vars[var_start:var_end]:
+                    if var.uid in err_vars:
+                        _LOGGER.debug("Skipping error uid: %s", var.uid)
+                        reply_len -= var.length
+                    else:
+                        data += var.uid_bytes
+                        data += var.offset_bytes
+                        data += var.length_bytes
+
+                if len(data) == len(SSCP_READ_DATA_FLAGS):
+                    break
+
+                request = bytearray()
+                request += header
+                request += len(data).to_bytes(2, SSCP_DATA_ORDER)
+                request += data
+
+                # Pass exceptions back to our caller
+                reply = await self._sscp_sendrecv(request, prefix="Read")
+
+                if reply[SSCP_STATUS_START:SSCP_STATUS_END] != SSCP_READ_DATA_SUCCESS:
+                    err = int.from_bytes(
+                        reply[SSCP_ERROR_CODE_START:SSCP_ERROR_CODE_END],
+                        SSCP_DATA_ORDER,
+                    )
+                    val = int.from_bytes(
+                        reply[SSCP_ERROR_VARS_START:SSCP_ERROR_VARS_END],
+                        SSCP_DATA_ORDER,
+                    )
+                    _LOGGER.error(
+                        "Variable read failed: vars 0x%08x, err 0x%04x (%s)",
+                        val,
+                        err,
+                        SSCP_ERRORS.get(err, "unknown"),
+                    )
+                    i = 0
+                    for var in vars[var_start:var_end]:
+                        if val & (1 << i) > 0:
+                            _LOGGER.debug("Error uid: %s", var.uid)
+                            if var.uid not in err_vars:
+                                err_vars.append(var.uid)
+                                err_codes.append(err)
+                        i += 1
+
+                    _LOGGER.debug("Error variables: %s", err_vars)
+                    continue
+
+                data_len = int.from_bytes(
+                    reply[SSCP_DATALEN_START:SSCP_DATALEN_END], SSCP_DATA_ORDER
+                )
+                if data_len != reply_len:
+                    _LOGGER.error("Read length mismatch: %d %d", data_len, reply_len)
+                    for var in vars[var_end:]:
+                        if var.uid not in err_vars:
+                            err_vars.append(var.uid)
+                            err_codes.append(0)
+                    return err_vars, err_codes
+
+                pos0 = SSCP_DATALEN_END
+                for var in vars[var_start:var_end]:
+                    if var.uid not in err_vars:
+                        pos1 = pos0 + var.length
+                        var.set_raw(reply[pos0:pos1])
+                        pos0 = pos1
+                break
+
+        return err_vars, err_codes
+
+    async def sscp_write_variable(self, var: sscp_variable, new) -> bool:
+        """Write variable via the connection.
+
+        Can raise exceptions from sendrecv().
+        """
+
+        data = bytearray()
+        data += SSCP_WRITE_DATA_FLAGS
+        data += SSCP_WRITE_DATA_1VARIABLE
+        data += var.uid_bytes
+        data += var.offset_bytes
+        data += var.length_bytes
+        try:
+            data += var.change_value(new)
+        except TypeError:
+            return False
+        data_len = len(data)
+
+        request = bytearray()
+        request += self.addr_byte
+        request += SSCP_WRITE_DATA_REQUEST
+        request += data_len.to_bytes(2, SSCP_DATA_ORDER)
+        request += data
+
+        # Pass exceptions back to our caller
+        reply = await self._sscp_sendrecv(request, prefix="Write")
+
+        if reply[SSCP_STATUS_START:SSCP_STATUS_END] != SSCP_WRITE_DATA_SUCCESS:
+            _LOGGER.error(
+                "Variable write failed: 0x%04x 0x%08x",
+                reply[SSCP_ERROR_CODE_START:SSCP_ERROR_CODE_END].hex(),
+                reply[SSCP_ERROR_VARS_START:SSCP_ERROR_VARS_END].hex(),
+            )
+            return False
+
+        return True
+
+    async def _sscp_sendrecv(
+        self, request: bytearray, prefix="Socket", close_after_send=False
     ) -> bytearray:
         """Send/receive data on the socket.
 
@@ -350,3 +517,38 @@ class sscp_connection:
 
         _LOGGER.debug("%s reply: %s", prefix, reply.hex())
         return reply
+
+
+def _sscp_read_variables_generator(vars: sscp_variable, send_max: int, recv_max: int):
+    """Split a request so that we don't exceed maximum variables, request length or reply length."""
+    var_start = 0
+    var_end = 0
+
+    reply_len = 0
+    request_len = len(SSCP_READ_DATA_FLAGS)
+    uid_count = 0
+    while var_end < len(vars):
+        var_len = (
+            len(vars[var_end].uid_bytes)
+            + len(vars[var_end].offset_bytes)
+            + len(vars[var_end].length_bytes)
+        )
+        if (
+            (reply_len + vars[var_end].length < recv_max)
+            and (request_len + var_len < send_max)
+            and uid_count < SSCP_DATA_MAX_VAR
+        ):
+            request_len += var_len
+            reply_len += vars[var_end].length
+            uid_count += 1
+        else:
+            _LOGGER.debug("Requesting data (some): %d %d", var_start, var_end)
+            yield (reply_len, var_start, var_end)
+            request_len = len(SSCP_READ_DATA_FLAGS) + var_len
+            reply_len = vars[var_end].length
+            uid_count = 1
+            var_start = var_end
+        var_end += 1
+    if request_len > 1:
+        _LOGGER.debug("Requesting data (last): %s %s", var_start, var_end)
+        yield (reply_len, var_start, var_end)
