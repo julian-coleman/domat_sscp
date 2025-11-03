@@ -67,22 +67,24 @@ SSCP_READ_DATA_SUCCESS = bytes("\x85\x00", encoding="iso-8859-1")
 SSCP_WRITE_DATA_REQUEST = bytes("\x05\x10", encoding="iso-8859-1")
 # Flags for offset + length (as per read)
 SSCP_WRITE_DATA_FLAGS = SSCP_READ_DATA_FLAGS
+# Write len for 1 variable
+SSCP_WRITE_DATA_1VARIABLE = bytes("\x01", encoding="iso-8859-1")
 # Write succesfull for all variables
 SSCP_WRITE_DATA_SUCCESS = bytes("\x85\x10", encoding="iso-8859-1")
 # Start and end bytes of received error code
-SSCP_ERROR_CODE_END = 7
-SSCP_ERROR_CODE_START = 9
+SSCP_ERROR_CODE_START = 7
+SSCP_ERROR_CODE_END = 9
 # Start and end bytes of received error variables
 SSCP_ERROR_VARS_START = 9
 SSCP_ERROR_VARS_END = 17
 
 # Error codes (not all)
 SSCP_ERRORS = {
-    0x0103: "NoSuchVariable",
-    0x010A: "WriteFailed",
-    0x010D: "DataTooLong",
-    0x0110: "VariableCountLimitExceed",
-    0x0112: "SizeMismatch",
+    0x0103: "No Such Variable",
+    0x010A: "Write Failed",
+    0x010D: "Data Too Long",
+    0x0110: "Variable Count Limit Exceeded",
+    0x0112: "Size Mismatch",
 }
 
 # Schedule constants
@@ -114,11 +116,11 @@ MINS_PER_DAY = 1440
 # IEEE754 constants
 IEEE754_SIGN = 0x80000000
 IEEE754_EXPONENT = 0x7F800000
-IEEE754_MANTISSA = 0x007FFFFF
-IEEE754_MAX_BITS = 32
-IEEE754_EXP_SHIFT = 23
-IEEE754_EXP_BIAS = 127
-IEEE755_MANT_LEN = IEEE754_EXP_SHIFT
+IEEE754_SIGNIFICAND = 0x007FFFFF
+IEEE754_MAXIMUM_BITS = 32
+IEEE754_EXPONENT_SHIFT = 23
+IEEE754_EXPONENT_BIAS = 127
+IEEE754_SIGNIFICAND_LENGTH = IEEE754_EXPONENT_SHIFT
 
 # Timeout defaults
 SSCP_TIMEOUT_CONNECT = 30
