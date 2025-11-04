@@ -198,10 +198,10 @@ async def validate_config(
             await conn.get_info()
             serial = conn.serial
         except TimeoutError:
-            _LOGGER.debug("Info timeout")
+            _LOGGER.debug("Get unfo timeout")
             raise Timeout from None
         except (ValueError, OSError):
-            _LOGGER.debug("Info failed")
+            _LOGGER.debug("Get info failed")
             raise CannotConnect from None
         if serial is None:
             # TODO Always add the username and SSCP address
@@ -213,15 +213,15 @@ async def validate_config(
         try:
             error_vars, error_codes = await conn.sscp_read_variables(variables)
         except TimeoutError:
-            _LOGGER.debug("Info timeout")
+            _LOGGER.debug("Get variables timeout")
             raise Timeout from None
         except (ValueError, OSError):
-            _LOGGER.debug("Info failed")
+            _LOGGER.debug("Get variables failed")
             raise CannotConnect from None
         if len(error_vars) > 0:
             error_code = error_codes[0]  # We only display the first error
             for var in error_vars:
-                error_vars_str = error_vars_str + " " + str(var)
+                error_vars_str = error_vars_str + str(var) + " "
 
     await conn.logout()
 
@@ -230,7 +230,7 @@ async def validate_config(
         "title": data[CONF_CONNECTION_NAME],
         "serial": serial,
         "error_code": error_code,
-        "error_variables": error_vars,
+        "error_variables": error_vars_str,
     }
 
 
