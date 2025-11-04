@@ -13,7 +13,7 @@ DEFAULT_SSCP_PORT = 12346
 DEFAULT_SSCP_ADDRESS = 1
 
 # Options flow constants
-OPT_DESCRIPTION = "description"
+OPT_NAME = "name"
 OPT_TEMPERATURE = "temperature"
 OPT_HUMIDITY = "humidity"
 OPT_METER_ELECTRICITY = "meter_electricity"
