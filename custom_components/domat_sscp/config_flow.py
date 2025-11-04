@@ -22,10 +22,9 @@ from homeassistant.const import (
     #    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.exceptions import HomeAssistantError
-import homeassistant.helpers.entity_registry as er
 from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
@@ -42,11 +41,11 @@ from .const import (
     OPT_CALORIMETER_COLD,
     OPT_CALORIMETER_HOT,
     OPT_CO2,
-    OPT_DESCRIPTION,
     OPT_HUMIDITY,
     OPT_MAXIMUM,
     OPT_METER_ELECTRICITY,
     OPT_MINIMUM,
+    OPT_NAME,
     OPT_TEMPERATURE,
     OPT_UID,
     OPT_VENTILATOR_ERROR,
@@ -127,7 +126,7 @@ def get_temp_hum_schema(
         default_description = ""
         default_temperature_uid = default_humidity_uid = 0
     else:
-        default_description = input_data.get(OPT_DESCRIPTION, "")
+        default_description = input_data.get(OPT_NAME, "")
         temperature = input_data.get(OPT_TEMPERATURE)
         default_temperature_uid = temperature.get(OPT_UID, 0)
         humidity = input_data.get(OPT_HUMIDITY, None)
@@ -135,7 +134,7 @@ def get_temp_hum_schema(
 
     return vol.Schema(
         {
-            vol.Required(OPT_DESCRIPTION, default=default_description): str,
+            vol.Required(OPT_NAME, default=default_description): str,
             vol.Required(OPT_TEMPERATURE): section(
                 vol.Schema(
                     {
@@ -220,7 +219,7 @@ async def validate_config(
             _LOGGER.debug("Info failed")
             raise CannotConnect from None
         if len(error_vars) > 0:
-            error_code = error_codes[0] # We only display the first error
+            error_code = error_codes[0]  # We only display the first error
             for var in error_vars:
                 error_vars_str = error_vars_str + " " + str(var)
 
@@ -265,7 +264,7 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Validate the user input and create an entry
         try:
-            info = await validate_config(user_input, None)
+            info = await validate_config(data=user_input, variables=None)
         except CannotConnect:
             errors["base"] = "cannot_connect"
         except Timeout:
@@ -316,13 +315,16 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for Domat SSCP."""
 
+        # Display a menu with step id's
         return self.async_show_menu(step_id="init", menu_options=_DEVICE_MENU)
 
     async def async_step_temp_hum(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manage the options for a temperature/humidity device."""
+        """Manage the options for adding a temperature/humidity device."""
 
+        data: dict[str, Any] = self.config_entry.options.copy()
+        _LOGGER.debug("Initial options: %s", data)
         errors: dict[str, str] = {}
         variables: list[sscp_variable] = []
         step = "temp_hum"
@@ -339,21 +341,45 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             variables.append(
                 sscp_variable(uid=temperature_uid, offset=0, length=4, type=13)
             )
+            temperature_unique_id = str(temperature_uid) + "-0-4"
         humidity = user_input.get(OPT_HUMIDITY)
         humidity_uid = humidity.get(OPT_UID)
         if humidity_uid != 0:
             variables.append(
                 sscp_variable(uid=humidity_uid, offset=0, length=4, type=13)
             )
+            humidity_unique_id = str(humidity_uid) + "-0-4"
 
         if len(variables) == 0:
             # No user variables
             errors["base"] = "variable_error"
             description_placeholders = {"error": "UID All Zero", "variables": "0"}
         else:
+            # Check that UID does not exist
+            err_vars = ""
+            if temperature_unique_id in data:
+                errors["base"] = "variable_error"
+                err_str = "UID Already Exists"
+                err_vars = err_vars + str(temperature_uid) + " "
+                description_placeholders = {
+                    "error": err_str,
+                    "variables": err_vars,
+                }
+            if humidity_unique_id in data:
+                errors["base"] = "variable_error"
+                err_str = "UID Already Exists"
+                err_vars = err_vars + str(humidity_uid) + " "
+                description_placeholders = {
+                    "error": err_str,
+                    "variables": err_vars,
+                }
+
+        if "base" not in errors:
             # Validate the user input and create an entry
             try:
-                info = await validate_config(self.config_entry.data, variables)
+                info = await validate_config(
+                    data=self.config_entry.data, variables=variables
+                )
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except Timeout:
@@ -365,9 +391,30 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                 if info["error_code"] != 0:
                     errors["base"] = "variable_error"
                     err_str = SSCP_ERRORS.get(info["error_code"], "unknown")
-                    description_placeholders = {"error": err_str, "variables": info["error_variables"]}
+                    description_placeholders = {
+                        "error": err_str,
+                        "variables": info["error_variables"],
+                    }
                 else:
-                    return self.async_create_entry(data=user_input)
+                    data.update(
+                        {
+                            temperature_unique_id: {
+                                "uid": temperature_uid,
+                                "offset": 0,
+                                "length": 4,
+                                "type": 13,
+                                "device": user_input.get(OPT_NAME),
+                            },
+                            humidity_unique_id: {
+                                "uid": humidity_uid,
+                                "offset": 0,
+                                "length": 4,
+                                "type": 13,
+                                "device": user_input.get(OPT_NAME),
+                            },
+                        }
+                    )
+                    return self.async_create_entry(data=data)
 
         # There was some validation problem - previous input as defaults
         return self.async_show_form(
@@ -380,7 +427,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     async def async_step_energy(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manage the options for an energy usage device."""
+        """Manage the options for adding an energy usage device."""
 
         errors: dict[str, str] = {}
         step = "energy"
@@ -444,7 +491,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     async def async_step_air(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manage the options for an air recuperation device."""
+        """Manage the options for adding an air recuperation device."""
 
         errors: dict[str, str] = {}
         step = "air"
