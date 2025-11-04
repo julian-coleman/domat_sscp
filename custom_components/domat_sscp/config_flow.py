@@ -45,20 +45,22 @@ from .const import (
     OPT_DESCRIPTION,
     OPT_HUMIDITY,
     OPT_MAXIMUM,
-    OPT_MINIMUM,
     OPT_METER_ELECTRICITY,
+    OPT_MINIMUM,
     OPT_TEMPERATURE,
     OPT_UID,
-    OPT_VENTILATOR_IN,
-    OPT_VENTILATOR_OUT,
     OPT_VENTILATOR_ERROR,
     OPT_VENTILATOR_FLOW,
-    OPT_VENTILATOR_FLOW_MINIMUM,
     OPT_VENTILATOR_FLOW_MAXIMUM,
+    OPT_VENTILATOR_FLOW_MINIMUM,
+    OPT_VENTILATOR_IN,
+    OPT_VENTILATOR_OUT,
     OPT_WATER_COLD,
     OPT_WATER_HOT,
 )
 from .sscp_connection import sscp_connection
+from .sscp_const import SSCP_ERRORS
+from .sscp_variable import sscp_variable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -123,20 +125,15 @@ def get_temp_hum_schema(
     # Fill in defaults from input or initial defaults
     if input_data is None:
         default_description = ""
-        default_temperature_uid = 0
-        default_humidity_uid = 0
+        default_temperature_uid = default_humidity_uid = 0
     else:
         default_description = input_data.get(OPT_DESCRIPTION, "")
-        default_temperature_uid = 0
-        temperature = input_data.get(OPT_TEMPERATURE, None)
-        if temperature is not None:
-            default_temperature_uid = temperature.get(OPT_UID, default_temperature_uid)
-        default_humidity_uid = 0
+        temperature = input_data.get(OPT_TEMPERATURE)
+        default_temperature_uid = temperature.get(OPT_UID, 0)
         humidity = input_data.get(OPT_HUMIDITY, None)
-        if humidity is not None:
-            default_humidity_uid = humidity.get(OPT_UID, default_humidity_uid)
+        default_humidity_uid = humidity.get(OPT_UID, 0)
 
-    schema = vol.Schema(
+    return vol.Schema(
         {
             vol.Required(OPT_DESCRIPTION, default=default_description): str,
             vol.Required(OPT_TEMPERATURE): section(
@@ -158,11 +155,17 @@ def get_temp_hum_schema(
         }
     )
 
-    return schema
 
-
-async def validate_config(data: dict[str, Any]) -> dict[str, Any]:
+async def validate_config(
+    data: dict[str, Any], variables: list[sscp_variable] | None
+) -> dict[str, Any]:
     """Validate that the user input allows us to connect using the values provided by the user."""
+
+    # Config flow info
+    serial = ""
+    # Options flow info
+    error_code = 0
+    error_vars_str = ""
 
     try:
         conn = sscp_connection(
@@ -172,10 +175,11 @@ async def validate_config(data: dict[str, Any]) -> dict[str, Any]:
             user_name=data[CONF_USERNAME],
             password=data[CONF_PASSWORD],
             sscp_address=data[CONF_SSCP_ADDRESS],
+            md5_hash=None,
         )
-    except ValueError as error:
+    except ValueError as e:
         _LOGGER.error("Could not create a connection object")
-        raise CannotConnect from error
+        raise CannotConnect from e
 
     try:
         await conn.login()
@@ -189,25 +193,46 @@ async def validate_config(data: dict[str, Any]) -> dict[str, Any]:
         _LOGGER.debug("Login connection error")
         raise CannotConnect from None
 
-    try:
-        await conn.get_info()
-        serial = conn.serial
-    except TimeoutError:
-        _LOGGER.debug("Info timeout")
-        raise Timeout from None
-    except (ValueError, OSError):
-        _LOGGER.debug("Info failed")
-        raise CannotConnect from None
-    if serial is None:
-        # TODO Always add the username and SSCP address
-        _LOGGER.error("No serial number for %s", data[CONF_CONNECTION_NAME])
-        serial = CONF_USERNAME + "-" + CONF_SSCP_ADDRESS
-    _LOGGER.info("Using unique ID: %s", serial)
+    if variables is None:
+        # Config flow
+        try:
+            await conn.get_info()
+            serial = conn.serial
+        except TimeoutError:
+            _LOGGER.debug("Info timeout")
+            raise Timeout from None
+        except (ValueError, OSError):
+            _LOGGER.debug("Info failed")
+            raise CannotConnect from None
+        if serial is None:
+            # TODO Always add the username and SSCP address
+            _LOGGER.error("No serial number for %s", data[CONF_CONNECTION_NAME])
+            serial = CONF_USERNAME + "-" + CONF_SSCP_ADDRESS
+        _LOGGER.info("Using unique ID: %s", serial)
+    else:
+        # Options flow
+        try:
+            error_vars, error_codes = await conn.sscp_read_variables(variables)
+        except TimeoutError:
+            _LOGGER.debug("Info timeout")
+            raise Timeout from None
+        except (ValueError, OSError):
+            _LOGGER.debug("Info failed")
+            raise CannotConnect from None
+        if len(error_vars) > 0:
+            error_code = error_codes[0] # We only display the first error
+            for var in error_vars:
+                error_vars_str = error_vars_str + " " + str(var)
 
     await conn.logout()
 
-    # Return info that we want to store in the config entry.
-    return {"title": data[CONF_CONNECTION_NAME], "serial": serial}
+    # Return info about the connection or variables.
+    return {
+        "title": data[CONF_CONNECTION_NAME],
+        "serial": serial,
+        "error_code": error_code,
+        "error_variables": error_vars,
+    }
 
 
 class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -240,26 +265,23 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Validate the user input and create an entry
         try:
-            info = await validate_config(user_input)
+            info = await validate_config(user_input, None)
         except CannotConnect:
             errors["base"] = "cannot_connect"
         except Timeout:
             errors["base"] = "timeout_connect"
         except InvalidAuth:
             errors["base"] = "invalid_auth"
-        except Exception:
-            _LOGGER.exception("Unexpected exception")
-            errors["base"] = "unknown"
         else:
+            # No exception, so either abort or return
+            await self.async_set_unique_id(info["serial"])
             if self.source == SOURCE_RECONFIGURE:
-                await self.async_set_unique_id(str(info["serial"]))
                 self._abort_if_unique_id_mismatch(reason="wrong_plc")
                 return self.async_update_reload_and_abort(
                     entry,
                     data_updates=user_input,
                 )
             # user
-            await self.async_set_unique_id(str(info["serial"]))
             self._abort_if_unique_id_configured()
             return self.async_create_entry(title=info["title"], data=user_input)
 
@@ -302,42 +324,50 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         """Manage the options for a temperature/humidity device."""
 
         errors: dict[str, str] = {}
+        variables: list[sscp_variable] = []
         step = "temp_hum"
         schema = get_temp_hum_schema(user_input)
 
         if user_input is None:
             return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
 
-        _LOGGER.error("User input: %s", user_input)
-        temperature = user_input.get(OPT_TEMPERATURE, None)
-        if temperature is not None:
-            temperature_uid = temperature.get(OPT_UID, 0)
-            if temperature_uid != 0:
-                _LOGGER.error("Temperature: %s %s %s", temperature_uid, 4, 0)
-        humidity = user_input.get(OPT_HUMIDITY, None)
-        if humidity is not None:
-            humidity_uid = humidity.get(OPT_UID, 0)
-            if humidity_uid != 0:
-                _LOGGER.error("Humidity: %s %s %s", humidity_uid, 4, 0)
+        # Create variables list from user input
+        _LOGGER.debug("User input: %s", user_input)
+        temperature = user_input.get(OPT_TEMPERATURE)
+        temperature_uid = temperature.get(OPT_UID)
+        if temperature_uid != 0:
+            variables.append(
+                sscp_variable(uid=temperature_uid, offset=0, length=4, type=13)
+            )
+        humidity = user_input.get(OPT_HUMIDITY)
+        humidity_uid = humidity.get(OPT_UID)
+        if humidity_uid != 0:
+            variables.append(
+                sscp_variable(uid=humidity_uid, offset=0, length=4, type=13)
+            )
 
-        # Validate the user input and create an entry
-#        try:
-#            error_variables = await validate_variables(variables)
-#        except CannotConnect:
-#            errors["base"] = "cannot_connect"
-#        except Timeout:
-#            errors["base"] = "timeout_connect"
-#        except InvalidAuth:
-#            errors["base"] = "invalid_auth"
-#        except Exception:
-#            _LOGGER.exception("Unexpected exception")
-#            errors["base"] = "unknown"
-#        else:
-
-        error_variables_string = str(temperature_uid)
-        description_placeholders = {"variables": error_variables_string}
-        errors["base"] = "variable_length"
-        # return self.async_create_entry(data=user_input)
+        if len(variables) == 0:
+            # No user variables
+            errors["base"] = "variable_error"
+            description_placeholders = {"error": "UID All Zero", "variables": "0"}
+        else:
+            # Validate the user input and create an entry
+            try:
+                info = await validate_config(self.config_entry.data, variables)
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except Timeout:
+                errors["base"] = "timeout_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            else:
+                # No exception, so either generate an error or return
+                if info["error_code"] != 0:
+                    errors["base"] = "variable_error"
+                    err_str = SSCP_ERRORS.get(info["error_code"], "unknown")
+                    description_placeholders = {"error": err_str, "variables": info["error_variables"]}
+                else:
+                    return self.async_create_entry(data=user_input)
 
         # There was some validation problem - previous input as defaults
         return self.async_show_form(
@@ -403,20 +433,6 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             return self.async_show_form(
                 step_id="energy", data_schema=schema, errors=errors
             )
-
-        # Validate the user input and create an entry
-        try:
-            error_variables = await validate_variables(variables)
-        except CannotConnect:
-            errors["base"] = "cannot_connect"
-        except Timeout:
-            errors["base"] = "timeout_connect"
-        except InvalidAuth:
-            errors["base"] = "invalid_auth"
-        except Exception:
-            _LOGGER.exception("Unexpected exception")
-            errors["base"] = "unknown"
-#        else:
 
         # There was some validation problem - previous input as defaults
         return self.async_show_form(
@@ -488,20 +504,6 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             return self.async_show_form(
                 step_id="air", data_schema=schema, errors=errors
             )
-
-        # Validate the user input and create an entry
-        try:
-            error_variables = await validate_variables(variables)
-        except CannotConnect:
-            errors["base"] = "cannot_connect"
-        except Timeout:
-            errors["base"] = "timeout_connect"
-        except InvalidAuth:
-            errors["base"] = "invalid_auth"
-        except Exception:
-            _LOGGER.exception("Unexpected exception")
-            errors["base"] = "unknown"
-#        else:
 
         # There was some validation problem - previous input as defaults
         return self.async_show_form(
