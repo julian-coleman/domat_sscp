@@ -295,15 +295,16 @@ class sscp_connection:
     async def sscp_read_variables(self, vars: list[sscp_variable]):
         """Read variable(s) via the connection.
 
+        Updates the raw values of the variables.
         Retries the read if some of the variables have errors.
-        Returns a list of variables with errors and the error codes
+        Returns a list of variables with errors and a list of the error codes
         Can raise exceptions from sendrecv().
         """
         _LOGGER.debug(
             "Read limits: %d, %d, %d", self.send_max, SSCP_RECV_MAX, SSCP_DATA_MAX_VAR
         )
+        # Unclear if *_max include the data header or not, so reduce them in case
         send_max = self.send_max - SSCP_DATALEN_END
-        # Unclear if recv_max inclues the data header or not, so reduce it in case
         recv_max = SSCP_RECV_MAX - SSCP_DATALEN_END
 
         header = bytearray()
@@ -354,14 +355,12 @@ class sscp_connection:
                         err,
                         SSCP_ERRORS.get(err, "unknown"),
                     )
-                    i = 0
-                    for var in vars[var_start:var_end]:
+                    for i, var in enumerate(vars[var_start:var_end]):
                         if val & (1 << i) > 0:
                             _LOGGER.debug("Error uid: %s", var.uid)
                             if var.uid not in err_vars:
                                 err_vars.append(var.uid)
                                 err_codes.append(err)
-                        i += 1
 
                     _LOGGER.debug("Error variables: %s", err_vars)
                     continue
