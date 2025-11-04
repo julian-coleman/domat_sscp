@@ -87,6 +87,16 @@ class sscp_variable:
     #        cls(
     #        )
 
+    def to_string(self):
+        if self.type == 13 or self.type == 2 or self.type == 0:
+            if len(self.states) > 0:
+                return self.state
+            if self.format is None:
+                return self.val
+            else:
+                return self.format % (self.val)
+        return self.raw.hex()
+
     def change_value(self, value: str) -> bytearray:
         """Change the variable to the new value.
 
@@ -97,16 +107,37 @@ class sscp_variable:
         _LOGGER.debug("Change %d to 0x%x", self.uid, value)
         return (0).to_bytes(self.length, SSCP_DATA_ORDER)
 
-    def set_raw(self, raw: bytearray) -> bool:
+    def set_value(self, raw: bytearray) -> None:
         """Set the variable to the new raw value.
 
         Directly updates the raw value.
+        Parses the raw value depending on the variable type.
         """
 
-        # TODO: Fix placeholder
         self.raw = raw
         _LOGGER.debug("Set %d to 0x%s", self.uid, self.raw.hex())
-        return True
+
+        match self.type:
+            case 18:        # 8-byte int
+                self.val = int.from_bytes(raw, sscp_data_order)
+            case 13:        # 4-byte float
+                self.val = ieee754_to_float(raw)
+            case 2:         # 2-byte int or state
+                self.val = int.from_bytes(raw, sscp_data_order)
+                self.state = self.val   # Default
+                if len(self.states) > 0:
+                    for state in self.states:
+                        if state["state"] == self.val:
+                            self.state = state["text"]
+            case 0:         # bool (1-byte int)
+                self.val = int.from_bytes(raw, sscp_data_order)
+                self.state = self.val   # Default
+                for state in self.states:
+                    if state["state"] == self.val:
+                        self.state = state["text"]
+            case _:         # unknown type
+                _LOGGER.error("Set unknown type for %d", self.uid)
+                self.val = int.from_bytes(raw, sscp_data_order)
 
 
 # Convert IEEE754 hex to float
