@@ -20,6 +20,7 @@ from homeassistant.const import (
     CONF_IP_ADDRESS,
     CONF_PASSWORD,
     CONF_PORT,
+    CONF_SENSOR_TYPE,
     #    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
     PERCENTAGE,
@@ -44,6 +45,7 @@ from .const import (
     OPT_CALORIMETER_COLD,
     OPT_CALORIMETER_HOT,
     OPT_CO2,
+    OPT_DEVICE,
     OPT_HUMIDITY,
     OPT_MAXIMUM,
     OPT_METER_ELECTRICITY,
@@ -126,21 +128,25 @@ def get_temp_hum_schema(
 
     # Fill in defaults from input or initial defaults
     if input_data is None:
-        default_description = ""
+        default_device = ""
         default_temperature_uid = default_humidity_uid = 0
+        default_temperature_name = "Temperature"
+        default_humidity_name = "Humidity"
     else:
-        default_description = input_data.get(OPT_NAME, "")
+        default_device = input_data.get(OPT_DEVICE, "")
         temperature = input_data.get(OPT_TEMPERATURE)
         default_temperature_uid = temperature.get(OPT_UID, 0)
-        humidity = input_data.get(OPT_HUMIDITY, None)
+        default_temperature_name = temperature.get(OPT_NAME)
+        humidity = input_data.get(OPT_HUMIDITY)
         default_humidity_uid = humidity.get(OPT_UID, 0)
-
+        default_humidity_name = humidity.get(OPT_NAME)
     return vol.Schema(
         {
-            vol.Required(OPT_NAME, default=default_description): str,
+            vol.Required(OPT_DEVICE, default=default_device): str,
             vol.Required(OPT_TEMPERATURE): section(
                 vol.Schema(
                     {
+                        vol.Optional(OPT_NAME, default=default_temperature_name): str,
                         vol.Optional(OPT_UID, default=default_temperature_uid): int,
                     }
                 ),
@@ -149,6 +155,7 @@ def get_temp_hum_schema(
             vol.Required(OPT_HUMIDITY): section(
                 vol.Schema(
                     {
+                        vol.Optional(OPT_NAME, default=default_humidity_name): str,
                         vol.Optional(OPT_UID, default=default_humidity_uid): int,
                     }
                 ),
@@ -207,7 +214,7 @@ async def validate_config(
             _LOGGER.debug("Get info failed")
             raise CannotConnect from None
         if serial is None:
-            # TODO Always add the username and SSCP address
+            # TODO: Always add the username and SSCP address
             _LOGGER.error("No serial number for %s", data[CONF_CONNECTION_NAME])
             serial = CONF_USERNAME + "-" + CONF_SSCP_ADDRESS
         _LOGGER.info("Using unique ID: %s", serial)
@@ -326,8 +333,10 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for adding a temperature/humidity device."""
 
-        data: dict[str, Any] = self.config_entry.options.copy()
-        _LOGGER.debug("Initial options: %s", data)
+        # TODO: Get the list of existing uid-offset-length entities
+        #        data: dict[str, Any] = self.config_entry.options.copy()
+        # _LOGGER.debug("Initial options: %s", data)
+        data: dict[str, Any] = {}
         errors: dict[str, str] = {}
         variables: list[sscp_variable] = []
         step = "temp_hum"
@@ -337,7 +346,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
 
         # Create variables list from user input
-        # Unique ID's are uid-length-offset of the variable
+        # Our entity ID's are uid-length-offset of the variable
         _LOGGER.debug("User input: %s", user_input)
         temperature = user_input.get(OPT_TEMPERATURE)
         temperature_uid = temperature.get(OPT_UID)
@@ -345,23 +354,23 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             variables.append(
                 sscp_variable(uid=temperature_uid, offset=0, length=4, type=13)
             )
-            temperature_unique_id = str(temperature_uid) + "-0-4"
+            temperature_entity_id = str(temperature_uid) + "-0-4"
         humidity = user_input.get(OPT_HUMIDITY)
         humidity_uid = humidity.get(OPT_UID)
         if humidity_uid != 0:
             variables.append(
                 sscp_variable(uid=humidity_uid, offset=0, length=4, type=13)
             )
-            humidity_unique_id = str(humidity_uid) + "-0-4"
+            humidity_entity_id = str(humidity_uid) + "-0-4"
 
         if len(variables) == 0:
             # No user variables
             errors["base"] = "variable_error"
             description_placeholders = {"error": "UID All Zero", "variables": "0"}
         else:
-            # Check that UID does not exist
+            # Check that uid-offset-length does not exist
             err_vars = ""
-            if temperature_unique_id in data:
+            if temperature_entity_id in data:
                 errors["base"] = "variable_error"
                 err_str = "UID Already Exists"
                 err_vars = err_vars + str(temperature_uid) + " "
@@ -369,7 +378,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                     "error": err_str,
                     "variables": err_vars,
                 }
-            if humidity_unique_id in data:
+            if humidity_entity_id in data:
                 errors["base"] = "variable_error"
                 err_str = "UID Already Exists"
                 err_vars = err_vars + str(humidity_uid) + " "
@@ -402,24 +411,29 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                 else:
                     data.update(
                         {
-                            temperature_unique_id: {
-                                "unique_id": temperature_unique_id,  # Repeated to use when adding entities
+                            temperature_entity_id: {
+                                "name": temperature.get(OPT_NAME),
                                 "uid": temperature_uid,
                                 "offset": 0,
                                 "length": 4,
                                 "type": 13,
                                 "class": SensorDeviceClass.TEMPERATURE,
                                 "unit": UnitOfTemperature.CELSIUS,
-                                "device": user_input.get(OPT_NAME),
+                                "precision": 1,
+                                "entity": CONF_SENSOR_TYPE,
+                                "device": user_input.get(OPT_DEVICE),
                             },
-                            humidity_unique_id: {
+                            humidity_entity_id: {
+                                "name": humidity.get(OPT_NAME),
                                 "uid": humidity_uid,
                                 "offset": 0,
                                 "length": 4,
                                 "type": 13,
                                 "class": SensorDeviceClass.HUMIDITY,
                                 "unit": PERCENTAGE,
-                                "device": user_input.get(OPT_NAME),
+                                "precision": 1,
+                                "entity": CONF_SENSOR_TYPE,
+                                "device": user_input.get(OPT_DEVICE),
                             },
                         }
                     )
