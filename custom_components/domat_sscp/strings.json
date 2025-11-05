@@ -51,7 +51,7 @@
         },
         "sections": {
           "temperature": {
-            "title": "Temperature variable:",
+            "name": "Temperature variable:",
             "data": {
               "name": "Name",
               "uid": "UID",
@@ -60,7 +60,7 @@
             }
           },
           "humidity": {
-            "title": "Humidity variable:",
+            "name": "Humidity variable:",
             "data": {
               "name": "Name",
               "uid": "UID",
