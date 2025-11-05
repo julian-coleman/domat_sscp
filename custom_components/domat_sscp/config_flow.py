@@ -7,6 +7,7 @@ from typing import Any
 
 import voluptuous as vol
 
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.config_entries import (
     SOURCE_RECONFIGURE,
     ConfigEntry,
@@ -21,6 +22,8 @@ from homeassistant.const import (
     CONF_PORT,
     #    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
+    PERCENTAGE,
+    UnitOfTemperature,
 )
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
@@ -334,6 +337,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
 
         # Create variables list from user input
+        # Unique ID's are uid-length-offset of the variable
         _LOGGER.debug("User input: %s", user_input)
         temperature = user_input.get(OPT_TEMPERATURE)
         temperature_uid = temperature.get(OPT_UID)
@@ -399,10 +403,13 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                     data.update(
                         {
                             temperature_unique_id: {
+                                "unique_id": temperature_unique_id,  # Repeated to use when adding entities
                                 "uid": temperature_uid,
                                 "offset": 0,
                                 "length": 4,
                                 "type": 13,
+                                "class": SensorDeviceClass.TEMPERATURE,
+                                "unit": UnitOfTemperature.CELSIUS,
                                 "device": user_input.get(OPT_NAME),
                             },
                             humidity_unique_id: {
@@ -410,6 +417,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                 "offset": 0,
                                 "length": 4,
                                 "type": 13,
+                                "class": SensorDeviceClass.HUMIDITY,
+                                "unit": PERCENTAGE,
                                 "device": user_input.get(OPT_NAME),
                             },
                         }
