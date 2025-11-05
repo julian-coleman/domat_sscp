@@ -78,6 +78,9 @@ class sscp_variable:
         self.length_bytes = self.length.to_bytes(4, SSCP_DATA_ORDER)
         self.offset_bytes = self.offset.to_bytes(4, SSCP_DATA_ORDER)
         self.raw = bytearray("\x00", encoding="iso-8859-1")
+        self.val = 0
+        self.states = None
+        self.state = ""
 
     # TODO: Initialisation from yaml
     #    @classmethod
@@ -88,24 +91,14 @@ class sscp_variable:
     #        )
 
     def to_string(self):
-        if self.type == 13 or self.type == 2 or self.type == 0:
+        """Return a string representation of the variable."""
+        if self.type in {13, 2, 0}:
             if len(self.states) > 0:
                 return self.state
-            if self.format is None:
-                return self.val
-            else:
+            if self.format is not None:
                 return self.format % (self.val)
+            return str(self.val)
         return self.raw.hex()
-
-    def change_value(self, value: str) -> bytearray:
-        """Change the variable to the new value.
-
-        Parses readable values and state changes.
-        """
-
-        # TODO: Fix placeholder
-        _LOGGER.debug("Change %d to 0x%x", self.uid, value)
-        return (0).to_bytes(self.length, SSCP_DATA_ORDER)
 
     def set_value(self, raw: bytearray) -> None:
         """Set the variable to the new raw value.
@@ -118,29 +111,38 @@ class sscp_variable:
         _LOGGER.debug("Set %d to 0x%s", self.uid, self.raw.hex())
 
         match self.type:
-            case 18:        # 8-byte int
-                self.val = int.from_bytes(raw, sscp_data_order)
-            case 13:        # 4-byte float
+            case 18:  # 8-byte int
+                self.val = int.from_bytes(raw, SSCP_DATA_ORDER)
+            case 13:  # 4-byte float
                 self.val = ieee754_to_float(raw)
-            case 2:         # 2-byte int or state
-                self.val = int.from_bytes(raw, sscp_data_order)
-                self.state = self.val   # Default
+            case 2:  # 2-byte int or state
+                self.val = int.from_bytes(raw, SSCP_DATA_ORDER)
+                self.state = self.val  # Default
                 if len(self.states) > 0:
                     for state in self.states:
                         if state["state"] == self.val:
                             self.state = state["text"]
-            case 0:         # bool (1-byte int)
-                self.val = int.from_bytes(raw, sscp_data_order)
-                self.state = self.val   # Default
+            case 0:  # bool (1-byte int)
+                self.val = int.from_bytes(raw, SSCP_DATA_ORDER)
+                self.state = self.val  # Default
                 for state in self.states:
                     if state["state"] == self.val:
                         self.state = state["text"]
-            case _:         # unknown type
+            case _:  # unknown type
                 _LOGGER.error("Set unknown type for %d", self.uid)
-                self.val = int.from_bytes(raw, sscp_data_order)
+                self.val = int.from_bytes(raw, SSCP_DATA_ORDER)
+
+    def change_value(self, value: str) -> bytearray:
+        """Change the variable to the new readable value.
+
+        Parses readable values and state changes and updates the raw value.
+        """
+
+        # TODO: Fix placeholder
+        _LOGGER.debug("Change %d to 0x%x", self.uid, value)
+        return (0).to_bytes(self.length, SSCP_DATA_ORDER)
 
 
-# Convert IEEE754 hex to float
 def ieee754_to_float(byte4) -> float:
     """Convert IEEE754 hex representation to float."""
     if len(byte4) != 4:
