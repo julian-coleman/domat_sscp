@@ -47,20 +47,22 @@
       "temp_hum": {
         "title": "Add a temperature and humidity device",
         "data": {
-          "descr": "Description"
+          "device": "Device name"
         },
         "sections": {
           "temperature": {
-            "name": "Temperature variable:",
+            "title": "Temperature variable:",
             "data": {
+              "name": "Name",
               "uid": "UID",
               "length": "Length",
               "offset": "Offset"
             }
           },
           "humidity": {
-            "name": "Humidity variable:",
+            "title": "Humidity variable:",
             "data": {
+              "name": "Name",
               "uid": "UID",
               "length": "Length",
               "offset": "Offset"
