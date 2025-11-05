@@ -300,6 +300,10 @@ class sscp_connection:
         Returns a list of variables with errors and a list of the error codes
         Can raise exceptions from sendrecv().
         """
+
+        if len(vars) == 0:
+            return [], []
+
         _LOGGER.debug(
             "Read limits: %d, %d, %d", self.send_max, SSCP_RECV_MAX, SSCP_DATA_MAX_VAR
         )
@@ -380,7 +384,7 @@ class sscp_connection:
                 for var in vars[var_start:var_end]:
                     if var.uid not in err_vars:
                         pos1 = pos0 + var.length
-                        var.set_raw(reply[pos0:pos1])
+                        var.set_value(reply[pos0:pos1])
                         pos0 = pos1
                 break
 
