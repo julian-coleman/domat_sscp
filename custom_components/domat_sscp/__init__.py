@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -21,9 +22,6 @@ async def async_setup_entry(
 ) -> bool:
     """Set up Domat SSCP from a config entry."""
 
-    # Remove any left-over options
-    # _LOGGER.error("Setup entry started - removing options")
-    # hass.config_entries.async_update_entry(config_entry, options={})
     coordinator = DomatSSCPCoordinator(hass, config_entry)
     await coordinator.async_config_entry_first_refresh()
     if not coordinator.data:
@@ -35,7 +33,6 @@ async def async_setup_entry(
     config_entry.async_on_unload(
         config_entry.add_update_listener(_async_update_listener)
     )
-    _LOGGER.error("Setup entry data: %s", coordinator.data)
 
     # Call the setup on our platforms
     await hass.config_entries.async_forward_entry_setups(config_entry, _PLATFORMS)
@@ -53,11 +50,8 @@ async def _async_update_listener(hass: HomeAssistant, config_entry: ConfigEntry)
     conf_data["password"] = "********"
     _LOGGER.error("Update listener data: %s", conf_data)
     _LOGGER.error("Update listener options: %s", config_entry.options)
-    # TODO: Add devices
     # Call the setup on our platforms
     await hass.config_entries.async_reload(config_entry.entry_id)
-    _LOGGER.error("Removing options")
-    config_entry.async_update_entry(config_entry, options={})
 
 
 async def async_remove_config_entry_device(
@@ -65,12 +59,34 @@ async def async_remove_config_entry_device(
 ) -> bool:
     """Allow devices to be deleted from the UI."""
 
-    _LOGGER.error("Remove config entry device: %s", device_entry)
+    data: dict[str, Any] = config_entry.options.copy()
+    devices: list = []
+    remove: list = []
+
+    # Remove entities for these devices from our options
+    for tup in device_entry.identifiers:
+        device = tup[1]
+        _LOGGER.debug(
+            "Removing entities with device: %s",
+            device_entry.identifiers,
+        )
+        devices.append(device)
+    for opt in data:
+        for device in devices:
+            if data[opt]["device"] == device:
+                remove.append(opt)  # noqa: PERF401
+    for opt in remove:
+        _LOGGER.debug("Removing entity: %s", opt)
+        data.pop(opt, None)
+
+    _LOGGER.debug("New options: %s", data)
+    hass.config_entries.async_update_entry(config_entry, options=data)
+
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Unload a config entry."""
 
-    _LOGGER.error("Unload entry")
+    _LOGGER.debug("Unload entry")
     return await hass.config_entries.async_unload_platforms(config_entry, _PLATFORMS)
