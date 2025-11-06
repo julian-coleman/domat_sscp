@@ -21,6 +21,7 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_PORT,
     CONF_SENSOR_TYPE,
+    # TODO: support changing the scan interval via reconfigure (min value should what?)
     #    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
     PERCENTAGE,
@@ -38,6 +39,7 @@ from homeassistant.helpers.selector import (
 from .const import (
     CONF_CONNECTION_NAME,
     CONF_SSCP_ADDRESS,
+    # TODO: Change the scan interval and add a fast scan after changes
     #    DEFAULT_SCAN_INTERVAL,
     DEFAULT_SSCP_ADDRESS,
     DEFAULT_SSCP_PORT,
@@ -50,15 +52,16 @@ from .const import (
     OPT_MAXIMUM,
     OPT_METER_ELECTRICITY,
     OPT_MINIMUM,
+    # TODO: Add translated name and czech translations
     OPT_NAME,
     OPT_TEMPERATURE,
     OPT_UID,
-    OPT_VENTILATOR_ERROR,
-    OPT_VENTILATOR_FLOW,
-    OPT_VENTILATOR_FLOW_MAXIMUM,
-    OPT_VENTILATOR_FLOW_MINIMUM,
-    OPT_VENTILATOR_IN,
-    OPT_VENTILATOR_OUT,
+    OPT_VENTILATION_ERROR,
+    OPT_VENTILATION_FLOW,
+    OPT_VENTILATION_FLOW_MAXIMUM,
+    OPT_VENTILATION_FLOW_MINIMUM,
+    OPT_VENTILATION_IN,
+    OPT_VENTILATION_OUT,
     OPT_WATER_COLD,
     OPT_WATER_HOT,
 )
@@ -130,23 +133,23 @@ def get_temp_hum_schema(
     if input_data is None:
         default_device = ""
         default_temperature_uid = default_humidity_uid = 0
-        default_temperature_name = "Temperature"
-        default_humidity_name = "Humidity"
+        # default_temperature_name = "Temperature"
+        # default_humidity_name = "Humidity"
     else:
         default_device = input_data.get(OPT_DEVICE, "")
         temperature = input_data.get(OPT_TEMPERATURE)
         default_temperature_uid = temperature.get(OPT_UID, 0)
-        default_temperature_name = temperature.get(OPT_NAME)
+        # default_temperature_name = temperature.get(OPT_NAME)
         humidity = input_data.get(OPT_HUMIDITY)
         default_humidity_uid = humidity.get(OPT_UID, 0)
-        default_humidity_name = humidity.get(OPT_NAME)
+        # default_humidity_name = humidity.get(OPT_NAME)
     return vol.Schema(
         {
             vol.Required(OPT_DEVICE, default=default_device): str,
             vol.Required(OPT_TEMPERATURE): section(
                 vol.Schema(
                     {
-                        vol.Optional(OPT_NAME, default=default_temperature_name): str,
+                        # vol.Optional(OPT_NAME, default=default_temperature_name): str,
                         vol.Optional(OPT_UID, default=default_temperature_uid): int,
                     }
                 ),
@@ -155,7 +158,7 @@ def get_temp_hum_schema(
             vol.Required(OPT_HUMIDITY): section(
                 vol.Schema(
                     {
-                        vol.Optional(OPT_NAME, default=default_humidity_name): str,
+                        # vol.Optional(OPT_NAME, default=default_humidity_name): str,
                         vol.Optional(OPT_UID, default=default_humidity_uid): int,
                     }
                 ),
@@ -247,6 +250,7 @@ async def validate_config(
 class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Domat SSCP."""
 
+    # Config flow version
     VERSION = 1
     MINOR_VERSION = 1
 
@@ -307,6 +311,8 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle reconfiguration."""
         return await self.async_step_user(user_input)
 
+    # TODO: reauth
+
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
@@ -333,10 +339,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for adding a temperature/humidity device."""
 
-        # TODO: Get the list of existing uid-offset-length entities
-        #        data: dict[str, Any] = self.config_entry.options.copy()
-        # _LOGGER.debug("Initial options: %s", data)
-        data: dict[str, Any] = {}
+        data: dict[str, Any] = self.config_entry.options.copy()
         errors: dict[str, str] = {}
         variables: list[sscp_variable] = []
         step = "temp_hum"
@@ -368,23 +371,26 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             errors["base"] = "variable_error"
             description_placeholders = {"error": "UID All Zero", "variables": "0"}
         else:
-            # Check that uid-offset-length does not exist
-            err_vars = ""
-            if temperature_entity_id in data:
+            err_info = self._check_exists(
+                user_input.get(OPT_DEVICE),
+                {
+                    temperature_entity_id: temperature_uid,
+                    humidity_entity_id: humidity_uid,
+                },
+            )
+            if "device" in err_info:
                 errors["base"] = "variable_error"
-                err_str = "UID Already Exists"
-                err_vars = err_vars + str(temperature_uid) + " "
+                err_str = "Device Already Exists"
                 description_placeholders = {
                     "error": err_str,
-                    "variables": err_vars,
+                    "variables": user_input.get(OPT_DEVICE),
                 }
-            if humidity_entity_id in data:
+            elif len(err_info["variables"]) > 0:
                 errors["base"] = "variable_error"
                 err_str = "UID Already Exists"
-                err_vars = err_vars + str(humidity_uid) + " "
                 description_placeholders = {
                     "error": err_str,
-                    "variables": err_vars,
+                    "variables": err_info["variables"],
                 }
 
         if "base" not in errors:
@@ -412,7 +418,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                     data.update(
                         {
                             temperature_entity_id: {
-                                "name": temperature.get(OPT_NAME),
+                                # "name": temperature.get(OPT_NAME),
                                 "uid": temperature_uid,
                                 "offset": 0,
                                 "length": 4,
@@ -424,7 +430,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                 "device": user_input.get(OPT_DEVICE),
                             },
                             humidity_entity_id: {
-                                "name": humidity.get(OPT_NAME),
+                                # "name": humidity.get(OPT_NAME),
                                 "uid": humidity_uid,
                                 "offset": 0,
                                 "length": 4,
@@ -452,6 +458,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for adding an energy usage device."""
 
+        # TODO: Clone temp_hum, but wrap each entity in a device
+        data: dict[str, Any] = self.config_entry.options.copy()
         errors: dict[str, str] = {}
         step = "energy"
         schema = vol.Schema(
@@ -516,12 +524,13 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for adding an air recuperation device."""
 
+        # TODO: Clone temp_hum
+        data: dict[str, Any] = self.config_entry.options.copy()
         errors: dict[str, str] = {}
         step = "air"
-
         schema = vol.Schema(
             {
-                vol.Required(OPT_VENTILATOR_IN): section(
+                vol.Required(OPT_VENTILATION_IN): section(
                     vol.Schema(
                         {
                             vol.Optional(OPT_UID, default=0): int,
@@ -529,7 +538,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                     ),
                     {"collapsed": False},
                 ),
-                vol.Required(OPT_VENTILATOR_OUT): section(
+                vol.Required(OPT_VENTILATION_OUT): section(
                     vol.Schema(
                         {
                             vol.Optional(OPT_UID, default=0): int,
@@ -545,7 +554,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                     ),
                     {"collapsed": False},
                 ),
-                vol.Required(OPT_VENTILATOR_ERROR): section(
+                vol.Required(OPT_VENTILATION_ERROR): section(
                     vol.Schema(
                         {
                             vol.Optional(OPT_UID, default=0): int,
@@ -553,15 +562,15 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                     ),
                     {"collapsed": False},
                 ),
-                vol.Optional(OPT_VENTILATOR_FLOW): section(
+                vol.Optional(OPT_VENTILATION_FLOW): section(
                     vol.Schema(
                         {
                             vol.Optional(OPT_UID, default=0): int,
                             vol.Optional(
-                                OPT_MINIMUM, default=OPT_VENTILATOR_FLOW_MINIMUM
+                                OPT_MINIMUM, default=OPT_VENTILATION_FLOW_MINIMUM
                             ): int,
                             vol.Optional(
-                                OPT_MAXIMUM, default=OPT_VENTILATOR_FLOW_MAXIMUM
+                                OPT_MAXIMUM, default=OPT_VENTILATION_FLOW_MAXIMUM
                             ): int,
                         }
                     ),
@@ -581,6 +590,18 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             data_schema=schema,
             errors=errors,
         )
+
+    def _check_exists(self, device_name: str, entity_ids: dict[str]) -> dict[str]:
+        """Check if entity already exists."""
+
+        variables: str = ""
+        for option in self.config_entry.options:
+            if self.config_entry.options[option]["device"] == device_name:
+                return {"device": device_name}
+        for entity_id, entity_uid in entity_ids.items():
+            if entity_id in self.config_entry.options:
+                variables = variables + str(entity_uid) + " "
+        return {"variables": variables}
 
 
 class CannotConnect(HomeAssistantError):
