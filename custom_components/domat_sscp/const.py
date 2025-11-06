@@ -22,11 +22,11 @@ OPT_WATER_COLD = "water_cold"
 OPT_WATER_HOT = "water_hot"
 OPT_CALORIMETER_COLD = "calorimeter_cold"
 OPT_CALORIMETER_HOT = "calorimeter_hot"
-OPT_VENTILATOR_IN = "ventilator_in"
-OPT_VENTILATOR_OUT = "ventilator_out"
+OPT_VENTILATION_IN = "ventilator_in"
+OPT_VENTILATION_OUT = "ventilator_out"
 OPT_CO2 = "cotwo"
-OPT_VENTILATOR_ERROR = "ventilator_error"
-OPT_VENTILATOR_FLOW = "ventilator_flow"
+OPT_VENTILATION_ERROR = "ventilator_error"
+OPT_VENTILATION_FLOW = "ventilator_flow"
 OPT_UID = "UID"
 OPT_OFFSET = "offset"
 OPT_LENGTH = "length"
@@ -34,5 +34,5 @@ OPT_MINIMUM = "minimum"
 OPT_MAXIMUM = "minimum"
 
 # Variable defaults
-OPT_VENTILATOR_FLOW_MINIMUM = 80
-OPT_VENTILATOR_FLOW_MAXIMUM = 200
+OPT_VENTILATION_FLOW_MINIMUM = 80
+OPT_VENTILATION_FLOW_MAXIMUM = 200
