@@ -16,6 +16,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
+import homeassistant.helpers.entity_registry as er
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
@@ -50,24 +51,36 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
 
+        self.data: dict[str, Any] = {}
+        entity_registry = er.async_get(self.hass)
+
+        # Check entity registry against options
+        for entity in entity_registry.entities.get_entries_for_config_entry_id(
+            self.config_entry.entry_id
+        ):
+            if entity.unique_id not in self.config_entry.options:
+                _LOGGER.error(
+                    "Entity %s in registry but not in options", entity.unique_id
+                )
+
     async def _async_update_data(self):
         """Fetch data from the server and convert it to the right format."""
 
+        # TODO: Change update interval (based on entity state changes?)
+
         # Data should not be empty, so set at least one entry
-        data: dict[str, Any] = {"connection": self.config_entry.unique_id}
+        self.data = {"connection": self.config_entry.unique_id}
 
         conf_data = self.config_entry.data.copy()
         conf_data["password"] = "********"
-        _LOGGER.error("Updating data %s", self.name)
+        _LOGGER.debug("Updating data %s", self.name)
         _LOGGER.debug("Data: %s", conf_data)
-        _LOGGER.error("Options: %s", self.config_entry.options)
+        _LOGGER.debug("Options: %s", self.config_entry.options)
 
-        # TODO Retrieve entities from er
-        # Are there any variables to fetch?
         if len(self.config_entry.options) == 0:
-            _LOGGER.error("No variables to fetch")
-            return data
+            return self.data
 
+        # Fetch variables data
         try:
             conn = sscp_connection(
                 name=self.config_entry.data[CONF_CONNECTION_NAME],
@@ -93,7 +106,6 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Login connection error for %s", self.name)
             raise UpdateFailed from None
 
-        # Fetch variables data
         sscp_vars: list[sscp_variable] = []
         sscp_vars.extend(
             sscp_variable(
@@ -107,10 +119,10 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         try:
             error_vars, _error_codes = await conn.sscp_read_variables(sscp_vars)
         except TimeoutError:
-            _LOGGER.error("Get sscp_var timeout for %s", self.name)
+            _LOGGER.error("Read variables timeout for %s", self.name)
             raise UpdateFailed from None
         except (ValueError, OSError):
-            _LOGGER.error("Get variables failed for %s", self.name)
+            _LOGGER.error("Read variables failed for %s", self.name)
             raise UpdateFailed from None
         finally:
             await conn.logout()
@@ -121,13 +133,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
 
         # Update variables with converted data
         for sscp_var in sscp_vars:
-            _LOGGER.debug(
-                "Updated %d to 0x%s (%s)",
-                sscp_var.uid,
-                sscp_var.raw.hex(),
-                sscp_var.val,
-            )
-            # Our entity ID's are uid-length-offset of the variable
+            # Recreate entity ID's (uid-length-offset) for our data
             entity_id = (
                 str(sscp_var.uid)
                 + "-"
@@ -135,6 +141,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                 + "-"
                 + str(sscp_var.length)
             )
-            data[entity_id] = sscp_var.val
+            self.data[entity_id] = sscp_var.val
 
-        return data
+        _LOGGER.debug("Data: %s", self.data)
+        return self.data
