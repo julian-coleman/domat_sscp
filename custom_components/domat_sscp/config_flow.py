@@ -209,17 +209,17 @@ async def validate_config(
         # Config flow
         try:
             await conn.get_info()
-            serial = conn.serial
         except TimeoutError:
             _LOGGER.debug("Get unfo timeout")
             raise Timeout from None
         except (ValueError, OSError):
             _LOGGER.debug("Get info failed")
             raise CannotConnect from None
-        if serial is None:
-            # TODO: Always add the username and SSCP address
+        if conn.serial is None:
             _LOGGER.error("No serial number for %s", data[CONF_CONNECTION_NAME])
-            serial = CONF_USERNAME + "-" + CONF_SSCP_ADDRESS
+            serial = CONF_USERNAME + "-" + CONF_SSCP_ADDRESS + "-00000000"
+        else:
+            serial = CONF_USERNAME + "-" + CONF_SSCP_ADDRESS + "-" + conn.serial
         _LOGGER.info("Using unique ID: %s", serial)
     else:
         # Options flow
