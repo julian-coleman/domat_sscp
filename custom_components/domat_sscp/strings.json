@@ -37,11 +37,11 @@
   "options": {
     "step": {
       "init": {
-        "title": "Add a device",
+        "title": "Add SSCP devices",
         "menu_options": {
           "temp_hum": "Temperature and humidity",
           "energy": "Energy usage",
-          "air": "Air recuperation"
+          "air": "Air circulation"
         }
       },
       "temp_hum": {
@@ -63,6 +63,56 @@
             "name": "Humidity variable:",
             "data": {
               "name": "Name",
+              "uid": "UID",
+              "length": "Length",
+              "offset": "Offset"
+            }
+          }
+        }
+      },
+      "energy": {
+        "title": "Add energy meter devices",
+        "sections": {
+          "meter_electricity": {
+            "name": "Electricity Meter variable:",
+            "data": {
+              "device": "Device name",
+              "uid": "UID",
+              "length": "Length",
+              "offset": "Offset"
+            }
+          },
+          "meter_water_cold": {
+            "name": "Cold Water Meter variable:",
+            "data": {
+              "device": "Device name",
+              "uid": "UID",
+              "length": "Length",
+              "offset": "Offset"
+            }
+          },
+          "meter_water_hot": {
+            "name": "Hot Water Meter variable:",
+            "data": {
+              "device": "Device name",
+              "uid": "UID",
+              "length": "Length",
+              "offset": "Offset"
+            }
+          },
+          "calorimeter_hot": {
+            "name": "Hot Calorimeter variable:",
+            "data": {
+              "device": "Device name",
+              "uid": "UID",
+              "length": "Length",
+              "offset": "Offset"
+            }
+          },
+          "calorimeter_cold": {
+            "name": "Cold Calorimeter variable:",
+            "data": {
+              "device": "Device name",
               "uid": "UID",
               "length": "Length",
               "offset": "Offset"

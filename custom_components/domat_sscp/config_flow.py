@@ -25,7 +25,10 @@ from homeassistant.const import (
     #    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
     PERCENTAGE,
+    UnitOfEnergy,
+    UnitOfPower,
     UnitOfTemperature,
+    UnitOfVolume,
 )
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
@@ -51,6 +54,8 @@ from .const import (
     OPT_HUMIDITY,
     OPT_MAXIMUM,
     OPT_METER_ELECTRICITY,
+    OPT_METER_WATER_COLD,
+    OPT_METER_WATER_HOT,
     OPT_MINIMUM,
     # TODO: Add translated name and czech translations
     OPT_NAME,
@@ -62,8 +67,6 @@ from .const import (
     OPT_VENTILATION_FLOW_MINIMUM,
     OPT_VENTILATION_IN,
     OPT_VENTILATION_OUT,
-    OPT_WATER_COLD,
-    OPT_WATER_HOT,
 )
 from .sscp_connection import sscp_connection
 from .sscp_const import SSCP_ERRORS
@@ -89,6 +92,7 @@ _ADDR_SELECTOR = vol.All(
 _DEVICE_MENU = ["temp_hum", "energy", "air"]
 
 
+# Helpers
 def get_user_schema(
     input_data: dict[str, Any] | None = None,
 ) -> vol.Schema:
@@ -160,6 +164,125 @@ def get_temp_hum_schema(
                     {
                         # vol.Optional(OPT_NAME, default=default_humidity_name): str,
                         vol.Optional(OPT_UID, default=default_humidity_uid): int,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+        }
+    )
+
+
+def get_energy_schema(
+    input_data: dict[str, Any] | None = None,
+) -> vol.Schema:
+    """Return an energy flow schema with defaults based on the user input."""
+
+    # Fill in defaults from input or initial defaults
+    # Order is the same as in the app
+    default_meter_electricity_uid = 0
+    default_meter_water_cold_uid = default_meter_water_hot_uid = 0
+    default_calorimeter_hot_uid = default_calorimeter_cold_uid = 0
+    default_meter_electricity_name = "Electricity Meter"
+    default_meter_water_cold_name = "Cold Water Meter"
+    default_meter_water_hot_name = "Hot Water Meter"
+    default_calorimeter_hot_name = "Hot Calorimeter"
+    default_calorimeter_cold_name = "Cold Calorimeter"
+    if input_data is not None:
+        meter_electricity = input_data.get(OPT_METER_ELECTRICITY)
+        default_meter_electricity_uid = meter_electricity.get(
+            OPT_UID, default_meter_electricity_uid
+        )
+        default_meter_electricity_name = meter_electricity.get(
+            OPT_NAME, default_meter_electricity_name
+        )
+        meter_water_cold = input_data.get(OPT_METER_WATER_COLD)
+        default_meter_water_cold_uid = meter_water_cold.get(
+            OPT_UID, default_meter_water_cold_uid
+        )
+        default_meter_water_cold_name = meter_water_cold.get(
+            OPT_NAME, default_meter_water_cold_name
+        )
+        meter_water_hot = input_data.get(OPT_METER_WATER_HOT)
+        default_meter_water_hot_uid = meter_water_hot.get(
+            OPT_UID, default_meter_water_hot_uid
+        )
+        default_meter_water_hot_name = meter_water_hot.get(
+            OPT_NAME, default_meter_water_hot_name
+        )
+        calorimeter_hot = input_data.get(OPT_CALORIMETER_HOT)
+        default_calorimeter_hot_uid = calorimeter_hot.get(
+            OPT_UID, default_calorimeter_hot_uid
+        )
+        default_calorimeter_hot_name = calorimeter_hot.get(
+            OPT_NAME, default_calorimeter_hot_name
+        )
+        calorimeter_cold = input_data.get(OPT_CALORIMETER_COLD)
+        default_calorimeter_cold_uid = calorimeter_cold.get(
+            OPT_UID, default_calorimeter_cold_uid
+        )
+        default_calorimeter_cold_name = calorimeter_cold.get(
+            OPT_NAME, default_calorimeter_cold_name
+        )
+
+    return vol.Schema(
+        {
+            vol.Required(OPT_METER_ELECTRICITY): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_meter_electricity_name
+                        ): str,
+                        vol.Optional(
+                            OPT_UID, default=default_meter_electricity_uid
+                        ): int,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_METER_WATER_COLD): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_meter_water_cold_name
+                        ): str,
+                        vol.Optional(
+                            OPT_UID, default=default_meter_water_cold_uid
+                        ): int,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_METER_WATER_HOT): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_meter_water_hot_name
+                        ): str,
+                        vol.Optional(OPT_UID, default=default_meter_water_hot_uid): int,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_CALORIMETER_HOT): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_calorimeter_hot_name
+                        ): str,
+                        vol.Optional(OPT_UID, default=default_calorimeter_hot_uid): int,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_CALORIMETER_COLD): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_calorimeter_cold_name
+                        ): str,
+                        vol.Optional(
+                            OPT_UID, default=default_calorimeter_cold_uid
+                        ): int,
                     }
                 ),
                 {"collapsed": False},
@@ -252,7 +375,7 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
 
     # Config flow version
     VERSION = 1
-    MINOR_VERSION = 1
+    MINOR_VERSION = 2
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -341,6 +464,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
 
         data: dict[str, Any] = self.config_entry.options.copy()
         errors: dict[str, str] = {}
+        description_placeholders: dict[str, str] = {}
         variables: list[sscp_variable] = []
         step = "temp_hum"
         schema = get_temp_hum_schema(user_input)
@@ -353,13 +477,13 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         _LOGGER.debug("User input: %s", user_input)
         temperature = user_input.get(OPT_TEMPERATURE)
         temperature_uid = temperature.get(OPT_UID)
+        humidity = user_input.get(OPT_HUMIDITY)
+        humidity_uid = humidity.get(OPT_UID)
         if temperature_uid != 0:
             variables.append(
                 sscp_variable(uid=temperature_uid, offset=0, length=4, type=13)
             )
             temperature_entity_id = str(temperature_uid) + "-0-4"
-        humidity = user_input.get(OPT_HUMIDITY)
-        humidity_uid = humidity.get(OPT_UID)
         if humidity_uid != 0:
             variables.append(
                 sscp_variable(uid=humidity_uid, offset=0, length=4, type=13)
@@ -372,8 +496,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             description_placeholders = {"error": "UID All Zero", "variables": "0"}
         else:
             err_info = self._check_exists(
-                user_input.get(OPT_DEVICE),
-                {
+                device_name=user_input.get(OPT_DEVICE),
+                entity_ids={
                     temperature_entity_id: temperature_uid,
                     humidity_entity_id: humidity_uid,
                 },
@@ -461,62 +585,190 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         # TODO: Clone temp_hum, but wrap each entity in a device
         data: dict[str, Any] = self.config_entry.options.copy()
         errors: dict[str, str] = {}
+        description_placeholders: dict[str, str] = {}
+        variables: list[sscp_variable] = []
+        entity_ids: dict[str, str] = {}
         step = "energy"
-        schema = vol.Schema(
-            {
-                vol.Required(OPT_METER_ELECTRICITY): section(
-                    vol.Schema(
-                        {
-                            vol.Optional(OPT_UID, default=0): int,
-                        }
-                    ),
-                    {"collapsed": False},
-                ),
-                vol.Required(OPT_WATER_COLD): section(
-                    vol.Schema(
-                        {
-                            vol.Optional(OPT_UID, default=0): int,
-                        }
-                    ),
-                    {"collapsed": False},
-                ),
-                vol.Required(OPT_WATER_HOT): section(
-                    vol.Schema(
-                        {
-                            vol.Optional(OPT_UID, default=0): int,
-                        }
-                    ),
-                    {"collapsed": False},
-                ),
-                vol.Required(OPT_CALORIMETER_COLD): section(
-                    vol.Schema(
-                        {
-                            vol.Optional(OPT_UID, default=0): int,
-                        }
-                    ),
-                    {"collapsed": False},
-                ),
-                vol.Required(OPT_CALORIMETER_HOT): section(
-                    vol.Schema(
-                        {
-                            vol.Optional(OPT_UID, default=0): int,
-                        }
-                    ),
-                    {"collapsed": False},
-                ),
-            }
-        )
+        schema = get_energy_schema(user_input)
 
         if user_input is None:
-            return self.async_show_form(
-                step_id="energy", data_schema=schema, errors=errors
+            return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
+
+        # Create variables and entities lists to check from user input
+        # Our entity ID's are uid-length-offset of the variable
+        _LOGGER.error("User input: %s", user_input)
+        meter_electricity = user_input.get(OPT_METER_ELECTRICITY)
+        meter_electricity_uid = meter_electricity.get(OPT_UID)
+        meter_water_cold = user_input.get(OPT_METER_WATER_COLD)
+        meter_water_cold_uid = meter_water_cold.get(OPT_UID)
+        meter_water_hot = user_input.get(OPT_METER_WATER_HOT)
+        meter_water_hot_uid = meter_water_hot.get(OPT_UID)
+        calorimeter_hot = user_input.get(OPT_CALORIMETER_HOT)
+        calorimeter_hot_uid = calorimeter_hot.get(OPT_UID)
+        calorimeter_cold = user_input.get(OPT_CALORIMETER_COLD)
+        calorimeter_cold_uid = calorimeter_cold.get(OPT_UID)
+        if meter_electricity_uid != 0:
+            variables.append(
+                sscp_variable(uid=meter_electricity_uid, offset=0, length=4, type=13)
             )
+            meter_electricity_entity_id = str(meter_electricity_uid) + "-0-4"
+            entity_ids.update({meter_electricity_entity_id: meter_electricity_uid})
+        if meter_water_cold_uid != 0:
+            variables.append(
+                sscp_variable(uid=meter_water_cold_uid, offset=0, length=4, type=13)
+            )
+            meter_water_cold_entity_id = str(meter_water_cold_uid) + "-0-4"
+            entity_ids.update({meter_water_cold_entity_id: meter_water_cold_uid})
+        if meter_water_hot_uid != 0:
+            variables.append(
+                sscp_variable(uid=meter_water_hot_uid, offset=0, length=4, type=13)
+            )
+            meter_water_hot_entity_id = str(meter_water_hot_uid) + "-0-4"
+            entity_ids.update({meter_water_hot_entity_id: meter_water_hot_uid})
+        if calorimeter_hot_uid != 0:
+            variables.append(
+                sscp_variable(uid=calorimeter_hot_uid, offset=0, length=4, type=13)
+            )
+            calorimeter_hot_entity_id = str(calorimeter_hot_uid) + "-0-4"
+            entity_ids.update({calorimeter_hot_entity_id: calorimeter_hot_uid})
+        if calorimeter_cold_uid != 0:
+            variables.append(
+                sscp_variable(uid=calorimeter_cold_uid, offset=0, length=4, type=13)
+            )
+            calorimeter_cold_entity_id = str(calorimeter_cold_uid) + "-0-4"
+            entity_ids.update({calorimeter_cold_entity_id: calorimeter_cold_uid})
+
+        if len(variables) == 0:
+            # No user variables
+            errors["base"] = "variable_error"
+            description_placeholders = {"error": "UID All Zero", "variables": "0"}
+        else:
+            err_info = self._check_exists(device_name=None, entity_ids=entity_ids)
+            if "device" in err_info:
+                errors["base"] = "variable_error"
+                err_str = "Device Already Exists"
+                description_placeholders = {
+                    "error": err_str,
+                    "variables": user_input.get(OPT_DEVICE),
+                }
+            elif len(err_info["variables"]) > 0:
+                errors["base"] = "variable_error"
+                err_str = "UID Already Exists"
+                description_placeholders = {
+                    "error": err_str,
+                    "variables": err_info["variables"],
+                }
+
+        if "base" not in errors:
+            # Validate the user input and create an entry
+            try:
+                info = await validate_config(
+                    data=self.config_entry.data, variables=variables
+                )
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except Timeout:
+                errors["base"] = "timeout_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            else:
+                # No exception, so either generate an error or return
+                if info["error_code"] != 0:
+                    errors["base"] = "variable_error"
+                    err_str = SSCP_ERRORS.get(info["error_code"], "unknown")
+                    description_placeholders = {
+                        "error": err_str,
+                        "variables": info["error_variables"],
+                    }
+                else:
+                    if meter_electricity_uid != 0:
+                        data.update(
+                            {
+                                meter_electricity_entity_id: {
+                                    "uid": meter_electricity_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.ENERGY,
+                                    "unit": UnitOfEnergy.KILO_WATT_HOUR,
+                                    "precision": 1,
+                                    "entity": CONF_SENSOR_TYPE,
+                                    "device": meter_electricity.get(OPT_NAME),
+                                },
+                            }
+                        )
+                    if meter_water_cold_uid != 0:
+                        data.update(
+                            {
+                                meter_water_cold_entity_id: {
+                                    "uid": meter_water_cold_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.VOLUME,
+                                    "unit": UnitOfVolume.CUBIC_METERS,
+                                    "precision": 1,
+                                    "entity": CONF_SENSOR_TYPE,
+                                    "device": meter_water_cold.get(OPT_NAME),
+                                },
+                            }
+                        )
+                    if meter_water_hot_uid != 0:
+                        data.update(
+                            {
+                                meter_water_hot_entity_id: {
+                                    "uid": meter_water_hot_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.VOLUME,
+                                    "unit": UnitOfVolume.CUBIC_METERS,
+                                    "precision": 1,
+                                    "entity": CONF_SENSOR_TYPE,
+                                    "device": meter_water_hot.get(OPT_NAME),
+                                },
+                            }
+                        )
+                    if calorimeter_hot_uid != 0:
+                        data.update(
+                            {
+                                calorimeter_hot_entity_id: {
+                                    "uid": calorimeter_hot_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.ENERGY,
+                                    "unit": UnitOfEnergy.GIGA_JOULE,
+                                    "precision": 1,
+                                    "entity": CONF_SENSOR_TYPE,
+                                    "device": calorimeter_hot.get(OPT_NAME),
+                                },
+                            }
+                        )
+                    if calorimeter_cold_uid != 0:
+                        data.update(
+                            {
+                                calorimeter_cold_entity_id: {
+                                    "uid": calorimeter_cold_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.POWER,
+                                    "unit": UnitOfPower.KILO_WATT,
+                                    "precision": 1,
+                                    "entity": CONF_SENSOR_TYPE,
+                                    "device": calorimeter_cold.get(OPT_NAME),
+                                },
+                            }
+                        )
+                    return self.async_create_entry(data=data)
 
         # There was some validation problem - previous input as defaults
         return self.async_show_form(
             step_id=step,
             data_schema=schema,
             errors=errors,
+            description_placeholders=description_placeholders,
         )
 
     async def async_step_air(
@@ -527,6 +779,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         # TODO: Clone temp_hum
         data: dict[str, Any] = self.config_entry.options.copy()
         errors: dict[str, str] = {}
+        description_placeholders: dict[str, str] = {}
+        variables: list[sscp_variable] = []
         step = "air"
         schema = vol.Schema(
             {
@@ -580,25 +834,30 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         )
 
         if user_input is None:
-            return self.async_show_form(
-                step_id="air", data_schema=schema, errors=errors
-            )
+            return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
 
         # There was some validation problem - previous input as defaults
         return self.async_show_form(
             step_id=step,
             data_schema=schema,
             errors=errors,
+            description_placeholders=description_placeholders,
         )
 
-    def _check_exists(self, device_name: str, entity_ids: dict[str]) -> dict[str]:
+    def _check_exists(
+        self, device_name: str | None, entity_ids: dict[str, str]
+    ) -> dict[str, str]:
         """Check if entity already exists."""
 
         variables: str = ""
         for option in self.config_entry.options:
-            if self.config_entry.options[option]["device"] == device_name:
+            if (
+                device_name is not None
+                and self.config_entry.options[option]["device"] == device_name
+            ):
                 return {"device": device_name}
         for entity_id, entity_uid in entity_ids.items():
+            _LOGGER.error("Check exists for %s %s", entity_id, entity_uid)
             if entity_id in self.config_entry.options:
                 variables = variables + str(entity_uid) + " "
         return {"variables": variables}
