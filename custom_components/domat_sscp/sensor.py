@@ -36,7 +36,6 @@ async def async_setup_entry(
     _LOGGER.debug("Setup values: %s", coordinator.data)
 
     # Add sensors (class) with their initialisation data
-    # TODO: Skip sensors that are already in er
     sensors: list[SensorEntity] = []
     for opt in config_entry.options:
         if (
