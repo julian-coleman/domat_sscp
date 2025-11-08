@@ -46,10 +46,7 @@ async def _async_update_listener(hass: HomeAssistant, config_entry: ConfigEntry)
     Called from our listener created earlier.
     """
 
-    conf_data = config_entry.data.copy()
-    conf_data["password"] = "********"
-    _LOGGER.error("Update listener data: %s", conf_data)
-    _LOGGER.error("Update listener options: %s", config_entry.options)
+    _LOGGER.debug("Update listener")
     # Call the setup on our platforms
     await hass.config_entries.async_reload(config_entry.entry_id)
 
