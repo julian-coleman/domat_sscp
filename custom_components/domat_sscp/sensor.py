@@ -86,7 +86,7 @@ class DomatSSCPSensor(CoordinatorEntity, SensorEntity):
             manufacturer="Domat",
             model="SSCP Device",
         )
-        _LOGGER.error("Initialised new %s with: %s", entity_id, entity_data)
+        _LOGGER.debug("Initialised new %s with: %s", entity_id, entity_data)
 
     @callback
     def _handle_coordinator_update(self) -> None:
