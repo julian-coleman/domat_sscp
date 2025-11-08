@@ -67,6 +67,7 @@ from .const import (
     OPT_VENTILATION_IN,
     OPT_VENTILATION_OUT,
 )
+from .coordinator import InvalidAuth
 from .sscp_connection import sscp_connection
 from .sscp_const import SSCP_ERRORS
 from .sscp_variable import sscp_variable
@@ -290,86 +291,6 @@ def get_energy_schema(
     )
 
 
-async def validate_config(
-    data: dict[str, Any],
-    variables: list[sscp_variable] | None,
-) -> dict[str, Any]:
-    """Validate that the user input allows us to connect using the values provided by the user."""
-
-    # Config flow info
-    serial = ""
-    # Options flow info
-    error_code = 0
-    error_vars_str = ""
-
-    try:
-        conn = sscp_connection(
-            name=data[CONF_CONNECTION_NAME],
-            ip_address=data[CONF_IP_ADDRESS],
-            port=data[CONF_PORT],
-            user_name=data[CONF_USERNAME],
-            password=data[CONF_PASSWORD],
-            sscp_address=data[CONF_SSCP_ADDRESS],
-            md5_hash=None,
-        )
-    except ValueError as e:
-        _LOGGER.error("Could not create a connection object")
-        raise CannotConnect from e
-
-    try:
-        await conn.login()
-        if conn.socket is None:
-            _LOGGER.debug("Login failed")
-            raise InvalidAuth from None
-    except TimeoutError:
-        _LOGGER.debug("Login timeout")
-        raise InvalidAuth from None
-    except (ValueError, OSError):
-        _LOGGER.debug("Login connection error")
-        raise CannotConnect from None
-
-    if variables is None:
-        # Config flow
-        try:
-            await conn.get_info()
-        except TimeoutError:
-            _LOGGER.debug("Get unfo timeout")
-            raise Timeout from None
-        except (ValueError, OSError):
-            _LOGGER.debug("Get info failed")
-            raise CannotConnect from None
-        if conn.serial is None:
-            _LOGGER.error("No serial number for %s", data[CONF_CONNECTION_NAME])
-            serial = CONF_USERNAME + "-" + CONF_SSCP_ADDRESS + "-00000000"
-        else:
-            serial = CONF_USERNAME + "-" + CONF_SSCP_ADDRESS + "-" + conn.serial
-        _LOGGER.info("Using unique ID: %s", serial)
-    else:
-        # Options flow
-        try:
-            error_vars, error_codes = await conn.sscp_read_variables(variables)
-        except TimeoutError:
-            _LOGGER.debug("Get variables timeout")
-            raise Timeout from None
-        except (ValueError, OSError):
-            _LOGGER.debug("Get variables failed")
-            raise CannotConnect from None
-        if len(error_vars) > 0:
-            error_code = error_codes[0]  # We only display the first error
-            for var in error_vars:
-                error_vars_str = error_vars_str + str(var) + " "
-
-    await conn.logout()
-
-    # Return info about the connection or variables.
-    return {
-        "title": data[CONF_CONNECTION_NAME],
-        "serial": serial,
-        "error_code": error_code,
-        "error_variables": error_vars_str,
-    }
-
-
 class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Domat SSCP."""
 
@@ -382,6 +303,7 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle the initial step."""
 
+        coordinator = self.config_entry.coordinator
         errors: dict[str, str] = {}
         if self.source == SOURCE_RECONFIGURE:
             entry = self._get_reconfigure_entry()
@@ -401,14 +323,14 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Validate the user input and create an entry
         try:
-            info = await validate_config(
+            info = await coordinator.validate_config(
                 data=user_input,
                 variables=None,
             )
-        except CannotConnect:
-            errors["base"] = "cannot_connect"
-        except Timeout:
+        except TimeoutError:
             errors["base"] = "timeout_connect"
+        except (ValueError, OSError):
+            errors["base"] = "cannot_connect"
         except InvalidAuth:
             errors["base"] = "invalid_auth"
         else:
@@ -466,6 +388,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         """Manage the options for adding a temperature/humidity device."""
 
         data: dict[str, Any] = self.config_entry.options.copy()
+        coordinator = self.config_entry.coordinator
         errors: dict[str, str] = {}
         description_placeholders: dict[str, str] = {}
         variables: list[sscp_variable] = []
@@ -475,6 +398,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         if user_input is None:
             return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
 
+        _LOGGER.error("Found coordinator: %s", coordinator)
         # Create variables list from user input
         # Our entity ID's are uid-length-offset of the variable
         _LOGGER.debug("User input: %s", user_input)
@@ -523,14 +447,14 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         if "base" not in errors:
             # Validate the user input and create an entry
             try:
-                info = await validate_config(
+                info = await coordinator.validate_config(
                     data=self.config_entry.data,
                     variables=variables,
                 )
-            except CannotConnect:
-                errors["base"] = "cannot_connect"
-            except Timeout:
+            except TimeoutError:
                 errors["base"] = "timeout_connect"
+            except (ValueError, OSError):
+                errors["base"] = "cannot_connect"
             except InvalidAuth:
                 errors["base"] = "invalid_auth"
             else:
@@ -587,6 +511,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         """Manage the options for adding an energy usage device."""
 
         data: dict[str, Any] = self.config_entry.options.copy()
+        coordinator = self.config_entry.coordinator
         errors: dict[str, str] = {}
         description_placeholders: dict[str, str] = {}
         variables: list[sscp_variable] = []
@@ -665,14 +590,14 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         if "base" not in errors:
             # Validate the user input and create an entry
             try:
-                info = await validate_config(
+                info = await coordinator.validate_config(
                     data=self.config_entry.data,
                     variables=variables,
                 )
-            except CannotConnect:
-                errors["base"] = "cannot_connect"
-            except Timeout:
+            except TimeoutError:
                 errors["base"] = "timeout_connect"
+            except (ValueError, OSError):
+                errors["base"] = "cannot_connect"
             except InvalidAuth:
                 errors["base"] = "invalid_auth"
             else:
@@ -787,6 +712,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
 
         # TODO: Clone temp_hum
         data: dict[str, Any] = self.config_entry.options.copy()
+        coordinator = self.config_entry.coordinator
         errors: dict[str, str] = {}
         description_placeholders: dict[str, str] = {}
         variables: list[sscp_variable] = []
@@ -866,19 +792,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             ):
                 return {"device": device_name}
         for entity_id, entity_uid in entity_ids.items():
-            _LOGGER.error("Check exists for %s %s", entity_id, entity_uid)
+            _LOGGER.debug("Check exists for %s (%s)", entity_id, entity_uid)
             if entity_id in self.config_entry.options:
                 variables = variables + str(entity_uid) + " "
         return {"variables": variables}
-
-
-class CannotConnect(HomeAssistantError):
-    """Error to indicate we cannot connect to the server."""
-
-
-class Timeout(HomeAssistantError):
-    """Error to indicate we timed out whilst connecting to the server."""
-
-
-class InvalidAuth(HomeAssistantError):
-    """Error to indicate there is authentication is invalid."""
