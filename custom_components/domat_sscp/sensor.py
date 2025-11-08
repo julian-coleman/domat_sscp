@@ -75,6 +75,8 @@ class DomatSSCPSensor(CoordinatorEntity, SensorEntity):
         # self._attr_name = entity_data["name"]
         self._attr_native_unit_of_measurement = entity_data["unit"]
         self._attr_device_class = entity_data["class"]
+        if "state" in entity_data:
+            self._attr_state_class = entity_data["state"]
         self._attr_suggested_display_precision = entity_data.get("precision", 0)
 
         self.value = self._update_value()

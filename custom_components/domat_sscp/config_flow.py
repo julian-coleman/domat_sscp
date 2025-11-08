@@ -7,7 +7,7 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.components.sensor import SensorDeviceClass
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.config_entries import (
     SOURCE_RECONFIGURE,
     ConfigEntry,
@@ -26,7 +26,6 @@ from homeassistant.const import (
     CONF_USERNAME,
     PERCENTAGE,
     UnitOfEnergy,
-    UnitOfPower,
     UnitOfTemperature,
     UnitOfVolume,
 )
@@ -292,7 +291,8 @@ def get_energy_schema(
 
 
 async def validate_config(
-    data: dict[str, Any], variables: list[sscp_variable] | None
+    data: dict[str, Any],
+    variables: list[sscp_variable] | None,
 ) -> dict[str, Any]:
     """Validate that the user input allows us to connect using the values provided by the user."""
 
@@ -401,7 +401,10 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Validate the user input and create an entry
         try:
-            info = await validate_config(data=user_input, variables=None)
+            info = await validate_config(
+                data=user_input,
+                variables=None,
+            )
         except CannotConnect:
             errors["base"] = "cannot_connect"
         except Timeout:
@@ -521,7 +524,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             # Validate the user input and create an entry
             try:
                 info = await validate_config(
-                    data=self.config_entry.data, variables=variables
+                    data=self.config_entry.data,
+                    variables=variables,
                 )
             except CannotConnect:
                 errors["base"] = "cannot_connect"
@@ -582,7 +586,6 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for adding an energy usage device."""
 
-        # TODO: Clone temp_hum, but wrap each entity in a device
         data: dict[str, Any] = self.config_entry.options.copy()
         errors: dict[str, str] = {}
         description_placeholders: dict[str, str] = {}
@@ -663,7 +666,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             # Validate the user input and create an entry
             try:
                 info = await validate_config(
-                    data=self.config_entry.data, variables=variables
+                    data=self.config_entry.data,
+                    variables=variables,
                 )
             except CannotConnect:
                 errors["base"] = "cannot_connect"
@@ -691,6 +695,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "type": 13,
                                     "class": SensorDeviceClass.ENERGY,
                                     "unit": UnitOfEnergy.KILO_WATT_HOUR,
+                                    "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
                                     "entity": CONF_SENSOR_TYPE,
                                     "device": meter_electricity.get(OPT_NAME),
@@ -705,8 +710,9 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "offset": 0,
                                     "length": 4,
                                     "type": 13,
-                                    "class": SensorDeviceClass.VOLUME,
+                                    "class": SensorDeviceClass.WATER,
                                     "unit": UnitOfVolume.CUBIC_METERS,
+                                    "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
                                     "entity": CONF_SENSOR_TYPE,
                                     "device": meter_water_cold.get(OPT_NAME),
@@ -721,8 +727,9 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "offset": 0,
                                     "length": 4,
                                     "type": 13,
-                                    "class": SensorDeviceClass.VOLUME,
+                                    "class": SensorDeviceClass.WATER,
                                     "unit": UnitOfVolume.CUBIC_METERS,
+                                    "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
                                     "entity": CONF_SENSOR_TYPE,
                                     "device": meter_water_hot.get(OPT_NAME),
@@ -739,6 +746,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "type": 13,
                                     "class": SensorDeviceClass.ENERGY,
                                     "unit": UnitOfEnergy.GIGA_JOULE,
+                                    "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
                                     "entity": CONF_SENSOR_TYPE,
                                     "device": calorimeter_hot.get(OPT_NAME),
@@ -753,8 +761,9 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "offset": 0,
                                     "length": 4,
                                     "type": 13,
-                                    "class": SensorDeviceClass.POWER,
-                                    "unit": UnitOfPower.KILO_WATT,
+                                    "class": SensorDeviceClass.ENERGY,
+                                    "unit": UnitOfEnergy.KILO_WATT_HOUR,
+                                    "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
                                     "entity": CONF_SENSOR_TYPE,
                                     "device": calorimeter_cold.get(OPT_NAME),
