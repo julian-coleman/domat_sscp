@@ -139,7 +139,6 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
             errors["base"] = "invalid_auth"
         else:
             # No exception, so either abort or return
-            _LOGGER.error("ID: %s", info["id"])
             await self.async_set_unique_id(info["id"])
             if self.source == SOURCE_RECONFIGURE:
                 coordinator.set_last_connect()
@@ -696,20 +695,21 @@ def _get_user_schema(
     """Return a config flow schema with defaults based on the step and user input."""
 
     # Fill in defaults from initial defaults or input
-    if input_data is None:
-        default_connection_name = ""
-        default_ip_address = ""
-        default_port = DEFAULT_SSCP_PORT
-        default_username = ""
-        default_password = ""
-        default_sscp_address = DEFAULT_SSCP_ADDRESS
-    else:
-        default_connection_name = input_data.get(CONF_CONNECTION_NAME, "")
-        default_ip_address = input_data.get(CONF_IP_ADDRESS, "")
-        default_port = input_data.get(CONF_PORT, DEFAULT_SSCP_PORT)
-        default_username = input_data.get(CONF_USERNAME, "")
-        default_password = input_data.get(CONF_PASSWORD, "")
-        default_sscp_address = input_data.get(CONF_SSCP_ADDRESS, DEFAULT_SSCP_ADDRESS)
+    default_connection_name = ""
+    default_ip_address = ""
+    default_port = DEFAULT_SSCP_PORT
+    default_username = ""
+    default_password = ""
+    default_sscp_address = DEFAULT_SSCP_ADDRESS
+    if input_data is not None:
+        default_connection_name = input_data.get(
+            CONF_CONNECTION_NAME, default_connection_name
+        )
+        default_ip_address = input_data.get(CONF_IP_ADDRESS, default_ip_address)
+        default_port = input_data.get(CONF_PORT, default_port)
+        default_username = input_data.get(CONF_USERNAME, default_username)
+        default_password = input_data.get(CONF_PASSWORD, default_password)
+        default_sscp_address = input_data.get(CONF_SSCP_ADDRESS, default_sscp_address)
     return vol.Schema(
         {
             vol.Required(CONF_CONNECTION_NAME, default=default_connection_name): str,
@@ -730,12 +730,11 @@ def _get_temp_hum_schema(
     """Return a temperature/humidity flow schema with defaults based on the user input."""
 
     # Fill in defaults from input or initial defaults
-    if input_data is None:
-        default_device = ""
-        default_temperature_uid = default_humidity_uid = 0
-        # default_temperature_name = "Temperature"
-        # default_humidity_name = "Humidity"
-    else:
+    default_device = ""
+    default_temperature_uid = default_humidity_uid = 0
+    # default_temperature_name = "Temperature"
+    # default_humidity_name = "Humidity"
+    if input_data is not None:
         default_device = input_data.get(OPT_DEVICE, "")
         temperature = input_data.get(OPT_TEMPERATURE)
         default_temperature_uid = temperature.get(OPT_UID, 0)
