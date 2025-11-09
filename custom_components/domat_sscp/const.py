@@ -6,6 +6,10 @@ DOMAIN = "domat_sscp"
 # Configuration flow constants
 CONF_CONNECTION_NAME = "connection_name"
 CONF_SSCP_ADDRESS = "sscp_address"
+CONF_ADVANCED = "advanced"
+CONF_FAST_COUNT = "fast_count"
+CONF_FAST_INTERVAL = "fast_interval"
+CONF_SCAN_INTERVAL = "scan_interval"
 
 # Configuration defaults
 DEFAULT_SCAN_INTERVAL = 180
