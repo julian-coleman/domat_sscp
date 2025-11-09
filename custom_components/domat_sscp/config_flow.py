@@ -139,7 +139,7 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
             errors["base"] = "invalid_auth"
         else:
             # No exception, so either abort or return
-            await self.async_set_unique_id(info["id"])
+            await self.async_set_unique_id(info["unique_id"])
             if self.source == SOURCE_RECONFIGURE:
                 coordinator.set_last_connect()
                 # Don't abort on unique ID mismatch, in case the PLC has a new serial number
@@ -624,7 +624,7 @@ async def _validate_config(
     """
 
     # Config flow info
-    id = ""
+    unique_id = ""
     # Options flow info
     error_code = 0
     error_vars_str = ""
@@ -655,21 +655,21 @@ async def _validate_config(
         await conn.get_info()
         if conn.serial is None:
             _LOGGER.error("No serial number for %s", data[CONF_CONNECTION_NAME])
-            id = (
+            unique_id = (
                 data[CONF_USERNAME]
                 + "-"
                 + str(data[CONF_SSCP_ADDRESS])
                 + "-0000000000000000"
             )
         else:
-            id = (
+            unique_id = (
                 data[CONF_USERNAME]
                 + "-"
                 + str(data[CONF_SSCP_ADDRESS])
                 + "-"
                 + conn.serial
             )
-        _LOGGER.info("Using unique ID: %s", id)
+        _LOGGER.info("Using unique ID: %s", unique_id)
     else:
         # Options flow
         error_vars, error_codes = await conn.sscp_read_variables(variables)
@@ -683,7 +683,7 @@ async def _validate_config(
     # Return info about the connection or errors.
     return {
         "title": data[CONF_CONNECTION_NAME],
-        "id": id,
+        "unique_id": unique_id,
         "error_code": error_code,
         "error_variables": error_vars_str,
     }
