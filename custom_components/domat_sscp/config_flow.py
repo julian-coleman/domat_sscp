@@ -21,8 +21,6 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_PORT,
     CONF_SENSOR_TYPE,
-    # TODO: support changing the scan interval via reconfigure (min value should what?)
-    #    CONF_SCAN_INTERVAL,
     CONF_USERNAME,
     PERCENTAGE,
     UnitOfEnergy,
@@ -39,10 +37,15 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
+    CONF_ADVANCED,
     CONF_CONNECTION_NAME,
+    CONF_FAST_COUNT,
+    CONF_FAST_INTERVAL,
+    CONF_SCAN_INTERVAL,
     CONF_SSCP_ADDRESS,
-    # TODO: Change the scan interval and add a fast scan after changes
-    #    DEFAULT_SCAN_INTERVAL,
+    DEFAULT_FAST_COUNT,
+    DEFAULT_FAST_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
     DEFAULT_SSCP_ADDRESS,
     DEFAULT_SSCP_PORT,
     DOMAIN,
@@ -67,7 +70,7 @@ from .const import (
     OPT_VENTILATION_IN,
     OPT_VENTILATION_OUT,
 )
-from .coordinator import InvalidAuth
+from .coordinator import DomatSSCPCoordinator
 from .sscp_connection import sscp_connection
 from .sscp_const import SSCP_ERRORS
 from .sscp_variable import sscp_variable
@@ -104,10 +107,10 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle the initial step."""
 
-        coordinator = self.config_entry.coordinator
         errors: dict[str, str] = {}
         if self.source == SOURCE_RECONFIGURE:
             entry = self._get_reconfigure_entry()
+            coordinator: DomatSSCPCoordinator = entry.coordinator
             input_data = entry.data
             step = "reconfigure"
         else:  # user
@@ -124,7 +127,7 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Validate the user input and create an entry
         try:
-            info = await coordinator.validate_config(
+            info = await _validate_config(
                 data=user_input,
                 variables=None,
             )
@@ -136,9 +139,12 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
             errors["base"] = "invalid_auth"
         else:
             # No exception, so either abort or return
+            _LOGGER.error("Serial: %s", info["serial"])
             await self.async_set_unique_id(info["serial"])
             if self.source == SOURCE_RECONFIGURE:
-                self._abort_if_unique_id_mismatch(reason="wrong_plc")
+                coordinator.set_last_connect()
+                # Don't abort on unique ID mismatch, in case the PLC has a new serial number
+                # self._abort_if_unique_id_mismatch(reason="wrong_plc")
                 return self.async_update_reload_and_abort(
                     entry,
                     data_updates=user_input,
@@ -189,7 +195,10 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         """Manage the options for adding a temperature/humidity device."""
 
         data: dict[str, Any] = self.config_entry.options.copy()
-        coordinator = self.config_entry.coordinator
+        # TODO: Update the coordinator last_connect
+        _LOGGER.error("Options entry: %s", self.config_entry)
+        coordinator: DomatSSCPCoordinator = self.config_entry.coordinator
+        _LOGGER.error("Coordinator: %s", coordinator)
         errors: dict[str, str] = {}
         description_placeholders: dict[str, str] = {}
         variables: list[sscp_variable] = []
@@ -199,7 +208,6 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         if user_input is None:
             return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
 
-        _LOGGER.error("Found coordinator: %s", coordinator)
         # Create variables list from user input
         # Our entity ID's are uid-length-offset of the variable
         _LOGGER.debug("User input: %s", user_input)
@@ -248,7 +256,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         if "base" not in errors:
             # Validate the user input and create an entry
             try:
-                info = await coordinator.validate_config(
+                info = await _validate_config(
                     data=self.config_entry.data,
                     variables=variables,
                 )
@@ -312,6 +320,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         """Manage the options for adding an energy usage device."""
 
         data: dict[str, Any] = self.config_entry.options.copy()
+        # TODO: Update the coordinator last_connect
         coordinator = self.config_entry.coordinator
         errors: dict[str, str] = {}
         description_placeholders: dict[str, str] = {}
@@ -391,7 +400,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         if "base" not in errors:
             # Validate the user input and create an entry
             try:
-                info = await coordinator.validate_config(
+                info = await _validate_config(
                     data=self.config_entry.data,
                     variables=variables,
                 )
@@ -513,6 +522,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
 
         # TODO: Clone temp_hum
         data: dict[str, Any] = self.config_entry.options.copy()
+        # TODO: Update the coordinator last_connect
         coordinator = self.config_entry.coordinator
         errors: dict[str, str] = {}
         description_placeholders: dict[str, str] = {}
@@ -599,7 +609,87 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         return {"variables": variables}
 
 
+class InvalidAuth(HomeAssistantError):
+    """Error to indicate that the authentication is invalid."""
+
+
 # Helpers
+async def _validate_config(
+    data: dict[str, Any],
+    variables: list[sscp_variable] | None,
+) -> dict[str, Any]:
+    """Validate that the user input allows us to connect using the values provided by the user.
+
+    Catches some exceptions to raise InvalidAuth.
+    Returns either information or errors in info[].
+    """
+
+    # Config flow info
+    serial = ""
+    # Options flow info
+    error_code = 0
+    error_vars_str = ""
+
+    conn = sscp_connection(
+        name=data[CONF_CONNECTION_NAME],
+        ip_address=data[CONF_IP_ADDRESS],
+        port=data[CONF_PORT],
+        user_name=data[CONF_USERNAME],
+        password=data[CONF_PASSWORD],
+        sscp_address=data[CONF_SSCP_ADDRESS],
+        md5_hash=None,
+    )
+
+    # Only catch some exceptions specific to authentication
+    try:
+        await conn.login()
+        if conn.socket is None:
+            _LOGGER.debug("Login failed")
+            raise InvalidAuth from None
+    except TimeoutError:
+        _LOGGER.debug("Login timeout")
+        raise InvalidAuth from None
+
+    if variables is None:
+        # Config flow
+        # Just use user name and SSCP address for unique ID, as the serial can change outside of our control
+        await conn.get_info()
+        if conn.serial is None:
+            _LOGGER.error("No serial number for %s", data[CONF_CONNECTION_NAME])
+            serial = (
+                data[CONF_USERNAME]
+                + "-"
+                + str(data[CONF_SSCP_ADDRESS])
+                + "-0000000000000000"
+            )
+        else:
+            serial = (
+                data[CONF_USERNAME]
+                + "-"
+                + str(data[CONF_SSCP_ADDRESS])
+                + "-"
+                + conn.serial
+            )
+        _LOGGER.info("Using unique ID: %s", serial)
+    else:
+        # Options flow
+        error_vars, error_codes = await conn.sscp_read_variables(variables)
+        if len(error_vars) > 0:
+            error_code = error_codes[0]  # We only display the first error
+            for var in error_vars:
+                error_vars_str = error_vars_str + str(var) + " "
+
+    await conn.logout()
+
+    # Return info about the connection or errors.
+    return {
+        "title": data[CONF_CONNECTION_NAME],
+        "serial": serial,
+        "error_code": error_code,
+        "error_variables": error_vars_str,
+    }
+
+
 def _get_user_schema(
     input_data: dict[str, Any] | None = None,
 ) -> vol.Schema:
@@ -630,7 +720,6 @@ def _get_user_schema(
             vol.Required(
                 CONF_SSCP_ADDRESS, default=default_sscp_address
             ): _ADDR_SELECTOR,
-            # vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): int,
         }
     )
 

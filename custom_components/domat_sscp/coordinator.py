@@ -8,13 +8,7 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    CONF_IP_ADDRESS,
-    CONF_PASSWORD,
-    CONF_PORT,
-    CONF_SCAN_INTERVAL,
-    CONF_USERNAME,
-)
+from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 import homeassistant.helpers.entity_registry as er
@@ -58,6 +52,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             self.scan_interval = self.config_entry.data["default_scan_interval"]
         else:
             self.scan_interval = DEFAULT_SCAN_INTERVAL
+        _LOGGER.error("Coordinator update inteval: %s", self.scan_interval)
         self.update_interval = timedelta(seconds=self.scan_interval)
         if "default_fast_interval" in self.config_entry.data:
             self.fast_interval = self.config_entry.data["default_fast_interval"]
@@ -169,81 +164,12 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             )
             self.data[entity_id] = sscp_var.val
 
-        self.last_connect = datetime.now(tz=None)
+        self.set_last_connect()
 
         _LOGGER.debug("Data: %s", self.data)
         return self.data
 
-    async def validate_config(
-        self,
-        data: dict[str, Any],
-        variables: list[sscp_variable] | None,
-    ) -> dict[str, Any]:
-        """Validate the config_flow input using the values provided.
-
-        Check that we can connect and login.
-        Check that we can fetch variables.
-
-        Can raise InvalidAuth or exceptions from sscp methods.
-        """
-
-        # Data config flow info
-        serial = ""
-        # Options config flow info
-        error_code = 0
-        error_vars_str = ""
-
-        # Check the last connection time
-        since = datetime.now(tz=None) - self.last_connect
-        if since.seconds < DEFAULT_FAST_INTERVAL:
-            _LOGGER.error("Validating too quickly: %s", self.update_interval)
-            await sleep(DEFAULT_FAST_INTERVAL - since.seconds)
-        _LOGGER.error("Time since last update: %s", since)
-
-        conn = sscp_connection(
-            name=data[CONF_CONNECTION_NAME],
-            ip_address=data[CONF_IP_ADDRESS],
-            port=data[CONF_PORT],
-            user_name=data[CONF_USERNAME],
-            password=data[CONF_PASSWORD],
-            sscp_address=data[CONF_SSCP_ADDRESS],
-            md5_hash=None,
-        )
-
-        await conn.login()
-        if conn.socket is None:
-            _LOGGER.debug("Login failed")
-            raise InvalidAuth from None
-
-        if variables is None:
-            # Config flow
-            await conn.get_info()
-            if conn.serial is None:
-                _LOGGER.error("No serial number for %s", data[CONF_CONNECTION_NAME])
-                serial = CONF_USERNAME + "-" + CONF_SSCP_ADDRESS + "-00000000"
-            else:
-                serial = CONF_USERNAME + "-" + CONF_SSCP_ADDRESS + "-" + conn.serial
-            _LOGGER.info("Using unique ID: %s", serial)
-        else:
-            # Options flow
-            error_vars, error_codes = await conn.sscp_read_variables(variables)
-            if len(error_vars) > 0:
-                error_code = error_codes[0]  # We only display the first error
-            for var in error_vars:
-                error_vars_str = error_vars_str + str(var) + " "
-
-        await conn.logout()
-
+    def set_last_connect(self):
+        """Set the last connection time."""
         self.last_connect = datetime.now(tz=None)
-
-        # Return info about the connection or variables.
-        return {
-            "title": data[CONF_CONNECTION_NAME],
-            "serial": serial,
-            "error_code": error_code,
-            "error_variables": error_vars_str,
-        }
-
-
-class InvalidAuth(HomeAssistantError):
-    """Error to indicate that the authentication is invalid."""
+        _LOGGER.error("Set last connect")
