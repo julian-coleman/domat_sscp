@@ -1148,22 +1148,22 @@ def _get_air_schema(
 
     # Fill in defaults from input or initial defaults
     # Order is the same as in the app
-    default_device = "Air Ventilation"
+    default_device = "Ventilation"
     default_ventilation_error_uid = 0
     default_ventilation_filter_uid = default_ventilation_state_uid = 0
     default_co2_target_uid = default_co2_actual_uid = 0
     default_ventilation_flow_target_uid = 0
     default_ventilation_in_uid = default_ventilation_out_uid = 0
     default_ventilation_flow_setting_uid = 0
-    default_ventilation_error_name = "Ventilation Fault"
+    default_ventilation_error_name = "Fault"
     default_ventilation_filter_name = "Filters Clogged"
-    default_ventilation_state_name = "Ventilation Run State"
+    default_ventilation_state_name = "Run State"
     default_co2_target_name = "CO2 Target"
     default_co2_actual_name = "CO2 Actual"
-    default_ventilation_flow_target_name = "Ventilation Flow Target"
-    default_ventilation_in_name = "Ventilation Inflow"
-    default_ventilation_out_name = "Ventilation Outflow"
-    default_ventilation_flow_setting_name = "Set Ventilation Flow"
+    default_ventilation_flow_target_name = "Flow Target"
+    default_ventilation_in_name = "Inflow"
+    default_ventilation_out_name = "Outflow"
+    default_ventilation_flow_setting_name = "Change Flow Target"
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE, "")
         default_ventilation_error = input_data.get(OPT_VENTILATION_ERROR)
