@@ -7,6 +7,7 @@ from typing import Any
 
 import voluptuous as vol
 
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.config_entries import (
     SOURCE_RECONFIGURE,
@@ -17,15 +18,18 @@ from homeassistant.config_entries import (
     #    OptionsFlowWithReload,
 )
 from homeassistant.const import (
+    CONCENTRATION_PARTS_PER_MILLION,
+    CONF_BINARY_SENSORS,
     CONF_IP_ADDRESS,
     CONF_PASSWORD,
     CONF_PORT,
-    CONF_SENSOR_TYPE,
+    CONF_SENSORS,
     CONF_USERNAME,
     PERCENTAGE,
     UnitOfEnergy,
     UnitOfTemperature,
     UnitOfVolume,
+    UnitOfVolumeFlowRate,
 )
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
@@ -37,7 +41,6 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
-    CONF_ADVANCED,
     CONF_CONNECTION_NAME,
     CONF_FAST_COUNT,
     CONF_FAST_INTERVAL,
@@ -51,24 +54,24 @@ from .const import (
     DOMAIN,
     OPT_CALORIMETER_COLD,
     OPT_CALORIMETER_HOT,
-    OPT_CO2,
+    OPT_CO2_ACTUAL,
+    OPT_CO2_TARGET,
     OPT_DEVICE,
     OPT_HUMIDITY,
-    OPT_MAXIMUM,
     OPT_METER_ELECTRICITY,
     OPT_METER_WATER_COLD,
     OPT_METER_WATER_HOT,
-    OPT_MINIMUM,
     # TODO: Add translated name and czech translations
     OPT_NAME,
     OPT_TEMPERATURE,
     OPT_UID,
     OPT_VENTILATION_ERROR,
-    OPT_VENTILATION_FLOW,
-    OPT_VENTILATION_FLOW_MAXIMUM,
-    OPT_VENTILATION_FLOW_MINIMUM,
+    OPT_VENTILATION_FILTER,
+    OPT_VENTILATION_FLOW_SETTING,
+    OPT_VENTILATION_FLOW_TARGET,
     OPT_VENTILATION_IN,
     OPT_VENTILATION_OUT,
+    OPT_VENTILATION_STATE,
 )
 from .coordinator import DomatSSCPCoordinator
 from .sscp_connection import sscp_connection
@@ -87,6 +90,12 @@ _PORT_SELECTOR = vol.All(
 _ADDR_SELECTOR = vol.All(
     NumberSelector(
         NumberSelectorConfig(min=1, max=255, mode=NumberSelectorMode.BOX),
+    ),
+    vol.Coerce(int),
+)
+_UID_SELECTOR = vol.All(
+    NumberSelector(
+        NumberSelectorConfig(min=0, max=0xFFFFFFFF, mode=NumberSelectorMode.BOX),
     ),
     vol.Coerce(int),
 )
@@ -194,7 +203,6 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         """Manage the options for adding a temperature/humidity device."""
 
         data: dict[str, Any] = self.config_entry.options.copy()
-        # TODO: Update the coordinator last_connect
         _LOGGER.error("Options entry: %s", self.config_entry)
         coordinator: DomatSSCPCoordinator = self.config_entry.coordinator
         _LOGGER.error("Coordinator: %s", coordinator)
@@ -275,6 +283,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         "variables": info["error_variables"],
                     }
                 else:
+                    coordinator.set_last_connect()
                     data.update(
                         {
                             temperature_entity_id: {
@@ -286,7 +295,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                 "class": SensorDeviceClass.TEMPERATURE,
                                 "unit": UnitOfTemperature.CELSIUS,
                                 "precision": 1,
-                                "entity": CONF_SENSOR_TYPE,
+                                "entity": CONF_SENSORS,
                                 "device": user_input.get(OPT_DEVICE),
                             },
                             humidity_entity_id: {
@@ -298,7 +307,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                 "class": SensorDeviceClass.HUMIDITY,
                                 "unit": PERCENTAGE,
                                 "precision": 1,
-                                "entity": CONF_SENSOR_TYPE,
+                                "entity": CONF_SENSORS,
                                 "device": user_input.get(OPT_DEVICE),
                             },
                         }
@@ -319,7 +328,6 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         """Manage the options for adding an energy usage device."""
 
         data: dict[str, Any] = self.config_entry.options.copy()
-        # TODO: Update the coordinator last_connect
         coordinator = self.config_entry.coordinator
         errors: dict[str, str] = {}
         description_placeholders: dict[str, str] = {}
@@ -333,7 +341,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
 
         # Create variables and entities lists to check from user input
         # Our entity ID's are uid-length-offset of the variable
-        _LOGGER.error("User input: %s", user_input)
+        _LOGGER.debug("User input: %s", user_input)
         meter_electricity = user_input.get(OPT_METER_ELECTRICITY)
         meter_electricity_uid = meter_electricity.get(OPT_UID)
         meter_water_cold = user_input.get(OPT_METER_WATER_COLD)
@@ -419,6 +427,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         "variables": info["error_variables"],
                     }
                 else:
+                    coordinator.set_last_connect()
                     if meter_electricity_uid != 0:
                         data.update(
                             {
@@ -431,7 +440,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "unit": UnitOfEnergy.KILO_WATT_HOUR,
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
-                                    "entity": CONF_SENSOR_TYPE,
+                                    "entity": CONF_SENSORS,
                                     "device": meter_electricity.get(OPT_NAME),
                                 },
                             }
@@ -448,7 +457,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "unit": UnitOfVolume.CUBIC_METERS,
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
-                                    "entity": CONF_SENSOR_TYPE,
+                                    "entity": CONF_SENSORS,
                                     "device": meter_water_cold.get(OPT_NAME),
                                 },
                             }
@@ -465,7 +474,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "unit": UnitOfVolume.CUBIC_METERS,
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
-                                    "entity": CONF_SENSOR_TYPE,
+                                    "entity": CONF_SENSORS,
                                     "device": meter_water_hot.get(OPT_NAME),
                                 },
                             }
@@ -482,7 +491,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "unit": UnitOfEnergy.GIGA_JOULE,
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
-                                    "entity": CONF_SENSOR_TYPE,
+                                    "entity": CONF_SENSORS,
                                     "device": calorimeter_hot.get(OPT_NAME),
                                 },
                             }
@@ -499,7 +508,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "unit": UnitOfEnergy.KILO_WATT_HOUR,
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
-                                    "entity": CONF_SENSOR_TYPE,
+                                    "entity": CONF_SENSORS,
                                     "device": calorimeter_cold.get(OPT_NAME),
                                 },
                             }
@@ -519,67 +528,306 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for adding an air recuperation device."""
 
-        # TODO: Clone temp_hum
         data: dict[str, Any] = self.config_entry.options.copy()
-        # TODO: Update the coordinator last_connect
         coordinator = self.config_entry.coordinator
         errors: dict[str, str] = {}
         description_placeholders: dict[str, str] = {}
         variables: list[sscp_variable] = []
+        entity_ids: dict[str, str] = {}
         step = "air"
-        schema = vol.Schema(
-            {
-                vol.Required(OPT_VENTILATION_IN): section(
-                    vol.Schema(
-                        {
-                            vol.Optional(OPT_UID, default=0): int,
-                        }
-                    ),
-                    {"collapsed": False},
-                ),
-                vol.Required(OPT_VENTILATION_OUT): section(
-                    vol.Schema(
-                        {
-                            vol.Optional(OPT_UID, default=0): int,
-                        }
-                    ),
-                    {"collapsed": False},
-                ),
-                vol.Required(OPT_CO2): section(
-                    vol.Schema(
-                        {
-                            vol.Optional(OPT_UID, default=0): int,
-                        }
-                    ),
-                    {"collapsed": False},
-                ),
-                vol.Required(OPT_VENTILATION_ERROR): section(
-                    vol.Schema(
-                        {
-                            vol.Optional(OPT_UID, default=0): int,
-                        }
-                    ),
-                    {"collapsed": False},
-                ),
-                vol.Optional(OPT_VENTILATION_FLOW): section(
-                    vol.Schema(
-                        {
-                            vol.Optional(OPT_UID, default=0): int,
-                            vol.Optional(
-                                OPT_MINIMUM, default=OPT_VENTILATION_FLOW_MINIMUM
-                            ): int,
-                            vol.Optional(
-                                OPT_MAXIMUM, default=OPT_VENTILATION_FLOW_MAXIMUM
-                            ): int,
-                        }
-                    ),
-                    {"collapsed": False},
-                ),
-            }
-        )
+        schema = _get_air_schema(user_input)
 
         if user_input is None:
             return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
+
+        # Create variables list from user input
+        # Our entity ID's are uid-length-offset of the variable
+        _LOGGER.debug("User input: %s", user_input)
+        ventilation_error = user_input.get(OPT_VENTILATION_ERROR)
+        ventilation_error_uid = ventilation_error.get(OPT_UID)
+        ventilation_filter = user_input.get(OPT_VENTILATION_FILTER)
+        ventilation_filter_uid = ventilation_filter.get(OPT_UID)
+        ventilation_state = user_input.get(OPT_VENTILATION_STATE)
+        ventilation_state_uid = ventilation_state.get(OPT_UID)
+        co2_target = user_input.get(OPT_CO2_TARGET)
+        co2_target_uid = co2_target.get(OPT_UID)
+        co2_actual = user_input.get(OPT_CO2_ACTUAL)
+        co2_actual_uid = co2_actual.get(OPT_UID)
+        ventilation_flow_target = user_input.get(OPT_VENTILATION_FLOW_TARGET)
+        ventilation_flow_target_uid = ventilation_flow_target.get(OPT_UID)
+        ventilation_in = user_input.get(OPT_VENTILATION_IN)
+        ventilation_in_uid = ventilation_in.get(OPT_UID)
+        ventilation_out = user_input.get(OPT_VENTILATION_OUT)
+        ventilation_out_uid = ventilation_out.get(OPT_UID)
+        ventilation_flow_setting = user_input.get(OPT_VENTILATION_FLOW_SETTING)
+        ventilation_flow_setting_uid = ventilation_flow_setting.get(OPT_UID)
+        if ventilation_error_uid != 0:
+            variables.append(
+                sscp_variable(uid=ventilation_error_uid, offset=0, length=1, type=0)
+            )
+            ventilation_error_entity_id = str(ventilation_error_uid) + "-0-1"
+            entity_ids.update({ventilation_error_entity_id: ventilation_error_uid})
+        if ventilation_filter_uid != 0:
+            variables.append(
+                sscp_variable(uid=ventilation_filter_uid, offset=0, length=1, type=0)
+            )
+            ventilation_filter_entity_id = str(ventilation_filter_uid) + "-0-1"
+            entity_ids.update({ventilation_filter_entity_id: ventilation_filter_uid})
+        if ventilation_state_uid != 0:
+            variables.append(
+                sscp_variable(uid=ventilation_state_uid, offset=0, length=1, type=0)
+            )
+            ventilation_state_entity_id = str(ventilation_state_uid) + "-0-1"
+            entity_ids.update({ventilation_state_entity_id: ventilation_state_uid})
+        if co2_target_uid != 0:
+            variables.append(
+                sscp_variable(uid=co2_target_uid, offset=0, length=4, type=13)
+            )
+            co2_target_entity_id = str(co2_target_uid) + "-0-4"
+            entity_ids.update({co2_target_entity_id: co2_target_uid})
+        if co2_actual_uid != 0:
+            variables.append(
+                sscp_variable(uid=co2_actual_uid, offset=0, length=2, type=2)
+            )
+            co2_actual_entity_id = str(co2_actual_uid) + "-0-2"
+            entity_ids.update({co2_actual_entity_id: co2_actual_uid})
+        if ventilation_flow_target_uid != 0:
+            variables.append(
+                sscp_variable(
+                    uid=ventilation_flow_target_uid, offset=0, length=4, type=13
+                )
+            )
+            ventilation_flow_target_entity_id = (
+                str(ventilation_flow_target_uid) + "-0-4"
+            )
+            entity_ids.update(
+                {ventilation_flow_target_entity_id: ventilation_flow_target_uid}
+            )
+        if ventilation_in_uid != 0:
+            variables.append(
+                sscp_variable(uid=ventilation_in_uid, offset=0, length=2, type=2)
+            )
+            ventilation_in_entity_id = str(ventilation_in_uid) + "-0-2"
+            entity_ids.update({ventilation_in_entity_id: ventilation_in_uid})
+        if ventilation_out_uid != 0:
+            variables.append(
+                sscp_variable(uid=ventilation_out_uid, offset=0, length=2, type=2)
+            )
+            ventilation_out_entity_id = str(ventilation_out_uid) + "-0-2"
+            entity_ids.update({ventilation_out_entity_id: ventilation_out_uid})
+        if ventilation_flow_setting_uid != 0:
+            variables.append(
+                sscp_variable(
+                    uid=ventilation_flow_setting_uid, offset=0, length=4, type=13
+                )
+            )
+            ventilation_flow_setting_entity_id = (
+                str(ventilation_flow_setting_uid) + "-0-4"
+            )
+            entity_ids.update(
+                {ventilation_flow_setting_entity_id: ventilation_flow_setting_uid}
+            )
+
+        if len(variables) == 0:
+            # No user variables
+            errors["base"] = "variable_error"
+            description_placeholders = {"error": "UID All Zero", "variables": "0"}
+        else:
+            err_info = self._check_exists(
+                device_name=user_input.get(OPT_DEVICE),
+                entity_ids=entity_ids,
+            )
+            if "device" in err_info:
+                errors["base"] = "variable_error"
+                err_str = "Device Already Exists"
+                description_placeholders = {
+                    "error": err_str,
+                    "variables": user_input.get(OPT_DEVICE),
+                }
+            elif len(err_info["variables"]) > 0:
+                errors["base"] = "variable_error"
+                err_str = "UID Already Exists"
+                description_placeholders = {
+                    "error": err_str,
+                    "variables": err_info["variables"],
+                }
+
+        if "base" not in errors:
+            # Validate the user input and create an entry
+            try:
+                info = await _validate_config(
+                    data=self.config_entry.data,
+                    variables=variables,
+                )
+            except TimeoutError:
+                errors["base"] = "timeout_connect"
+            except (ValueError, OSError):
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            else:
+                # No exception, so either generate an error or return
+                if info["error_code"] != 0:
+                    errors["base"] = "variable_error"
+                    err_str = SSCP_ERRORS.get(info["error_code"], "unknown")
+                    description_placeholders = {
+                        "error": err_str,
+                        "variables": info["error_variables"],
+                    }
+                else:
+                    coordinator.set_last_connect()
+                    if ventilation_error_uid != 0:
+                        data.update(
+                            {
+                                ventilation_error_entity_id: {
+                                    "name": ventilation_error.get(OPT_NAME),
+                                    "uid": ventilation_error_uid,
+                                    "offset": 0,
+                                    "length": 1,
+                                    "type": 0,
+                                    "class": BinarySensorDeviceClass.PROBLEM,
+                                    "on": 1,
+                                    "off": 0,
+                                    "entity": CONF_BINARY_SENSORS,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if ventilation_filter_uid != 0:
+                        data.update(
+                            {
+                                ventilation_filter_entity_id: {
+                                    "name": ventilation_filter.get(OPT_NAME),
+                                    "uid": ventilation_filter_uid,
+                                    "offset": 0,
+                                    "length": 1,
+                                    "type": 0,
+                                    "class": BinarySensorDeviceClass.PROBLEM,
+                                    "on": 1,
+                                    "off": 0,
+                                    "entity": CONF_BINARY_SENSORS,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if ventilation_state_uid != 0:
+                        data.update(
+                            {
+                                ventilation_state_entity_id: {
+                                    "name": ventilation_state.get(OPT_NAME),
+                                    "uid": ventilation_state_uid,
+                                    "offset": 0,
+                                    "length": 1,
+                                    "type": 0,
+                                    "class": BinarySensorDeviceClass.RUNNING,
+                                    "on": 1,
+                                    "off": 0,
+                                    "entity": CONF_BINARY_SENSORS,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if co2_target_uid != 0:
+                        data.update(
+                            {
+                                co2_target_entity_id: {
+                                    "name": co2_target.get(OPT_NAME),
+                                    "uid": co2_target_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.CO2,
+                                    "unit": CONCENTRATION_PARTS_PER_MILLION,
+                                    "precision": 0,
+                                    "entity": CONF_SENSORS,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if co2_actual_uid != 0:
+                        data.update(
+                            {
+                                co2_actual_entity_id: {
+                                    "name": co2_actual.get(OPT_NAME),
+                                    "uid": co2_actual_uid,
+                                    "offset": 0,
+                                    "length": 2,
+                                    "type": 2,
+                                    "class": SensorDeviceClass.CO2,
+                                    "unit": CONCENTRATION_PARTS_PER_MILLION,
+                                    "precision": 0,
+                                    "entity": CONF_SENSORS,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if ventilation_flow_target_uid != 0:
+                        data.update(
+                            {
+                                ventilation_flow_target_entity_id: {
+                                    "name": ventilation_flow_target.get(OPT_NAME),
+                                    "uid": ventilation_flow_target_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.VOLUME_FLOW_RATE,
+                                    "unit": UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR,
+                                    "precision": 0,
+                                    "entity": CONF_SENSORS,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if ventilation_in_uid != 0:
+                        data.update(
+                            {
+                                ventilation_in_entity_id: {
+                                    "name": ventilation_in.get(OPT_NAME),
+                                    "uid": ventilation_in_uid,
+                                    "offset": 0,
+                                    "length": 2,
+                                    "type": 2,
+                                    "unit": PERCENTAGE,
+                                    "precision": 0,
+                                    "entity": CONF_SENSORS,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if ventilation_out_uid != 0:
+                        data.update(
+                            {
+                                ventilation_out_entity_id: {
+                                    "name": ventilation_out.get(OPT_NAME),
+                                    "uid": ventilation_out_uid,
+                                    "offset": 0,
+                                    "length": 2,
+                                    "type": 2,
+                                    "unit": PERCENTAGE,
+                                    "precision": 0,
+                                    "entity": CONF_SENSORS,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if ventilation_flow_setting_uid != 0:
+                        data.update(
+                            {
+                                ventilation_flow_setting_entity_id: {
+                                    "name": ventilation_flow_setting.get(OPT_NAME),
+                                    "uid": ventilation_flow_setting_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.VOLUME_FLOW_RATE,
+                                    "unit": UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR,
+                                    "precision": 0,
+                                    "entity": CONF_SENSORS,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    return self.async_create_entry(data=data)
 
         # There was some validation problem - previous input as defaults
         return self.async_show_form(
@@ -602,7 +850,6 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             ):
                 return {"device": device_name}
         for entity_id, entity_uid in entity_ids.items():
-            _LOGGER.debug("Check exists for %s (%s)", entity_id, entity_uid)
             if entity_id in self.config_entry.options:
                 variables = variables + str(entity_uid) + " "
         return {"variables": variables}
@@ -749,7 +996,9 @@ def _get_temp_hum_schema(
                 vol.Schema(
                     {
                         # vol.Optional(OPT_NAME, default=default_temperature_name): str,
-                        vol.Optional(OPT_UID, default=default_temperature_uid): int,
+                        vol.Optional(
+                            OPT_UID, default=default_temperature_uid
+                        ): _UID_SELECTOR,
                     }
                 ),
                 {"collapsed": False},
@@ -758,7 +1007,9 @@ def _get_temp_hum_schema(
                 vol.Schema(
                     {
                         # vol.Optional(OPT_NAME, default=default_humidity_name): str,
-                        vol.Optional(OPT_UID, default=default_humidity_uid): int,
+                        vol.Optional(
+                            OPT_UID, default=default_humidity_uid
+                        ): _UID_SELECTOR,
                     }
                 ),
                 {"collapsed": False},
@@ -829,7 +1080,7 @@ def _get_energy_schema(
                         ): str,
                         vol.Optional(
                             OPT_UID, default=default_meter_electricity_uid
-                        ): int,
+                        ): _UID_SELECTOR,
                     }
                 ),
                 {"collapsed": False},
@@ -842,7 +1093,7 @@ def _get_energy_schema(
                         ): str,
                         vol.Optional(
                             OPT_UID, default=default_meter_water_cold_uid
-                        ): int,
+                        ): _UID_SELECTOR,
                     }
                 ),
                 {"collapsed": False},
@@ -853,7 +1104,9 @@ def _get_energy_schema(
                         vol.Optional(
                             OPT_NAME, default=default_meter_water_hot_name
                         ): str,
-                        vol.Optional(OPT_UID, default=default_meter_water_hot_uid): int,
+                        vol.Optional(
+                            OPT_UID, default=default_meter_water_hot_uid
+                        ): _UID_SELECTOR,
                     }
                 ),
                 {"collapsed": False},
@@ -864,7 +1117,9 @@ def _get_energy_schema(
                         vol.Optional(
                             OPT_NAME, default=default_calorimeter_hot_name
                         ): str,
-                        vol.Optional(OPT_UID, default=default_calorimeter_hot_uid): int,
+                        vol.Optional(
+                            OPT_UID, default=default_calorimeter_hot_uid
+                        ): _UID_SELECTOR,
                     }
                 ),
                 {"collapsed": False},
@@ -877,10 +1132,188 @@ def _get_energy_schema(
                         ): str,
                         vol.Optional(
                             OPT_UID, default=default_calorimeter_cold_uid
-                        ): int,
+                        ): _UID_SELECTOR,
                     }
                 ),
                 {"collapsed": False},
+            ),
+        }
+    )
+
+
+def _get_air_schema(
+    input_data: dict[str, Any] | None = None,
+) -> vol.Schema:
+    """Return an air ventilation schema with defaults based on the user input."""
+
+    # Fill in defaults from input or initial defaults
+    # Order is the same as in the app
+    default_device = "Air Ventilation"
+    default_ventilation_error_uid = 0
+    default_ventilation_filter_uid = default_ventilation_state_uid = 0
+    default_co2_target_uid = default_co2_actual_uid = 0
+    default_ventilation_flow_target_uid = 0
+    default_ventilation_in_uid = default_ventilation_out_uid = 0
+    default_ventilation_flow_setting_uid = 0
+    default_ventilation_error_name = "Ventilation Fault"
+    default_ventilation_filter_name = "Filters Clogged"
+    default_ventilation_state_name = "Ventilation Run State"
+    default_co2_target_name = "CO2 Target"
+    default_co2_actual_name = "CO2 Actual"
+    default_ventilation_flow_target_name = "Ventilation Flow Target"
+    default_ventilation_in_name = "Ventilation Inflow"
+    default_ventilation_out_name = "Ventilation Outflow"
+    default_ventilation_flow_setting_name = "Set Ventilation Flow"
+    if input_data is not None:
+        default_device = input_data.get(OPT_DEVICE, "")
+        default_ventilation_error = input_data.get(OPT_VENTILATION_ERROR)
+        default_ventilation_error_uid = default_ventilation_error.get(
+            OPT_UID, default_ventilation_error_uid
+        )
+        default_ventilation_filter = input_data.get(OPT_VENTILATION_FILTER)
+        default_ventilation_filter_uid = default_ventilation_filter.get(
+            OPT_UID, default_ventilation_filter_uid
+        )
+        default_ventilation_state = input_data.get(OPT_VENTILATION_STATE)
+        default_ventilation_state_uid = default_ventilation_state.get(
+            OPT_UID, default_ventilation_state_uid
+        )
+        default_co2_target = input_data.get(OPT_CO2_TARGET)
+        default_co2_target_uid = default_co2_target.get(OPT_UID, default_co2_target_uid)
+        default_co2_actual = input_data.get(OPT_CO2_ACTUAL)
+        default_co2_actual_uid = default_co2_actual.get(OPT_UID, default_co2_actual_uid)
+        default_ventilation_flow_target = input_data.get(OPT_VENTILATION_FLOW_TARGET)
+        default_ventilation_flow_target_uid = default_ventilation_flow_target.get(
+            OPT_UID, default_ventilation_flow_target_uid
+        )
+        default_ventilation_in = input_data.get(OPT_VENTILATION_IN)
+        default_ventilation_in_uid = default_ventilation_in.get(
+            OPT_UID, default_ventilation_in_uid
+        )
+        default_ventilation_out = input_data.get(OPT_VENTILATION_OUT)
+        default_ventilation_out_uid = default_ventilation_out.get(
+            OPT_UID, default_ventilation_out_uid
+        )
+        default_ventilation_flow_setting = input_data.get(OPT_VENTILATION_FLOW_SETTING)
+        default_ventilation_flow_setting_uid = default_ventilation_flow_setting.get(
+            OPT_UID, default_ventilation_flow_setting_uid
+        )
+
+    return vol.Schema(
+        {
+            vol.Required(OPT_DEVICE, default=default_device): str,
+            vol.Required(OPT_VENTILATION_ERROR): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_ventilation_error_name
+                        ): str,
+                        vol.Optional(
+                            OPT_UID, default=default_ventilation_error_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_VENTILATION_FILTER): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_ventilation_filter_name
+                        ): str,
+                        vol.Optional(
+                            OPT_UID, default=default_ventilation_filter_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_VENTILATION_STATE): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_ventilation_state_name
+                        ): str,
+                        vol.Optional(
+                            OPT_UID, default=default_ventilation_state_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_CO2_TARGET): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_co2_target_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_co2_target_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_CO2_ACTUAL): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_co2_actual_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_co2_actual_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Optional(OPT_VENTILATION_FLOW_TARGET): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_ventilation_flow_target_name
+                        ): str,
+                        vol.Optional(
+                            OPT_UID, default=default_ventilation_flow_target_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_VENTILATION_IN): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_ventilation_in_name
+                        ): str,
+                        vol.Optional(
+                            OPT_UID, default=default_ventilation_in_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_VENTILATION_OUT): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_ventilation_out_name
+                        ): str,
+                        vol.Optional(
+                            OPT_UID, default=default_ventilation_out_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Optional(OPT_VENTILATION_FLOW_SETTING): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_ventilation_flow_setting_name
+                        ): str,
+                        vol.Optional(
+                            OPT_UID, default=default_ventilation_flow_setting_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": True},
             ),
         }
     )

@@ -19,7 +19,10 @@
                     "port": "Port",
                     "username": "Username",
                     "password": "Password",
-                    "sscp_address": "SSCP address"
+                    "sscp_address": "SSCP address",
+                    "scan_interval": "Polling interval (seconds)",
+                    "fast_interal": "Fast polling interval (seconds)",
+                    "fast_count": "Number of times to run fast polling"
                 }
             },
             "reconfigure": {
@@ -29,7 +32,10 @@
                     "port": "Port",
                     "username": "Username",
                     "password": "Password",
-                    "sscp_address": "SSCP address"
+                    "sscp_address": "SSCP address",
+                    "scan_interval": "Polling interval (seconds)",
+                    "fast_interal": "Fast polling interval (seconds)",
+                    "fast_count": "Number of times to run fast polling"
                 }
             }
         }
@@ -41,7 +47,7 @@
                 "menu_options": {
                     "temp_hum": "Temperature and humidity",
                     "energy": "Energy meters",
-                    "air": "Air circulation"
+                    "air": "Air ventilation"
                 }
             },
             "temp_hum": {
@@ -113,6 +119,95 @@
                         "name": "Cold Calorimeter variable:",
                         "data": {
                             "device": "Device name",
+                            "uid": "UID",
+                            "length": "Length",
+                            "offset": "Offset"
+                        }
+                    }
+                }
+            },
+            "air": {
+                "title": "Add an air ventilation device",
+                "data": {
+                    "device": "Device name"
+                },
+                "sections": {
+                    "ventilator_error": {
+                        "name": "Ventilation Fault variable:",
+                        "data": {
+                            "name": "Name",
+                            "uid": "UID",
+                            "length": "Length",
+                            "offset": "Offset"
+                        }
+                    },
+                    "ventilator_filter": {
+                        "name": "Filters Clogged Up variable:",
+                        "data": {
+                            "name": "Name",
+                            "uid": "UID",
+                            "length": "Length",
+                            "offset": "Offset"
+                        }
+                    },
+                    "ventilator_state": {
+                        "name": "Ventilation Run State variable:",
+                        "data": {
+                         "name": "Name",
+                         "uid": "UID",
+                         "length": "Length",
+                         "offset": "Offset"
+                        }
+                    },
+                    "cotwo_target": {
+                        "name": "CO2 Target variable:",
+                        "data": {
+                            "name": "Name",
+                            "uid": "UID",
+                            "length": "Length",
+                            "offset": "Offset"
+                        }
+                    },
+                    "cotwo_actual": {
+                        "name": "CO2 Actual variable:",
+                        "data": {
+                            "name": "Name",
+                            "uid": "UID",
+                            "length": "Length",
+                            "offset": "Offset"
+                        }
+                    },
+                    "ventilator_flow_target": {
+                        "name": "Ventilation Flow Target variable:",
+                        "data": {
+                            "name": "Name",
+                            "uid": "UID",
+                            "length": "Length",
+                            "offset": "Offset"
+                        }
+                    },
+                    "ventilator_in": {
+                        "name": "Ventilation Inflow variable:",
+                        "data": {
+                            "name": "Name",
+                            "uid": "UID",
+                            "length": "Length",
+                            "offset": "Offset"
+                        }
+                    },
+                    "ventilator_out": {
+                        "name": "Ventilation Outflow variable:",
+                        "data": {
+                            "name": "Name",
+                            "uid": "UID",
+                            "length": "Length",
+                            "offset": "Offset"
+                        }
+                    },
+                    "ventilator_flow_setting": {
+                        "name": "Set Ventilation Flow variable:",
+                        "data": {
+                            "name": "Name",
                             "uid": "UID",
                             "length": "Length",
                             "offset": "Offset"
