@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import CONF_SENSOR_TYPE
+from homeassistant.const import CONF_SENSORS
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -13,9 +13,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import DomatSSCPConfigEntry
 from .const import DOMAIN
 from .coordinator import DomatSSCPCoordinator
-
-# TODO: Add a common entity
-# from .entity import DomatSSCPEntity
 
 # The co-ordinator is used to centralise the data updates
 PARALLEL_UPDATES = 0
@@ -40,7 +37,7 @@ async def async_setup_entry(
     for opt in config_entry.options:
         if (
             "entity" in config_entry.options[opt]
-            and config_entry.options[opt]["entity"] == CONF_SENSOR_TYPE
+            and config_entry.options[opt]["entity"] == CONF_SENSORS
         ):
             _LOGGER.debug("Adding sensor %s: %s", opt, config_entry.options[opt])
             sensors.append(
@@ -72,9 +69,11 @@ class DomatSSCPSensor(CoordinatorEntity, SensorEntity):
         # Entity-specific values
         self.coordinator = coordinator
         self._attr_unique_id = entity_id
-        # self._attr_name = entity_data["name"]
         self._attr_native_unit_of_measurement = entity_data["unit"]
-        self._attr_device_class = entity_data["class"]
+        if "name" in entity_data:
+            self._attr_name = entity_data["name"]
+        if "class" in entity_data:
+            self._attr_device_class = entity_data["class"]
         if "state" in entity_data:
             self._attr_state_class = entity_data["state"]
         self._attr_suggested_display_precision = entity_data.get("precision", 0)
