@@ -211,6 +211,7 @@ class sscp_connection:
             if self.socket is not None:
                 self.socket.close()
                 self.socket = None
+            # TODO: Raise an exception here for easier handling in callers
             return False
 
         self.send_max = int.from_bytes(reply[SSCP_MAXDATA_START:SSCP_MAXDATA_END])
@@ -227,6 +228,7 @@ class sscp_connection:
         if len(reply) > SSCP_GUID_END:
             _LOGGER.debug("optional data: %s", reply[SSCP_GUID_END:].hex())
 
+        # TODO: Return None (after TODO for False is done)
         return True
 
     async def logout(self):
@@ -318,21 +320,23 @@ class sscp_connection:
         err_vars = []
         err_codes = []
 
-        for reply_len, var_start, var_end in _sscp_read_variables_generator(
+        for reply_len_base, var_start, var_end in _sscp_read_variables_generator(
             vars=vars, send_max=send_max, recv_max=recv_max
         ):
             while True:
+                # Build our request
                 data = bytearray()
                 data += SSCP_READ_DATA_FLAGS
+                reply_len = reply_len_base
                 for var in vars[var_start:var_end]:
                     if var.uid in err_vars:
-                        _LOGGER.debug("Skipping error uid: %s", var.uid)
                         reply_len -= var.length
                     else:
                         data += var.uid_bytes
                         data += var.offset_bytes
                         data += var.length_bytes
 
+                # All variables have errors
                 if len(data) == len(SSCP_READ_DATA_FLAGS):
                     break
 
@@ -359,20 +363,25 @@ class sscp_connection:
                         err,
                         SSCP_ERRORS.get(err, "unknown"),
                     )
-                    for i, var in enumerate(vars[var_start:var_end]):
+                    # Add variables with errors to the error list
+                    i = 0
+                    for var in vars[var_start:var_end]:
+                        if var.uid in err_vars:
+                            continue
                         if val & (1 << i) > 0:
-                            _LOGGER.debug("Error uid: %s", var.uid)
-                            if var.uid not in err_vars:
-                                err_vars.append(var.uid)
-                                err_codes.append(err)
+                            err_vars.append(var.uid)
+                            err_codes.append(err)
+                        i += 1
 
-                    _LOGGER.debug("Error variables: %s", err_vars)
+                    _LOGGER.error("Error variables: %s", err_vars)
+                    _LOGGER.error("Error codes: %s", err_codes)
                     continue
 
                 data_len = int.from_bytes(
                     reply[SSCP_DATALEN_START:SSCP_DATALEN_END], SSCP_DATA_ORDER
                 )
                 if data_len != reply_len:
+                    # We didn't receive enough data, so mark remaining UID's as errors
                     _LOGGER.error("Read length mismatch: %d %d", data_len, reply_len)
                     for var in vars[var_end:]:
                         if var.uid not in err_vars:
