@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import CONF_SENSORS
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -37,7 +37,7 @@ async def async_setup_entry(
     for opt in config_entry.options:
         if (
             "entity" in config_entry.options[opt]
-            and config_entry.options[opt]["entity"] == CONF_SENSORS
+            and config_entry.options[opt]["entity"] == Platform.SENSOR
         ):
             _LOGGER.debug("Adding sensor %s: %s", opt, config_entry.options[opt])
             sensors.append(
@@ -69,9 +69,10 @@ class DomatSSCPSensor(CoordinatorEntity, SensorEntity):
         # Entity-specific values
         self.coordinator = coordinator
         self._attr_unique_id = entity_id
-        self._attr_native_unit_of_measurement = entity_data["unit"]
         if "name" in entity_data:
             self._attr_name = entity_data["name"]
+        if "unit" in entity_data:
+            self._attr_native_unit_of_measurement = entity_data["unit"]
         if "class" in entity_data:
             self._attr_device_class = entity_data["class"]
         if "state" in entity_data:

@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.const import CONF_BINARY_SENSORS
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -37,7 +37,7 @@ async def async_setup_entry(
     for opt in config_entry.options:
         if (
             "entity" in config_entry.options[opt]
-            and config_entry.options[opt]["entity"] == CONF_BINARY_SENSORS
+            and config_entry.options[opt]["entity"] == Platform.BINARY_SENSOR
         ):
             _LOGGER.debug("Adding binary sensor %s: %s", opt, config_entry.options[opt])
             binary_sensors.append(
@@ -110,7 +110,7 @@ class DomatSSCPBinarySensor(CoordinatorEntity, BinarySensorEntity):
         """Retrieve our value from the co-ordinator."""
 
         if self.unique_id not in self.coordinator.data:
-            _LOGGER.debug("No co-ordinator data for %s", self.unique_id)
+            _LOGGER.error("No co-ordinator data for %s", self.unique_id)
             return None
 
         new_value = self.coordinator.data[self.unique_id]
@@ -118,5 +118,5 @@ class DomatSSCPBinarySensor(CoordinatorEntity, BinarySensorEntity):
             return True
         if new_value == self.off_value:
             return False
-        _LOGGER.debug("Unexpected value: %s = %s", self._attr_unique_id, new_value)
+        _LOGGER.error("Unexpected value: %s = %s", self._attr_unique_id, new_value)
         return True

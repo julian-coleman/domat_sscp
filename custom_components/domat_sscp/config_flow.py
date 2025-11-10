@@ -19,13 +19,12 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import (
     CONCENTRATION_PARTS_PER_MILLION,
-    CONF_BINARY_SENSORS,
     CONF_IP_ADDRESS,
     CONF_PASSWORD,
     CONF_PORT,
-    CONF_SENSORS,
     CONF_USERNAME,
     PERCENTAGE,
+    Platform,
     UnitOfEnergy,
     UnitOfTemperature,
     UnitOfVolume,
@@ -67,6 +66,8 @@ from .const import (
     OPT_UID,
     OPT_VENTILATION_ERROR,
     OPT_VENTILATION_FILTER,
+    OPT_VENTILATION_FLOW_MINIMUM,
+    OPT_VENTILATION_FLOW_MAXIMUM,
     OPT_VENTILATION_FLOW_SETTING,
     OPT_VENTILATION_FLOW_TARGET,
     OPT_VENTILATION_IN,
@@ -295,7 +296,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                 "class": SensorDeviceClass.TEMPERATURE,
                                 "unit": UnitOfTemperature.CELSIUS,
                                 "precision": 1,
-                                "entity": CONF_SENSORS,
+                                "entity": Platform.SENSOR,
                                 "device": user_input.get(OPT_DEVICE),
                             },
                             humidity_entity_id: {
@@ -307,7 +308,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                 "class": SensorDeviceClass.HUMIDITY,
                                 "unit": PERCENTAGE,
                                 "precision": 1,
-                                "entity": CONF_SENSORS,
+                                "entity": Platform.SENSOR,
                                 "device": user_input.get(OPT_DEVICE),
                             },
                         }
@@ -440,7 +441,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "unit": UnitOfEnergy.KILO_WATT_HOUR,
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
-                                    "entity": CONF_SENSORS,
+                                    "entity": Platform.SENSOR,
                                     "device": meter_electricity.get(OPT_NAME),
                                 },
                             }
@@ -457,7 +458,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "unit": UnitOfVolume.CUBIC_METERS,
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
-                                    "entity": CONF_SENSORS,
+                                    "entity": Platform.SENSOR,
                                     "device": meter_water_cold.get(OPT_NAME),
                                 },
                             }
@@ -474,7 +475,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "unit": UnitOfVolume.CUBIC_METERS,
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
-                                    "entity": CONF_SENSORS,
+                                    "entity": Platform.SENSOR,
                                     "device": meter_water_hot.get(OPT_NAME),
                                 },
                             }
@@ -491,7 +492,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "unit": UnitOfEnergy.GIGA_JOULE,
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
-                                    "entity": CONF_SENSORS,
+                                    "entity": Platform.SENSOR,
                                     "device": calorimeter_hot.get(OPT_NAME),
                                 },
                             }
@@ -508,7 +509,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "unit": UnitOfEnergy.KILO_WATT_HOUR,
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 1,
-                                    "entity": CONF_SENSORS,
+                                    "entity": Platform.SENSOR,
                                     "device": calorimeter_cold.get(OPT_NAME),
                                 },
                             }
@@ -688,7 +689,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "class": BinarySensorDeviceClass.PROBLEM,
                                     "on": 1,
                                     "off": 0,
-                                    "entity": CONF_BINARY_SENSORS,
+                                    "entity": Platform.BINARY_SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
                                 },
                             }
@@ -705,7 +706,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "class": BinarySensorDeviceClass.PROBLEM,
                                     "on": 1,
                                     "off": 0,
-                                    "entity": CONF_BINARY_SENSORS,
+                                    "entity": Platform.BINARY_SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
                                 },
                             }
@@ -722,7 +723,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "class": BinarySensorDeviceClass.RUNNING,
                                     "on": 1,
                                     "off": 0,
-                                    "entity": CONF_BINARY_SENSORS,
+                                    "entity": Platform.BINARY_SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
                                 },
                             }
@@ -739,7 +740,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "class": SensorDeviceClass.CO2,
                                     "unit": CONCENTRATION_PARTS_PER_MILLION,
                                     "precision": 0,
-                                    "entity": CONF_SENSORS,
+                                    "entity": Platform.SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
                                 },
                             }
@@ -756,7 +757,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "class": SensorDeviceClass.CO2,
                                     "unit": CONCENTRATION_PARTS_PER_MILLION,
                                     "precision": 0,
-                                    "entity": CONF_SENSORS,
+                                    "entity": Platform.SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
                                 },
                             }
@@ -773,7 +774,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "class": SensorDeviceClass.VOLUME_FLOW_RATE,
                                     "unit": UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR,
                                     "precision": 0,
-                                    "entity": CONF_SENSORS,
+                                    "entity": Platform.SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
                                 },
                             }
@@ -789,7 +790,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "type": 2,
                                     "unit": PERCENTAGE,
                                     "precision": 0,
-                                    "entity": CONF_SENSORS,
+                                    "entity": Platform.SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
                                 },
                             }
@@ -805,7 +806,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "type": 2,
                                     "unit": PERCENTAGE,
                                     "precision": 0,
-                                    "entity": CONF_SENSORS,
+                                    "entity": Platform.SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
                                 },
                             }
@@ -819,10 +820,12 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "offset": 0,
                                     "length": 4,
                                     "type": 13,
+                                    "max": OPT_VENTILATION_FLOW_MAXIMUM,
+                                    "min": OPT_VENTILATION_FLOW_MINIMUM,
+                                    "step": 1,
                                     "class": SensorDeviceClass.VOLUME_FLOW_RATE,
                                     "unit": UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR,
-                                    "precision": 0,
-                                    "entity": CONF_SENSORS,
+                                    "entity": Platform.NUMBER,
                                     "device": user_input.get(OPT_DEVICE),
                                 },
                             }
@@ -1163,7 +1166,7 @@ def _get_air_schema(
     default_ventilation_flow_target_name = "Flow Target"
     default_ventilation_in_name = "Inflow"
     default_ventilation_out_name = "Outflow"
-    default_ventilation_flow_setting_name = "Change Flow Target"
+    default_ventilation_flow_setting_name = "Set Flow Target"
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE, "")
         default_ventilation_error = input_data.get(OPT_VENTILATION_ERROR)
