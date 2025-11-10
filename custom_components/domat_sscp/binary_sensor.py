@@ -39,7 +39,7 @@ async def async_setup_entry(
             "entity" in config_entry.options[opt]
             and config_entry.options[opt]["entity"] == CONF_BINARY_SENSORS
         ):
-            _LOGGER.error("Adding binary sensor %s: %s", opt, config_entry.options[opt])
+            _LOGGER.debug("Adding binary sensor %s: %s", opt, config_entry.options[opt])
             binary_sensors.append(
                 DomatSSCPBinarySensor(
                     coordinator=coordinator,
@@ -110,7 +110,7 @@ class DomatSSCPBinarySensor(CoordinatorEntity, BinarySensorEntity):
         """Retrieve our value from the co-ordinator."""
 
         if self.unique_id not in self.coordinator.data:
-            _LOGGER.error("No co-ordinator data for %s", self.unique_id)
+            _LOGGER.debug("No co-ordinator data for %s", self.unique_id)
             return None
 
         new_value = self.coordinator.data[self.unique_id]
@@ -118,5 +118,5 @@ class DomatSSCPBinarySensor(CoordinatorEntity, BinarySensorEntity):
             return True
         if new_value == self.off_value:
             return False
-        _LOGGER.error("Unexpected value: %s = %s", self._attr_unique_id, new_value)
+        _LOGGER.debug("Unexpected value: %s = %s", self._attr_unique_id, new_value)
         return True
