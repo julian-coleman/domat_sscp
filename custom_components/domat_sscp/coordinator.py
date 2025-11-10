@@ -10,7 +10,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
+from homeassistant.exceptions import ConfigEntryAuthFailed
 import homeassistant.helpers.entity_registry as er
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -52,7 +52,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             self.scan_interval = self.config_entry.data["default_scan_interval"]
         else:
             self.scan_interval = DEFAULT_SCAN_INTERVAL
-        _LOGGER.error("Coordinator update inteval: %s", self.scan_interval)
+        _LOGGER.debug("Coordinator update inteval: %s", self.scan_interval)
         self.update_interval = timedelta(seconds=self.scan_interval)
         if "default_fast_interval" in self.config_entry.data:
             self.fast_interval = self.config_entry.data["default_fast_interval"]
@@ -87,7 +87,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
 
         conf_data = self.config_entry.data.copy()
         conf_data["password"] = "********"
-        _LOGGER.error("Updating data for: %s", self.name)
+        _LOGGER.debug("Updating data for: %s", self.name)
         _LOGGER.debug("Data: %s", conf_data)
         _LOGGER.debug("Options: %s", self.config_entry.options)
 
@@ -97,9 +97,8 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         # Check the last connection time
         since = datetime.now(tz=None) - self.last_connect
         if since.seconds < DEFAULT_FAST_INTERVAL:
-            _LOGGER.error("Connecting too quickly: %s", self.update_interval)
+            _LOGGER.error("Connecting too quickly: %s", since.seconds)
             await sleep(DEFAULT_FAST_INTERVAL - since.seconds)
-        _LOGGER.error("Time since last update: %s", since)
 
         # Fetch variables data
         try:
@@ -172,4 +171,3 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
     def set_last_connect(self):
         """Set the last connection time."""
         self.last_connect = datetime.now(tz=None)
-        _LOGGER.error("Set last connect")
