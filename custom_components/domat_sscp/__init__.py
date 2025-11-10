@@ -14,7 +14,7 @@ from homeassistant.helpers.device_registry import DeviceEntry
 from .coordinator import DomatSSCPConfigEntry, DomatSSCPCoordinator
 
 _LOGGER = logging.getLogger(__name__)
-_PLATFORMS: list[Platform] = [Platform.SENSOR]
+_PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 
 async def async_setup_entry(
@@ -40,6 +40,7 @@ async def async_setup_entry(
     return True
 
 
+# TODO: Remove update listener and use OptionsFlowWithReload
 async def _async_update_listener(hass: HomeAssistant, config_entry: ConfigEntry):
     """Handle config options update.
 
