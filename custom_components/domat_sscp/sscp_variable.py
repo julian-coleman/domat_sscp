@@ -25,7 +25,7 @@ class sscp_variable:
     """SSCP Variable.
 
     Handles known types and their properties.
-    Converts 4-byte floats to and from IEEE754 format.
+    Converts type 13 4-byte floats to and from IEEE754 format.
     """
 
     def __init__(
@@ -67,6 +67,8 @@ class sscp_variable:
             self.minimum = minimum
         if states is not None:
             self.states = states
+        else:
+            self.states = None
         if format is not None:
             self.format = format
         if perm is not None:
@@ -79,8 +81,7 @@ class sscp_variable:
         self.offset_bytes = self.offset.to_bytes(4, SSCP_DATA_ORDER)
         self.raw = bytearray("\x00", encoding="iso-8859-1")
         self.val = 0
-        self.states = None
-        self.state = ""
+        self.state = "unknown"
 
     # TODO: Initialisation from yaml
     #    @classmethod
@@ -93,7 +94,7 @@ class sscp_variable:
     def to_string(self):
         """Return a string representation of the variable."""
         if self.type in {13, 2, 0}:
-            if len(self.states) > 0:
+            if self.states is not None:
                 return self.state
             if self.format is not None:
                 return self.format % (self.val)
@@ -117,17 +118,18 @@ class sscp_variable:
                 self.val = ieee754_to_float(raw)
             case 2:  # 2-byte int or state
                 self.val = int.from_bytes(raw, SSCP_DATA_ORDER)
-                self.state = self.val  # Default
-                if len(self.states) > 0:
+                if self.states is not None:
+                    self.state = "unknown"  # Default
                     for state in self.states:
                         if state["state"] == self.val:
                             self.state = state["text"]
             case 0:  # bool (1-byte int)
                 self.val = int.from_bytes(raw, SSCP_DATA_ORDER)
-                self.state = self.val  # Default
-                for state in self.states:
-                    if state["state"] == self.val:
-                        self.state = state["text"]
+                if self.states is not None:
+                    self.state = "unknown"  # Default
+                    for state in self.states:
+                        if state["state"] == self.val:
+                            self.state = state["text"]
             case _:  # unknown type
                 _LOGGER.error("Set unknown type for %d", self.uid)
                 self.val = int.from_bytes(raw, SSCP_DATA_ORDER)
