@@ -9,7 +9,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
 import homeassistant.helpers.entity_registry as er
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -48,20 +48,23 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         )
 
         self.data: dict[str, Any] = {}
-        if "default_scan_interval" in self.config_entry.data:
-            self.scan_interval = self.config_entry.data["default_scan_interval"]
-        else:
-            self.scan_interval = DEFAULT_SCAN_INTERVAL
-        _LOGGER.debug("Coordinator update inteval: %s", self.scan_interval)
+        self.scan_interval = self.config_entry.data.get(
+            "default_scan_interval", DEFAULT_SCAN_INTERVAL
+        )
+        self.fast_interval = self.config_entry.data.get(
+            "default_fast_interval", DEFAULT_FAST_INTERVAL
+        )
+        self.fast_count = self.config_entry.data.get(
+            "default_fast_count", DEFAULT_FAST_COUNT
+        )
+        self.fast_remaining = self.fast_count
         self.update_interval = timedelta(seconds=self.scan_interval)
-        if "default_fast_interval" in self.config_entry.data:
-            self.fast_interval = self.config_entry.data["default_fast_interval"]
-        else:
-            self.fast_interval = DEFAULT_SCAN_INTERVAL
-        if "default_fast_count" in self.config_entry.data:
-            self.fast_count = self.config_entry.data["default_fast_count"]
-        else:
-            self.fast_count = DEFAULT_SCAN_INTERVAL
+        _LOGGER.error(
+            "Coordinator update intevals: %s %s (%s)",
+            self.scan_interval,
+            self.fast_interval,
+            self.fast_count,
+        )
         # Set to the past because we'll update ~immediately on first refresh
         self.last_connect: datetime = datetime.now(tz=None) - timedelta(
             seconds=DEFAULT_FAST_INTERVAL
@@ -87,7 +90,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
 
         conf_data = self.config_entry.data.copy()
         conf_data["password"] = "********"
-        _LOGGER.debug("Updating data for: %s", self.name)
+        _LOGGER.error("Updating data for: %s", self.name)
         _LOGGER.debug("Data: %s", conf_data)
         _LOGGER.debug("Options: %s", self.config_entry.options)
 
@@ -95,10 +98,16 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             return self.data
 
         # Check the last connection time
+        # We set the time when we finish, so want a pause if the server is slow
         since = datetime.now(tz=None) - self.last_connect
         if since.seconds < DEFAULT_FAST_INTERVAL:
-            _LOGGER.error("Connecting too quickly: %s", since.seconds)
             await sleep(DEFAULT_FAST_INTERVAL - since.seconds)
+        # Are we doing fast updates?
+        if self.update_interval.seconds == self.fast_interval:
+            self.fast_remaining -= 1
+            if self.fast_remaining <= 0:
+                self.fast_remaining = self.fast_count
+                self.update_interval = timedelta(seconds=self.scan_interval)
 
         # Fetch variables data
         try:
@@ -168,6 +177,14 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Data: %s", self.data)
         return self.data
 
+    @callback
+    def entity_update(self):
+        """An entity has changed a setting: update and use fast polling."""
+        _LOGGER.error("Entity update notification")
+        self.update_interval = timedelta(seconds=self.fast_interval)
+        # self.async_set_updated_data(data)
+
+    @callback
     def set_last_connect(self):
         """Set the last connection time."""
         self.last_connect = datetime.now(tz=None)

@@ -3,7 +3,12 @@
 import logging
 from typing import Any
 
-from homeassistant.components.number import NumberEntity
+from homeassistant.components.number import (
+    DEFAULT_MAX_VALUE,
+    DEFAULT_MIN_VALUE,
+    DEFAULT_STEP,
+    NumberEntity,
+)
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -74,12 +79,9 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
             self._attr_name = entity_data["name"]
         if "class" in entity_data:
             self._attr_device_class = entity_data["class"]
-        if "max" in entity_data:
-            self._attr_max_value = entity_data["max"]
-        if "min" in entity_data:
-            self._attr_min_value = entity_data["min"]
-        if "step" in entity_data:
-            self._attr_step = entity_data["step"]
+        self._attr_max_value = entity_data.get("max", DEFAULT_MAX_VALUE)
+        self._attr_min_value = entity_data.get("min", DEFAULT_MIN_VALUE)
+        self._attr_step = entity_data.get("step")
         self._attr_native_value = self._update_value()
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entity_data.get("device"))},
@@ -99,13 +101,13 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
     # TODO: Add a callback for when the entity is disabled/enabled and update runtime
 
     @property
-    def native_max_value(self) -> float | None:
+    def native_max_value(self) -> float:
         """Return the maximum value."""
 
         return self._attr_max_value
 
     @property
-    def native_min_value(self) -> float | None:
+    def native_min_value(self) -> float:
         """Return the minimum value."""
 
         return self._attr_min_value
@@ -133,9 +135,11 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
     def set_native_value(self, value: float) -> None:
         """Set the value."""
 
+        # TODO: Can we update the UI if the number changes?
         # TODO: SSCP connection + write
         # TODO: call coordinator fast read
         _LOGGER.error("Number set value: %s %s", self._attr_unique_id, value)
+        self.coordinator.entity_update()
 
     def _update_value(self) -> float | None:
         """Retrieve our value from the co-ordinator."""
@@ -144,5 +148,4 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
             _LOGGER.error("No co-ordinator data for %s", self.unique_id)
             return None
 
-        new_value = self.coordinator.data[self.unique_id]
-        return new_value
+        return self.coordinator.data[self.unique_id]
