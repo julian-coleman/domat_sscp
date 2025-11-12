@@ -156,7 +156,7 @@ class sscp_variable:
                     val = self.maximum
                 if self.minimum is not None and val < self.minimum:
                     val = self.minimum
-                _LOGGER.error("New 4-byte: %s", val)
+                _LOGGER.debug("New 4-byte: %s", val)
                 return float_to_ieee754(val)
 
             case 2:  # 2-byte int or state
