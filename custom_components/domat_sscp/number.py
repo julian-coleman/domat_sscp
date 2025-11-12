@@ -138,12 +138,17 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
     def set_native_value(self, value: float) -> None:
         """Set the value."""
 
-        # TODO: Can we update the UI if the number changes?
-        _LOGGER.error("Number set value: %s %s", self._attr_unique_id, value)
-
         self.hass.loop.create_task(
             self.coordinator.entity_update(
-                self.sscp_uid, self.sscp_offset, self.sscp_length, self.sscp_type, value
+                uid=self.sscp_uid,
+                offset=self.sscp_offset,
+                length=self.sscp_length,
+                type=self.sscp_type,
+                value=value,
+                increment=self._attr_step,
+                maximum=self._attr_max_value,
+                decrement=self._attr_step,
+                minimum=self._attr_min_value,
             )
         )
 
