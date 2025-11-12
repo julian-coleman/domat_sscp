@@ -112,6 +112,7 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
     MINOR_VERSION = 2
 
+    # TODO: Add a checkbox for InSady (update MINOR to 3)
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -263,6 +264,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
 
         if "base" not in errors:
             # Validate the user input and create an entry
+            coordinator.set_last_connect()
             try:
                 info = await _validate_config(
                     data=self.config_entry.data,
@@ -284,7 +286,6 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         "variables": info["error_variables"],
                     }
                 else:
-                    coordinator.set_last_connect()
                     data.update(
                         {
                             temperature_entity_id: {
@@ -407,6 +408,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
 
         if "base" not in errors:
             # Validate the user input and create an entry
+            coordinator.set_last_connect()
             try:
                 info = await _validate_config(
                     data=self.config_entry.data,
@@ -428,7 +430,6 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         "variables": info["error_variables"],
                     }
                 else:
-                    coordinator.set_last_connect()
                     if meter_electricity_uid != 0:
                         data.update(
                             {
@@ -440,7 +441,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "class": SensorDeviceClass.ENERGY,
                                     "unit": UnitOfEnergy.KILO_WATT_HOUR,
                                     "state": SensorStateClass.TOTAL_INCREASING,
-                                    "precision": 1,
+                                    "precision": 4,
                                     "entity": Platform.SENSOR,
                                     "device": meter_electricity.get(OPT_NAME),
                                 },
@@ -457,7 +458,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "class": SensorDeviceClass.WATER,
                                     "unit": UnitOfVolume.CUBIC_METERS,
                                     "state": SensorStateClass.TOTAL_INCREASING,
-                                    "precision": 1,
+                                    "precision": 4,
                                     "entity": Platform.SENSOR,
                                     "device": meter_water_cold.get(OPT_NAME),
                                 },
@@ -474,7 +475,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "class": SensorDeviceClass.WATER,
                                     "unit": UnitOfVolume.CUBIC_METERS,
                                     "state": SensorStateClass.TOTAL_INCREASING,
-                                    "precision": 1,
+                                    "precision": 4,
                                     "entity": Platform.SENSOR,
                                     "device": meter_water_hot.get(OPT_NAME),
                                 },
@@ -491,7 +492,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "class": SensorDeviceClass.ENERGY,
                                     "unit": UnitOfEnergy.GIGA_JOULE,
                                     "state": SensorStateClass.TOTAL_INCREASING,
-                                    "precision": 1,
+                                    "precision": 4,
                                     "entity": Platform.SENSOR,
                                     "device": calorimeter_hot.get(OPT_NAME),
                                 },
@@ -508,7 +509,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "class": SensorDeviceClass.ENERGY,
                                     "unit": UnitOfEnergy.KILO_WATT_HOUR,
                                     "state": SensorStateClass.TOTAL_INCREASING,
-                                    "precision": 1,
+                                    "precision": 4,
                                     "entity": Platform.SENSOR,
                                     "device": calorimeter_cold.get(OPT_NAME),
                                 },
@@ -655,6 +656,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
 
         if "base" not in errors:
             # Validate the user input and create an entry
+            coordinator.set_last_connect()
             try:
                 info = await _validate_config(
                     data=self.config_entry.data,
@@ -676,7 +678,6 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         "variables": info["error_variables"],
                     }
                 else:
-                    coordinator.set_last_connect()
                     if ventilation_error_uid != 0:
                         data.update(
                             {
