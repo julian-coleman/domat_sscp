@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from asyncio import sleep
+from contextlib import suppress
 from datetime import datetime, timedelta
 import logging
 from typing import Any
@@ -157,7 +158,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             await conn.logout()
 
         if len(error_vars) > 0:
-            _LOGGER.error("Variable errors for %s: %s", self.name, error_vars)
+            _LOGGER.error("Read variable errors for %s: %s", self.name, error_vars)
             raise UpdateFailed from None
 
         # Update variables with converted data
@@ -174,22 +175,90 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
 
         self.set_last_connect()
 
-        _LOGGER.error("Data: %s", data)
+        _LOGGER.debug("Data: %s", data)
         self.data = data
         return self.data
 
     async def entity_update(
-        self, uid: int, offset: int, length: int, type: int, value: Any
-    ):
+        self,
+        uid: int,
+        offset: int,
+        length: int,
+        type: int,
+        value: Any,
+        increment: float | None = None,
+        maximum: float | None = None,
+        decrement: float | None = None,
+        minimum: float | None = None,
+        states: dict[str, Any] | None = None,
+    ) -> None:
         """An entity has changed a setting: update using fast polling."""
+
         _LOGGER.error("Entity update: %s %s %s %s %s", uid, offset, length, type, value)
+        since = datetime.now(tz=None) - self.last_connect
+        if since.seconds < DEFAULT_FAST_INTERVAL:
+            await sleep(DEFAULT_FAST_INTERVAL - since.seconds)
+
+        sscp_var = sscp_variable(
+            uid=uid,
+            offset=offset,
+            length=length,
+            type=type,
+            increment=increment,
+            maximum=maximum,
+            decrement=decrement,
+            minimum=minimum,
+            states=states,
+            perm="rw",
+        )
+
         self.set_last_connect()
-        # TODO: Do the write here
+        try:
+            conn = sscp_connection(
+                name=self.config_entry.data[CONF_CONNECTION_NAME],
+                ip_address=self.config_entry.data[CONF_IP_ADDRESS],
+                port=self.config_entry.data[CONF_PORT],
+                user_name=self.config_entry.data[CONF_USERNAME],
+                password=self.config_entry.data[CONF_PASSWORD],
+                sscp_address=self.config_entry.data[CONF_SSCP_ADDRESS],
+            )
+        except ValueError:
+            _LOGGER.error("Could not create a connection for %s", self.name)
+            return
+
+        try:
+            await conn.login()
+            if conn.socket is None:
+                _LOGGER.error("Login failed for %s", self.name)
+                return
+        except TimeoutError:
+            _LOGGER.error("Login timeout for %s", self.name)
+            return
+        except (ValueError, OSError):
+            _LOGGER.error("Login connection error for %s", self.name)
+            return
+        try:
+            res = await conn.sscp_write_variable(var=sscp_var, new=value)
+        except TimeoutError:
+            _LOGGER.error("Write variable timeout for %s", self.name)
+            return
+        except (ValueError, OSError) as e:
+            _LOGGER.error("Write variable failed for %s: %s", self.name, e)
+            return
+        finally:
+            await conn.logout()
+
+        if res:
+            _LOGGER.error("Write variable error for %s", self.name)
+            return
+
+        # Re-read our data using fast polling and send updates to our platforms
         self.update_interval = timedelta(seconds=self.fast_interval)
-        await self._async_update_data()
+        with suppress(UpdateFailed):
+            await self._async_update_data()
         self.async_set_updated_data(self.data)
 
     @callback
     def set_last_connect(self):
-        """Set the last connection time: called from other connect functions."""
+        """Set the last connection time: called from other connect functions too."""
         self.last_connect = datetime.now(tz=None)
