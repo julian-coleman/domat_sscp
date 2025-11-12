@@ -81,24 +81,24 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                 )
 
     async def _async_update_data(self):
-        """Fetch data from the server and convert it to the right format."""
+        """Fetch entity data from the server/PLC."""
 
-        # TODO: Change update interval (based on entity state changes)
-
-        # Data should not be empty, so set at least one entry
-        self.data = {"connection": self.config_entry.unique_id}
+        # Returned data should not be empty, so set at least one entry
+        data = {"connection": self.config_entry.unique_id}
 
         conf_data = self.config_entry.data.copy()
         conf_data["password"] = "********"
         _LOGGER.error("Updating data for: %s", self.name)
-        _LOGGER.debug("Data: %s", conf_data)
-        _LOGGER.debug("Options: %s", self.config_entry.options)
+        _LOGGER.debug("Config Data: %s", conf_data)
+        _LOGGER.debug("Config Options: %s", self.config_entry.options)
 
         if len(self.config_entry.options) == 0:
+            self.data = data
             return self.data
 
         # Check the last connection time
         # We set the time when we finish, so want a pause if the server is slow
+        # Helps to avoid connecting at the same time as config flow validation and entity writes
         since = datetime.now(tz=None) - self.last_connect
         if since.seconds < DEFAULT_FAST_INTERVAL:
             await sleep(DEFAULT_FAST_INTERVAL - since.seconds)
@@ -170,21 +170,26 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                 + "-"
                 + str(sscp_var.length)
             )
-            self.data[entity_id] = sscp_var.val
+            data[entity_id] = sscp_var.val
 
         self.set_last_connect()
 
-        _LOGGER.debug("Data: %s", self.data)
+        _LOGGER.error("Data: %s", data)
+        self.data = data
         return self.data
 
-    @callback
-    def entity_update(self):
-        """An entity has changed a setting: update and use fast polling."""
-        _LOGGER.error("Entity update notification")
+    async def entity_update(
+        self, uid: int, offset: int, length: int, type: int, value: Any
+    ):
+        """An entity has changed a setting: update using fast polling."""
+        _LOGGER.error("Entity update: %s %s %s %s %s", uid, offset, length, type, value)
+        self.set_last_connect()
+        # TODO: Do the write here
         self.update_interval = timedelta(seconds=self.fast_interval)
-        # self.async_set_updated_data(data)
+        await self._async_update_data()
+        self.async_set_updated_data(self.data)
 
     @callback
     def set_last_connect(self):
-        """Set the last connection time."""
+        """Set the last connection time: called from other connect functions."""
         self.last_connect = datetime.now(tz=None)
