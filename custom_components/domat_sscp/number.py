@@ -6,7 +6,6 @@ from typing import Any
 from homeassistant.components.number import (
     DEFAULT_MAX_VALUE,
     DEFAULT_MIN_VALUE,
-    DEFAULT_STEP,
     NumberEntity,
 )
 from homeassistant.const import Platform
@@ -89,6 +88,10 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
             manufacturer="Domat",
             model="SSCP Device",
         )
+        self.sscp_uid = entity_data["uid"]
+        self.sscp_offset = entity_data["offset"]
+        self.sscp_length = entity_data["length"]
+        self.sscp_type = entity_data["type"]
         _LOGGER.debug("Initialised new %s with: %s", entity_id, entity_data)
 
     @callback
@@ -136,10 +139,13 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
         """Set the value."""
 
         # TODO: Can we update the UI if the number changes?
-        # TODO: SSCP connection + write
-        # TODO: call coordinator fast read
         _LOGGER.error("Number set value: %s %s", self._attr_unique_id, value)
-        self.coordinator.entity_update()
+
+        self.hass.loop.create_task(
+            self.coordinator.entity_update(
+                self.sscp_uid, self.sscp_offset, self.sscp_length, self.sscp_type, value
+            )
+        )
 
     def _update_value(self) -> float | None:
         """Retrieve our value from the co-ordinator."""
