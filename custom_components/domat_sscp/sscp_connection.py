@@ -399,7 +399,7 @@ class sscp_connection:
 
         return err_vars, err_codes
 
-    async def sscp_write_variable(self, var: sscp_variable, new) -> bool:
+    async def sscp_write_variable(self, var: sscp_variable, new) -> None:
         """Write variable via the connection.
 
         Can raise exceptions from sendrecv().
@@ -411,10 +411,7 @@ class sscp_connection:
         data += var.uid_bytes
         data += var.offset_bytes
         data += var.length_bytes
-        try:
-            data += var.change_value(new)
-        except TypeError:
-            return False
+        data += var.change_value(new)
         data_len = len(data)
 
         request = bytearray()
@@ -427,14 +424,10 @@ class sscp_connection:
         reply = await self._sscp_sendrecv(request, prefix="Write")
 
         if reply[SSCP_STATUS_START:SSCP_STATUS_END] != SSCP_WRITE_DATA_SUCCESS:
-            _LOGGER.error(
-                "Variable write failed: 0x%04x 0x%08x",
-                reply[SSCP_ERROR_CODE_START:SSCP_ERROR_CODE_END].hex(),
-                reply[SSCP_ERROR_VARS_START:SSCP_ERROR_VARS_END].hex(),
-            )
-            return False
-
-        return True
+            msg = f"Variable write failed {var.uid}"
+            msg = msg + f"0x{reply[SSCP_ERROR_CODE_START:SSCP_ERROR_CODE_END].hex():4}"
+            msg = msg + f"0x{reply[SSCP_ERROR_VARS_START:SSCP_ERROR_VARS_END].hex():8}"
+            raise ValueError(msg)
 
     async def _sscp_sendrecv(
         self, request: bytearray, prefix="Socket", close_after_send=False
