@@ -51,30 +51,30 @@ class sscp_variable:
         self.length = length
         self.offset = offset
         self.type = type
-        if name is not None:
-            self.name = name
-        if description is not None:
-            self.description = description
-        if page is not None:
-            self.page = page
+        # We support a subset of types
+        if self.type not in {64, 18, 13, 2, 0}:
+            raise ValueError("Unsupported type")
+        self.name = name
+        self.description = description
+        self.page = page
         if increment is not None:
             self.increment = increment
-        if maximum is not None:
-            self.maximum = maximum
+        else:
+            self.increment = 0
+        self.maximum = maximum
         if decrement is not None:
             self.decrement = decrement
-        if minimum is not None:
-            self.minimum = minimum
-        if states is not None:
-            self.states = states
         else:
-            self.states = None
-        if format is not None:
-            self.format = format
-        if perm is not None:
+            self.decrement = 0
+        self.minimum = minimum
+        self.states = states
+        self.format = format
+        if perm is None or perm == "ro":
+            self.perm = "ro"
+        elif perm == "rw":
             self.perm = "rw"
         else:
-            self.perm = "ro"
+            raise ValueError("Invalid permission")
 
         self.uid_bytes = self.uid.to_bytes(4, SSCP_DATA_ORDER)
         self.length_bytes = self.length.to_bytes(4, SSCP_DATA_ORDER)
@@ -102,7 +102,7 @@ class sscp_variable:
         return self.raw.hex()
 
     def set_value(self, raw: bytearray) -> None:
-        """Set the variable to the new raw value.
+        """Set the variable to the new raw value from the PLC.
 
         Directly updates the raw value.
         Parses the raw value depending on the variable type.
@@ -134,15 +134,78 @@ class sscp_variable:
                 _LOGGER.error("Set unknown type for %d", self.uid)
                 self.val = int.from_bytes(raw, SSCP_DATA_ORDER)
 
-    def change_value(self, value: str) -> bytearray:
-        """Change the variable to the new readable value.
+    def change_value(self, new: Any) -> bytearray:
+        """Change the variable using the new readable value.
 
         Parses readable values and state changes and updates the raw value.
         """
 
-        # TODO: Fix placeholder
-        _LOGGER.debug("Change %d to 0x%x", self.uid, value)
-        return (0).to_bytes(self.length, SSCP_DATA_ORDER)
+        _LOGGER.debug("Change %d to %s", self.uid, new)
+        if self.perm != "rw":
+            msg = f"Variable is read-only: {self.uid}"
+            raise ValueError(msg)
+        match self.type:
+            case 13:  # 4-byte float
+                if new == "+" and self.increment != 0:
+                    val = self.val + self.increment
+                elif new == "-" and self.decrement != 0:
+                    val = self.val - self.increment
+                else:
+                    val = float(new)
+                if self.maximum is not None and val > self.maximum:
+                    val = self.maximum
+                if self.minimum is not None and val < self.minimum:
+                    val = self.minimum
+                _LOGGER.error("New 4-byte: %s", val)
+                return float_to_ieee754(val)
+
+            case 2:  # 2-byte int or state
+                if self.states is not None:
+                    return change_state(
+                        uid=self.uid,
+                        length=self.length,
+                        states=self.states,
+                        old=self.val,
+                        new=new,
+                    )
+                if new.lower().startswith("0x"):
+                    val = int(new, 16)
+                else:
+                    val = int(new)
+                _LOGGER.debug("New 2-byte: %s", val)
+                return val.to_bytes(2, SSCP_DATA_ORDER)
+
+            case 0:  # 1-byte int (bool) or state
+                if self.states is not None:
+                    return change_state(
+                        uid=self.uid,
+                        length=self.length,
+                        states=self.states,
+                        old=self.val,
+                        new=new,
+                    )
+                if new in {"+", "-"}:
+                    if self.val == 0:
+                        val = 1
+                    else:
+                        val = 0
+                elif new.lower().startswith("0x"):
+                    val = int(new, 16)
+                else:
+                    val = int(new)
+                _LOGGER.debug("new 1-byte: %s", val)
+                return val.to_bytes(1, SSCP_DATA_ORDER)
+
+            case _:
+                _LOGGER.debug("Change unknown type: %d", self.uid)
+                if new.lower().startswith("0x"):
+                    val = int(new, 16)
+                else:
+                    val = int(new)
+                return val.to_bytes(self.length, SSCP_DATA_ORDER)
+
+        msg = f"Unmatched variable type: {self.uid}"
+        raise ValueError(msg)
 
 
 def ieee754_to_float(byte4) -> float:
@@ -194,3 +257,28 @@ def float_to_ieee754(val) -> bytes:
             mult -= div
     _LOGGER.debug("IEEE754: %f = 0x%08x", val, (sign + exp + sig))
     return (sign + exp + sig).to_bytes(4, SSCP_DATA_ORDER)
+
+
+def change_state(
+    uid: int, length: int, states: dict[str, Any], old: int, new: str
+) -> str:
+    """Find the next, previous or matching state."""
+
+    if new == "+":
+        for state in states:
+            if (state["state"] == old) and state.get("nextstate", None) is not None:
+                _LOGGER.debug("new state +: %s %s", uid, state["nextstate"])
+                return state["nextstate"].to_bytes(length, SSCP_DATA_ORDER)
+    elif new == "-":
+        for state in states:
+            if state.get("nextstate", None) is not None and state["nextstate"] == old:
+                _LOGGER.debug("new state -: %s %s", uid, state["state"])
+                return state["state"].to_bytes(length, SSCP_DATA_ORDER)
+    else:
+        val = int(new)
+        for state in states:
+            if state["state"] == val:
+                _LOGGER.debug("new state: %s %s", uid, state["state"])
+                return state["state"].to_bytes(length, SSCP_DATA_ORDER)
+    msg = f"Unknown state or next state: {uid}"
+    raise ValueError(msg)
