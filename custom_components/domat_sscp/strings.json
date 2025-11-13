@@ -1,30 +1,42 @@
 {
+  "common": {
+    "connection_name": "Connection name",
+    "sscp_address": "SSCP address",
+    "scan_interval": "Polling interval (seconds)",
+    "fast_interval": "Fast polling interval (seconds)",
+    "fast_count": "Number of times to run fast polling",
+    "device": "Device name",
+    "name": "Name",
+    "uid": "UID",
+    "length": "Length",
+    "offset": "Offset"
+  },
   "config": {
     "step": {
       "user": {
         "data": {
-          "connection_name": "Connection name",
+          "connection_name": "[%key:component::domat_sscp::common::connection_name%]",
           "ip_address": "[%key:common::config_flow::data::ip%]",
           "port": "[%key:common::config_flow::data::port%]",
           "username": "[%key:common::config_flow::data::username%]",
           "password": "[%key:common::config_flow::data::password%]",
-          "sscp_address": "SSCP address",
-          "scan_interval": "Polling interval (seconds)",
-          "fast_interal": "Fast polling interval (seconds)",
-          "fast_count": "Number of times to run fast polling"
+          "sscp_address": "[%key:component::domat_sscp::common::sscp_address%]",
+          "scan_interval": "[%key:component::domat_sscp::common::scan_interval%]",
+          "fast_interval": "[%key:component::domat_sscp::common::fast_interval%]",
+          "fast_count": "[%key:component::domat_sscp::common::fast_count%]"
         }
       },
       "reconfigure": {
         "data": {
-          "connection_name": "Connection name",
+          "connection_name": "[%key:component::domat_sscp::common::connection_name%]",
           "ip_address": "[%key:common::config_flow::data::ip%]",
           "port": "[%key:common::config_flow::data::port%]",
           "username": "[%key:common::config_flow::data::username%]",
           "password": "[%key:common::config_flow::data::password%]",
-          "sscp_address": "SSCP address",
-          "scan_interval": "Polling interval (seconds)",
-          "fast_interal": "Fast polling interval (seconds)",
-          "fast_count": "Number of times to run fast polling"
+          "sscp_address": "[%key:component::domat_sscp::common::sscp_address%]",
+          "scan_interval": "[%key:component::domat_sscp::common::scan_interval%]",
+          "fast_interval": "[%key:component::domat_sscp::common::fast_interval%]",
+          "fast_count": "[%key:component::domat_sscp::common::fast_count%]"
         }
       }
     },
@@ -46,21 +58,21 @@
         "title": "Add SSCP devices",
         "menu_options": {
           "temp_hum": "Temperature and humidity",
-          "energy": "Energy usage",
+          "energy": "Energy meters",
           "air": "Air ventilation"
         }
       },
       "temp_hum": {
         "title": "Add a temperature and humidity device",
         "data": {
-          "device": "Device name"
+          "device": "[%key:component::domat_sscp::common::device%]"
         },
         "sections": {
           "temperature": {
             "name": "Temperature variable:",
             "data": {
-              "name": "Name",
-              "uid": "UID",
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -68,8 +80,8 @@
           "humidity": {
             "name": "Humidity variable:",
             "data": {
-              "name": "Name",
-              "uid": "UID",
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -82,8 +94,8 @@
           "meter_electricity": {
             "name": "Electricity Meter variable:",
             "data": {
-              "device": "Device name",
-              "uid": "UID",
+              "device": "[%key:component::domat_sscp::common::device%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -91,8 +103,8 @@
           "meter_water_cold": {
             "name": "Cold Water Meter variable:",
             "data": {
-              "device": "Device name",
-              "uid": "UID",
+              "device": "[%key:component::domat_sscp::common::device%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -100,8 +112,8 @@
           "meter_water_hot": {
             "name": "Hot Water Meter variable:",
             "data": {
-              "device": "Device name",
-              "uid": "UID",
+              "device": "[%key:component::domat_sscp::common::device%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -109,8 +121,8 @@
           "calorimeter_hot": {
             "name": "Hot Calorimeter variable:",
             "data": {
-              "device": "Device name",
-              "uid": "UID",
+              "device": "[%key:component::domat_sscp::common::device%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -118,8 +130,8 @@
           "calorimeter_cold": {
             "name": "Cold Calorimeter variable:",
             "data": {
-              "device": "Device name",
-              "uid": "UID",
+              "device": "[%key:component::domat_sscp::common::device%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -129,14 +141,14 @@
       "air": {
         "title": "Add an air ventilation device",
         "data": {
-          "device": "Device name"
+          "device": "[%key:component::domat_sscp::common::device%]"
         },
         "sections": {
           "ventilator_error": {
             "name": "Ventilation Fault variable:",
             "data": {
-              "name": "Name",
-              "uid": "UID",
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -144,8 +156,8 @@
           "ventilator_filter": {
             "name": "Filters Clogged Up variable:",
             "data": {
-              "name": "Name",
-              "uid": "UID",
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -153,8 +165,8 @@
           "ventilator_state": {
             "name": "Ventilation Run State variable:",
             "data": {
-              "name": "Name",
-              "uid": "UID",
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -162,8 +174,8 @@
           "cotwo_target": {
             "name": "CO2 Target variable:",
             "data": {
-              "name": "Name",
-              "uid": "UID",
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -171,8 +183,8 @@
           "cotwo_actual": {
             "name": "CO2 Actual variable:",
             "data": {
-              "name": "Name",
-              "uid": "UID",
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -180,8 +192,8 @@
           "ventilator_flow_target": {
             "name": "Ventilation Flow Target variable:",
             "data": {
-              "name": "Name",
-              "uid": "UID",
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -189,8 +201,8 @@
           "ventilator_in": {
             "name": "Ventilation Inflow variable:",
             "data": {
-              "name": "Name",
-              "uid": "UID",
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -198,8 +210,8 @@
           "ventilator_out": {
             "name": "Ventilation Outflow variable:",
             "data": {
-              "name": "Name",
-              "uid": "UID",
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
@@ -207,8 +219,8 @@
           "ventilator_flow_setting": {
             "name": "Set Ventilation Flow variable:",
             "data": {
-              "name": "Name",
-              "uid": "UID",
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
               "length": "Length",
               "offset": "Offset"
             }
