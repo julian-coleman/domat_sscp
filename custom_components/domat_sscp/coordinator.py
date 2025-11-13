@@ -129,19 +129,21 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                 sscp_address=self.config_entry.data[CONF_SSCP_ADDRESS],
             )
         except ValueError as error:
-            _LOGGER.error("Could not create a connection for %s", self.name)
+            _LOGGER.error(
+                "Fetching data: could not create a connection for %s", self.name
+            )
             raise UpdateFailed from error
 
         try:
             await conn.login()
             if conn.socket is None:
-                _LOGGER.error("Login failed for %s", self.name)
+                _LOGGER.error("Fetching data: login failed for %s", self.name)
                 raise ConfigEntryAuthFailed from None
         except TimeoutError:
-            _LOGGER.error("Login timeout for %s", self.name)
+            _LOGGER.error("Fetching data: login timeout for %s", self.name)
             raise ConfigEntryAuthFailed from None
         except (ValueError, OSError):
-            _LOGGER.error("Login connection error for %s", self.name)
+            _LOGGER.error("Fetching data: login connection error for %s", self.name)
             raise UpdateFailed from None
 
         sscp_vars: list[sscp_variable] = []
@@ -157,16 +159,18 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         try:
             error_vars, _error_codes = await conn.sscp_read_variables(sscp_vars)
         except TimeoutError:
-            _LOGGER.error("Read variables timeout for %s", self.name)
+            _LOGGER.error("Fetching data: read variables timeout for %s", self.name)
             raise UpdateFailed from None
         except (ValueError, OSError):
-            _LOGGER.error("Read variables failed for %s", self.name)
+            _LOGGER.error("Fetching data: read variables failed for %s", self.name)
             raise UpdateFailed from None
         finally:
             await conn.logout()
 
         if len(error_vars) > 0:
-            _LOGGER.error("Read variable errors for %s: %s", self.name, error_vars)
+            _LOGGER.error(
+                "Fetching data: read variable errors for %s: %s", self.name, error_vars
+            )
             raise UpdateFailed from None
 
         # Update variables with converted data
@@ -183,7 +187,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
 
         self.set_last_connect()
 
-        _LOGGER.debug("Data: %s", data)
+        _LOGGER.debug("Fetched data: %s", data)
         self.data = data
         return self.data
 
@@ -239,28 +243,32 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                     sscp_address=self.config_entry.data[CONF_SSCP_ADDRESS],
                 )
             except ValueError:
-                _LOGGER.error("Could not create a connection for %s", self.name)
+                _LOGGER.error(
+                    "Entity write: could not create a connection for %s", self.name
+                )
                 continue
 
             try:
                 await conn.login()
                 if conn.socket is None:
-                    _LOGGER.error("Login failed for %s", self.name)
+                    _LOGGER.error("Entity write: login failed for %s", self.name)
                     continue
             except TimeoutError:
-                _LOGGER.error("Login timeout for %s", self.name)
+                _LOGGER.error("Entity write: login timeout for %s", self.name)
                 continue
             except (ValueError, OSError):
-                _LOGGER.error("Login connection error for %s", self.name)
+                _LOGGER.error("Entity write: login connection error for %s", self.name)
                 continue
 
             try:
                 await conn.sscp_write_variable(var=sscp_var, new=value)
             except TimeoutError:
-                _LOGGER.error("Write variable timeout for %s", self.name)
+                _LOGGER.error("Entity write: write variable timeout for %s", self.name)
                 continue
             except (ValueError, OSError) as e:
-                _LOGGER.error("Write variable failed for %s: %s", self.name, e)
+                _LOGGER.error(
+                    "Entity write: write variable failed for %s: %s", self.name, e
+                )
                 continue
             finally:
                 await conn.logout()
