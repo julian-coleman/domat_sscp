@@ -1,0 +1,194 @@
+{
+  "common": {
+    "scan_interval": "Polling interval (seconds)",
+    "fast_interval": "Fast polling interval (seconds)",
+    "fast_count": "Kolikrát to run fast polling",
+    "write_retries": "Number of retries for entity writes"
+  },
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "connection_name": "Název připojení",
+          "ip_address": "IP adresa",
+          "port": "Port",
+          "username": "Uživatelské jméno",
+          "password": "Heslo",
+          "sscp_address": "Adresa SSCP"
+        }
+      },
+      "reconfigure": {
+        "data": {
+          "connection_name": "Název připojení",
+          "ip_address": "IP adresa",
+          "port": "Port",
+          "username": "Uživatelské jméno",
+          "password": "Heslo",
+          "sscp_address": "Adresa SSCP"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "timeout_connect": "[%key:common::config_flow::error::timeout_connect%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
+    },
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]",
+      "wrong_plc": "The reconfigured device is not the same as the one already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Přidat zařízení SSCP",
+        "menu_options": {
+          "temp_hum": "Teplota a vlhkost",
+          "energy": "Měřiče energie",
+          "air": "Vzduchotechnika"
+        }
+      },
+      "temp_hum": {
+        "title": "Přidat zařízení pro měření teploty a vlhkosti",
+        "data": {
+          "device": "Název zařízení"
+        },
+        "sections": {
+          "temperature": {
+            "name": "Teplota:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "humidity": {
+            "name": "Vlhkost:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          }
+        }
+      },
+      "energy": {
+        "title": "Přidat měřiče energie",
+        "sections": {
+          "meter_electricity": {
+            "name": "Elektroměr:",
+            "data": {
+              "device": "Název zařízení",
+              "uid": "UID"
+            }
+          },
+          "meter_water_cold": {
+            "name": "Voda - studená:",
+            "data": {
+              "device": "Název zařízení",
+              "uid": "UID"
+            }
+          },
+          "meter_water_hot": {
+            "name": "Voda - teplá:",
+            "data": {
+              "device": "Název zařízení",
+              "uid": "UID"
+            }
+          },
+          "calorimeter_hot": {
+            "name": "Kalorimetr topení:",
+            "data": {
+              "device": "Název zařízení",
+              "uid": "UID"
+            }
+          },
+          "calorimeter_cold": {
+            "name": "Kalorimetr chlazení:",
+            "data": {
+              "device": "Název zařízení",
+              "uid": "UID"
+            }
+          }
+        }
+      },
+      "air": {
+        "title": "Přidat zařízení vzduchotechniky",
+        "data": {
+          "device": "Název zařízení"
+        },
+        "sections": {
+          "ventilator_error": {
+            "name": "Porucha:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "ventilator_filter": {
+            "name": "Filtry zanešeny:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "ventilator_state": {
+            "name": "Stav:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "cotwo_target": {
+            "name": "CO2 žádaná:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "cotwo_actual": {
+            "name": "CO2 aktuální:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "ventilator_flow_target": {
+            "name": "Požadovaný průtok ventilátorů:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "ventilator_in": {
+            "name": "Výkon vent.přívod:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "ventilator_out": {
+            "name": "Výkon vent.odtah:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "ventilator_flow_setting": {
+            "name": "Průtok ventilátorů - nastavení:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "timeout_connect": "[%key:common::config_flow::error::timeout_connect%]",
+      "variable_error": "Error ({error}) with variable(s): {variables}"
+    }
+  }
+}
