@@ -64,14 +64,14 @@
         },
         "sections": {
           "temperature": {
-            "name": "Temperature variable:",
+            "name": "Temperature:",
             "data": {
               "name": "[%key:component::domat_sscp::common::name%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "humidity": {
-            "name": "Humidity variable:",
+            "name": "Humidity:",
             "data": {
               "name": "[%key:component::domat_sscp::common::name%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
@@ -83,35 +83,35 @@
         "title": "Add energy meter devices",
         "sections": {
           "meter_electricity": {
-            "name": "Electricity Meter variable:",
+            "name": "Electricity Meter:",
             "data": {
               "device": "[%key:component::domat_sscp::common::device%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "meter_water_cold": {
-            "name": "Cold Water Meter variable:",
+            "name": "Cold Water Meter:",
             "data": {
               "device": "[%key:component::domat_sscp::common::device%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "meter_water_hot": {
-            "name": "Hot Water Meter variable:",
+            "name": "Hot Water Meter:",
             "data": {
               "device": "[%key:component::domat_sscp::common::device%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "calorimeter_hot": {
-            "name": "Hot Calorimeter variable:",
+            "name": "Hot Calorimeter:",
             "data": {
               "device": "[%key:component::domat_sscp::common::device%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "calorimeter_cold": {
-            "name": "Cold Calorimeter variable:",
+            "name": "Cold Calorimeter:",
             "data": {
               "device": "[%key:component::domat_sscp::common::device%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
@@ -126,63 +126,63 @@
         },
         "sections": {
           "ventilator_error": {
-            "name": "Ventilation Fault variable:",
+            "name": "Ventilation Fault:",
             "data": {
               "name": "[%key:component::domat_sscp::common::name%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "ventilator_filter": {
-            "name": "Filters Clogged Up variable:",
+            "name": "Filters Clogged:",
             "data": {
               "name": "[%key:component::domat_sscp::common::name%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "ventilator_state": {
-            "name": "Ventilation Run State variable:",
+            "name": "Run State:",
             "data": {
               "name": "[%key:component::domat_sscp::common::name%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "cotwo_target": {
-            "name": "CO2 Target variable:",
+            "name": "CO2 Target:",
             "data": {
               "name": "[%key:component::domat_sscp::common::name%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "cotwo_actual": {
-            "name": "CO2 Actual variable:",
+            "name": "CO2 Actual:",
             "data": {
               "name": "[%key:component::domat_sscp::common::name%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "ventilator_flow_target": {
-            "name": "Ventilation Flow Target variable:",
+            "name": "Ventilation Flow Target:",
             "data": {
               "name": "[%key:component::domat_sscp::common::name%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "ventilator_in": {
-            "name": "Ventilation Inflow variable:",
+            "name": "Ventilation Inflow:",
             "data": {
               "name": "[%key:component::domat_sscp::common::name%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "ventilator_out": {
-            "name": "Ventilation Outflow variable:",
+            "name": "Ventilation Outflow:",
             "data": {
               "name": "[%key:component::domat_sscp::common::name%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
             }
           },
           "ventilator_flow_setting": {
-            "name": "Set Ventilation Flow variable:",
+            "name": "Set Ventilation Flow:",
             "data": {
               "name": "[%key:component::domat_sscp::common::name%]",
               "uid": "[%key:component::domat_sscp::common::uid%]"
