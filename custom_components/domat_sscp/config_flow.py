@@ -207,9 +207,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         """Manage the options for adding a temperature/humidity device."""
 
         data: dict[str, Any] = self.config_entry.options.copy()
-        _LOGGER.error("Options entry: %s", self.config_entry)
         coordinator: DomatSSCPCoordinator = self.config_entry.coordinator
-        _LOGGER.error("Coordinator: %s", coordinator)
         errors: dict[str, str] = {}
         description_placeholders: dict[str, str] = {}
         variables: list[sscp_variable] = []
