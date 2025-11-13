@@ -6,14 +6,16 @@ DOMAIN = "domat_sscp"
 # Configuration flow constants
 CONF_CONNECTION_NAME = "connection_name"
 CONF_SSCP_ADDRESS = "sscp_address"
-CONF_FAST_COUNT = "fast_count"
-CONF_FAST_INTERVAL = "fast_interval"
 CONF_SCAN_INTERVAL = "scan_interval"
+CONF_FAST_INTERVAL = "fast_interval"
+CONF_FAST_COUNT = "fast_count"
+CONF_WRITE_RETRIES = "write_retries"
 
 # Configuration defaults
 DEFAULT_SCAN_INTERVAL = 300
 DEFAULT_FAST_INTERVAL = 3
 DEFAULT_FAST_COUNT = 5
+DEFAULT_WRITE_RETRIES = 5
 DEFAULT_SSCP_PORT = 12346
 DEFAULT_SSCP_ADDRESS = 1
 
