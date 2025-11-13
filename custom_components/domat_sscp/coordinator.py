@@ -17,10 +17,15 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .const import (
     CONF_CONNECTION_NAME,
+    CONF_FAST_COUNT,
+    CONF_FAST_INTERVAL,
+    CONF_SCAN_INTERVAL,
     CONF_SSCP_ADDRESS,
+    CONF_WRITE_RETRIES,
     DEFAULT_FAST_COUNT,
     DEFAULT_FAST_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_WRITE_RETRIES,
     DOMAIN,
 )
 from .sscp_connection import sscp_connection
@@ -50,26 +55,27 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
 
         self.data: dict[str, Any] = {}
         self.scan_interval = self.config_entry.data.get(
-            "default_scan_interval", DEFAULT_SCAN_INTERVAL
+            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
         )
         self.fast_interval = self.config_entry.data.get(
-            "default_fast_interval", DEFAULT_FAST_INTERVAL
+            CONF_FAST_INTERVAL, DEFAULT_FAST_INTERVAL
         )
         self.fast_count = self.config_entry.data.get(
-            "default_fast_count", DEFAULT_FAST_COUNT
+            CONF_FAST_COUNT, DEFAULT_FAST_COUNT
         )
-        self.fast_remaining = self.fast_count
+        self.write_retries = self.config_entry.data.get(
+            CONF_WRITE_RETRIES, DEFAULT_WRITE_RETRIES
+        )
+        self.fast_max = min(self.scan_interval, self.fast_interval * self.fast_count)
         self.update_interval = timedelta(seconds=self.scan_interval)
-        _LOGGER.error(
-            "Coordinator update intevals: %s %s (%s)",
+        _LOGGER.debug(
+            "Coordinator update intervals: %s %s %s (%s)",
             self.scan_interval,
             self.fast_interval,
             self.fast_count,
+            self.fast_max,
         )
-        # Set to the past because we'll update ~immediately on first refresh
-        self.last_connect: datetime = datetime.now(tz=None) - timedelta(
-            seconds=DEFAULT_FAST_INTERVAL
-        )
+        self.last_connect: datetime = datetime.now(tz=None)
         entity_registry = er.async_get(self.hass)
 
         # Check entity registry against options
@@ -84,31 +90,33 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Fetch entity data from the server/PLC."""
 
-        # Returned data should not be empty, so set at least one entry
-        data = {"connection": self.config_entry.unique_id}
-
+        # Don't display the password in the log
         conf_data = self.config_entry.data.copy()
         conf_data["password"] = "********"
-        _LOGGER.error("Updating data for: %s", self.name)
+        _LOGGER.error("Fetching data for: %s", self.name)
         _LOGGER.debug("Config Data: %s", conf_data)
         _LOGGER.debug("Config Options: %s", self.config_entry.options)
+
+        # Returned data should not be empty, so set at least one entry
+        data = {"connection": self.config_entry.unique_id}
 
         if len(self.config_entry.options) == 0:
             self.data = data
             return self.data
 
-        # Check the last connection time
-        # We set the time when we finish, so want a pause if the server is slow
+        # Check the last connection time - we don't want to connect too quickly
         # Helps to avoid connecting at the same time as config flow validation and entity writes
         since = datetime.now(tz=None) - self.last_connect
-        if since.seconds < DEFAULT_FAST_INTERVAL:
-            await sleep(DEFAULT_FAST_INTERVAL - since.seconds)
-        # Are we doing fast updates?
-        if self.update_interval.seconds == self.fast_interval:
-            self.fast_remaining -= 1
-            if self.fast_remaining <= 0:
-                self.fast_remaining = self.fast_count
-                self.update_interval = timedelta(seconds=self.scan_interval)
+        if since.seconds < self.fast_interval:
+            await sleep(self.fast_interval)
+        # Are we doing fast updates?  If so, do back-off
+        if self.update_interval.seconds < self.fast_max:
+            interval = min(
+                self.scan_interval, self.update_interval.seconds + self.fast_interval
+            )
+            self.update_interval = timedelta(seconds=interval)
+        else:
+            self.update_interval = timedelta(seconds=self.scan_interval)
 
         # Fetch variables data
         try:
@@ -194,10 +202,10 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
     ) -> None:
         """An entity has changed a setting: update using fast polling."""
 
-        _LOGGER.error("Entity update: %s %s %s %s %s", uid, offset, length, type, value)
+        _LOGGER.error("Entity write: %s %s %s %s %s", uid, offset, length, type, value)
         since = datetime.now(tz=None) - self.last_connect
-        if since.seconds < DEFAULT_FAST_INTERVAL:
-            await sleep(DEFAULT_FAST_INTERVAL - since.seconds)
+        if since.seconds < self.fast_interval:
+            await sleep(self.fast_interval)
 
         sscp_var = sscp_variable(
             uid=uid,
@@ -212,44 +220,57 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             perm="rw",
         )
 
-        self.set_last_connect()
-        try:
-            conn = sscp_connection(
-                name=self.config_entry.data[CONF_CONNECTION_NAME],
-                ip_address=self.config_entry.data[CONF_IP_ADDRESS],
-                port=self.config_entry.data[CONF_PORT],
-                user_name=self.config_entry.data[CONF_USERNAME],
-                password=self.config_entry.data[CONF_PASSWORD],
-                sscp_address=self.config_entry.data[CONF_SSCP_ADDRESS],
-            )
-        except ValueError:
-            _LOGGER.error("Could not create a connection for %s", self.name)
-            return
+        # Try the write a few times, in case we clash with another connection
+        retry = 0
+        success = False
+        while retry < self.write_retries:
+            if retry > 0:
+                await sleep(self.fast_interval)
+                _LOGGER.debug("Retrying write for %s %s", uid, value)
+            retry += 1
+            self.set_last_connect()
+            try:
+                conn = sscp_connection(
+                    name=self.config_entry.data[CONF_CONNECTION_NAME],
+                    ip_address=self.config_entry.data[CONF_IP_ADDRESS],
+                    port=self.config_entry.data[CONF_PORT],
+                    user_name=self.config_entry.data[CONF_USERNAME],
+                    password=self.config_entry.data[CONF_PASSWORD],
+                    sscp_address=self.config_entry.data[CONF_SSCP_ADDRESS],
+                )
+            except ValueError:
+                _LOGGER.error("Could not create a connection for %s", self.name)
+                continue
 
-        try:
-            await conn.login()
-            if conn.socket is None:
-                _LOGGER.error("Login failed for %s", self.name)
-                return
-        except TimeoutError:
-            _LOGGER.error("Login timeout for %s", self.name)
-            return
-        except (ValueError, OSError):
-            _LOGGER.error("Login connection error for %s", self.name)
-            return
-        try:
-            res = await conn.sscp_write_variable(var=sscp_var, new=value)
-        except TimeoutError:
-            _LOGGER.error("Write variable timeout for %s", self.name)
-            return
-        except (ValueError, OSError) as e:
-            _LOGGER.error("Write variable failed for %s: %s", self.name, e)
-            return
-        finally:
-            await conn.logout()
+            try:
+                await conn.login()
+                if conn.socket is None:
+                    _LOGGER.error("Login failed for %s", self.name)
+                    continue
+            except TimeoutError:
+                _LOGGER.error("Login timeout for %s", self.name)
+                continue
+            except (ValueError, OSError):
+                _LOGGER.error("Login connection error for %s", self.name)
+                continue
 
-        if res:
-            _LOGGER.error("Write variable error for %s", self.name)
+            try:
+                await conn.sscp_write_variable(var=sscp_var, new=value)
+            except TimeoutError:
+                _LOGGER.error("Write variable timeout for %s", self.name)
+                continue
+            except (ValueError, OSError) as e:
+                _LOGGER.error("Write variable failed for %s: %s", self.name, e)
+                continue
+            finally:
+                await conn.logout()
+
+            # No exception when writing
+            success = True
+            break
+
+        if success is not True:
+            _LOGGER.error("Entity write failed: %s %s", uid, value)
             return
 
         # Re-read our data using fast polling and send updates to our platforms
