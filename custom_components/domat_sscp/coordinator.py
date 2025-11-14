@@ -93,7 +93,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         # Don't display the password in the log
         conf_data = self.config_entry.data.copy()
         conf_data["password"] = "********"
-        _LOGGER.error("Fetching data for: %s", self.name)
+        _LOGGER.debug("Fetching data for: %s", self.name)
         _LOGGER.debug("Config Data: %s", conf_data)
         _LOGGER.debug("Config Options: %s", self.config_entry.options)
 
