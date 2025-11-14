@@ -71,6 +71,8 @@ class DomatSSCPSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = entity_id
         if "name" in entity_data:
             self._attr_name = entity_data["name"]
+        if "icon" in entity_data:
+            self._attr_icon = entity_data["icon"]
         if "unit" in entity_data:
             self._attr_native_unit_of_measurement = entity_data["unit"]
         if "class" in entity_data:

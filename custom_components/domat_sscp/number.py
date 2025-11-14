@@ -76,6 +76,8 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
         self._attr_native_unit_of_measurement = entity_data["unit"]
         if "name" in entity_data:
             self._attr_name = entity_data["name"]
+        if "icon" in entity_data:
+            self._attr_icon = entity_data["icon"]
         if "class" in entity_data:
             self._attr_device_class = entity_data["class"]
         self._attr_max_value = entity_data.get("max", DEFAULT_MAX_VALUE)
@@ -136,7 +138,7 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
         return False
 
     def set_native_value(self, value: float) -> None:
-        """Set the value."""
+        """Set the value using the co-ordinator function."""
 
         self.hass.loop.create_task(
             self.coordinator.entity_update(

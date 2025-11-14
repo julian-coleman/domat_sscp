@@ -75,6 +75,8 @@ class DomatSSCPBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_is_on = self._update_value()
         if "name" in entity_data:
             self._attr_name = entity_data["name"]
+        if "icon" in entity_data:
+            self._attr_icon = entity_data["icon"]
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entity_data.get("device"))},
             name=entity_data.get("device"),

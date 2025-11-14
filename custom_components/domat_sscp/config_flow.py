@@ -228,12 +228,12 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             variables.append(
                 sscp_variable(uid=temperature_uid, offset=0, length=4, type=13)
             )
-            temperature_entity_id = str(temperature_uid) + "_0_4"
+            temperature_entity_id = str(temperature_uid) + "-0-4"
         if humidity_uid != 0:
             variables.append(
                 sscp_variable(uid=humidity_uid, offset=0, length=4, type=13)
             )
-            humidity_entity_id = str(humidity_uid) + "_0_4"
+            humidity_entity_id = str(humidity_uid) + "-0-4"
 
         if len(variables) == 0:
             # No user variables
@@ -358,31 +358,31 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             variables.append(
                 sscp_variable(uid=meter_electricity_uid, offset=0, length=4, type=13)
             )
-            meter_electricity_entity_id = str(meter_electricity_uid) + "_0_4"
+            meter_electricity_entity_id = str(meter_electricity_uid) + "-0-4"
             entity_ids.update({meter_electricity_entity_id: meter_electricity_uid})
         if meter_water_cold_uid != 0:
             variables.append(
                 sscp_variable(uid=meter_water_cold_uid, offset=0, length=4, type=13)
             )
-            meter_water_cold_entity_id = str(meter_water_cold_uid) + "_0_4"
+            meter_water_cold_entity_id = str(meter_water_cold_uid) + "-0-4"
             entity_ids.update({meter_water_cold_entity_id: meter_water_cold_uid})
         if meter_water_hot_uid != 0:
             variables.append(
                 sscp_variable(uid=meter_water_hot_uid, offset=0, length=4, type=13)
             )
-            meter_water_hot_entity_id = str(meter_water_hot_uid) + "_0_4"
+            meter_water_hot_entity_id = str(meter_water_hot_uid) + "-0-4"
             entity_ids.update({meter_water_hot_entity_id: meter_water_hot_uid})
         if calorimeter_hot_uid != 0:
             variables.append(
                 sscp_variable(uid=calorimeter_hot_uid, offset=0, length=4, type=13)
             )
-            calorimeter_hot_entity_id = str(calorimeter_hot_uid) + "_0_4"
+            calorimeter_hot_entity_id = str(calorimeter_hot_uid) + "-0-4"
             entity_ids.update({calorimeter_hot_entity_id: calorimeter_hot_uid})
         if calorimeter_cold_uid != 0:
             variables.append(
                 sscp_variable(uid=calorimeter_cold_uid, offset=0, length=4, type=13)
             )
-            calorimeter_cold_entity_id = str(calorimeter_cold_uid) + "_0_4"
+            calorimeter_cold_entity_id = str(calorimeter_cold_uid) + "-0-4"
             entity_ids.update({calorimeter_cold_entity_id: calorimeter_cold_uid})
 
         if len(variables) == 0:
@@ -567,31 +567,31 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             variables.append(
                 sscp_variable(uid=ventilation_error_uid, offset=0, length=1, type=0)
             )
-            ventilation_error_entity_id = str(ventilation_error_uid) + "_0_1"
+            ventilation_error_entity_id = str(ventilation_error_uid) + "-0-1"
             entity_ids.update({ventilation_error_entity_id: ventilation_error_uid})
         if ventilation_filter_uid != 0:
             variables.append(
                 sscp_variable(uid=ventilation_filter_uid, offset=0, length=1, type=0)
             )
-            ventilation_filter_entity_id = str(ventilation_filter_uid) + "_0_1"
+            ventilation_filter_entity_id = str(ventilation_filter_uid) + "-0-1"
             entity_ids.update({ventilation_filter_entity_id: ventilation_filter_uid})
         if ventilation_state_uid != 0:
             variables.append(
                 sscp_variable(uid=ventilation_state_uid, offset=0, length=1, type=0)
             )
-            ventilation_state_entity_id = str(ventilation_state_uid) + "_0_1"
+            ventilation_state_entity_id = str(ventilation_state_uid) + "-0-1"
             entity_ids.update({ventilation_state_entity_id: ventilation_state_uid})
         if co2_target_uid != 0:
             variables.append(
                 sscp_variable(uid=co2_target_uid, offset=0, length=4, type=13)
             )
-            co2_target_entity_id = str(co2_target_uid) + "_0_4"
+            co2_target_entity_id = str(co2_target_uid) + "-0-4"
             entity_ids.update({co2_target_entity_id: co2_target_uid})
         if co2_actual_uid != 0:
             variables.append(
                 sscp_variable(uid=co2_actual_uid, offset=0, length=2, type=2)
             )
-            co2_actual_entity_id = str(co2_actual_uid) + "_0_2"
+            co2_actual_entity_id = str(co2_actual_uid) + "-0-2"
             entity_ids.update({co2_actual_entity_id: co2_actual_uid})
         if ventilation_flow_target_uid != 0:
             variables.append(
@@ -600,7 +600,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                 )
             )
             ventilation_flow_target_entity_id = (
-                str(ventilation_flow_target_uid) + "_0_4"
+                str(ventilation_flow_target_uid) + "-0-4"
             )
             entity_ids.update(
                 {ventilation_flow_target_entity_id: ventilation_flow_target_uid}
@@ -609,13 +609,13 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             variables.append(
                 sscp_variable(uid=ventilation_in_uid, offset=0, length=2, type=2)
             )
-            ventilation_in_entity_id = str(ventilation_in_uid) + "_0_2"
+            ventilation_in_entity_id = str(ventilation_in_uid) + "-0-2"
             entity_ids.update({ventilation_in_entity_id: ventilation_in_uid})
         if ventilation_out_uid != 0:
             variables.append(
                 sscp_variable(uid=ventilation_out_uid, offset=0, length=2, type=2)
             )
-            ventilation_out_entity_id = str(ventilation_out_uid) + "_0_2"
+            ventilation_out_entity_id = str(ventilation_out_uid) + "-0-2"
             entity_ids.update({ventilation_out_entity_id: ventilation_out_uid})
         if ventilation_flow_setting_uid != 0:
             variables.append(
@@ -624,7 +624,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                 )
             )
             ventilation_flow_setting_entity_id = (
-                str(ventilation_flow_setting_uid) + "_0_4"
+                str(ventilation_flow_setting_uid) + "-0-4"
             )
             entity_ids.update(
                 {ventilation_flow_setting_entity_id: ventilation_flow_setting_uid}
@@ -692,6 +692,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "off": 0,
                                     "entity": Platform.BINARY_SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:bell",
                                 },
                             }
                         )
@@ -709,6 +710,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "off": 0,
                                     "entity": Platform.BINARY_SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:wrench",
                                 },
                             }
                         )
@@ -777,6 +779,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "precision": 0,
                                     "entity": Platform.SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:speedometer",
                                 },
                             }
                         )
@@ -793,6 +796,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "precision": 0,
                                     "entity": Platform.SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:fan",
                                 },
                             }
                         )
@@ -809,6 +813,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "precision": 0,
                                     "entity": Platform.SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:fan",
                                 },
                             }
                         )
@@ -908,16 +913,16 @@ async def _validate_config(
             _LOGGER.error("No serial number for %s", data[CONF_CONNECTION_NAME])
             unique_id = (
                 data[CONF_USERNAME]
-                + "_"
+                + "-"
                 + str(data[CONF_SSCP_ADDRESS])
-                + "_0000000000000000"
+                + "-0000000000000000"
             )
         else:
             unique_id = (
                 data[CONF_USERNAME]
-                + "_"
+                + "-"
                 + str(data[CONF_SSCP_ADDRESS])
-                + "_"
+                + "-"
                 + conn.serial
             )
         _LOGGER.info("Using unique ID: %s", unique_id)
