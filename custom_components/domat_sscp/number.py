@@ -6,6 +6,7 @@ from typing import Any
 from homeassistant.components.number import (
     DEFAULT_MAX_VALUE,
     DEFAULT_MIN_VALUE,
+    DEFAULT_STEP,
     NumberEntity,
 )
 from homeassistant.const import Platform
@@ -82,7 +83,7 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
             self._attr_device_class = entity_data["class"]
         self._attr_max_value = entity_data.get("max", DEFAULT_MAX_VALUE)
         self._attr_min_value = entity_data.get("min", DEFAULT_MIN_VALUE)
-        self._attr_step = entity_data.get("step")
+        self._attr_step = entity_data.get("step", DEFAULT_STEP)
         self._attr_native_value = self._update_value()
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entity_data.get("device"))},
