@@ -14,7 +14,12 @@ from homeassistant.helpers.device_registry import DeviceEntry
 from .coordinator import DomatSSCPConfigEntry, DomatSSCPCoordinator
 
 _LOGGER = logging.getLogger(__name__)
-_PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.NUMBER]
+_PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
+    Platform.SENSOR,
+    Platform.NUMBER,
+    Platform.WATER_HEATER,
+]
 
 
 async def async_setup_entry(

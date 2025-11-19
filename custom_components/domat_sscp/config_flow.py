@@ -9,6 +9,7 @@ import voluptuous as vol
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.components.water_heater import WaterHeaterEntityFeature
 from homeassistant.config_entries import (
     SOURCE_RECONFIGURE,
     ConfigEntry,
@@ -24,6 +25,7 @@ from homeassistant.const import (
     CONF_PORT,
     CONF_USERNAME,
     PERCENTAGE,
+    PRECISION_TENTHS,
     Platform,
     UnitOfEnergy,
     UnitOfTemperature,
@@ -57,12 +59,19 @@ from .const import (
     OPT_CO2_TARGET,
     OPT_DEVICE,
     OPT_HUMIDITY,
+    OPT_MAXIMUM,
     OPT_METER_ELECTRICITY,
     OPT_METER_WATER_COLD,
     OPT_METER_WATER_HOT,
+    OPT_MINIMUM,
     # TODO: Add translated name and czech translations
     OPT_NAME,
+    OPT_STEP,
     OPT_TEMPERATURE,
+    OPT_TEMPERATURE_TARGET,
+    OPT_TEMPERATURE_TARGET_MAXIMUM,
+    OPT_TEMPERATURE_TARGET_MINIMUM,
+    OPT_TEMPERATURE_TARGET_STEP,
     OPT_UID,
     OPT_VENTILATION_ERROR,
     OPT_VENTILATION_FILTER,
@@ -99,6 +108,32 @@ _UID_SELECTOR = vol.All(
         NumberSelectorConfig(min=0, max=0xFFFFFFFF, mode=NumberSelectorMode.BOX),
     ),
     vol.Coerce(int),
+)
+_TARGET_MIN_SELECTOR = vol.All(
+    NumberSelector(
+        NumberSelectorConfig(
+            min=OPT_TEMPERATURE_TARGET_MINIMUM,
+            max=OPT_TEMPERATURE_TARGET_MAXIMUM,
+            mode=NumberSelectorMode.BOX,
+        ),
+    ),
+    vol.Coerce(int),
+)
+_TARGET_MAX_SELECTOR = vol.All(
+    NumberSelector(
+        NumberSelectorConfig(
+            min=OPT_TEMPERATURE_TARGET_MINIMUM,
+            max=OPT_TEMPERATURE_TARGET_MAXIMUM,
+            mode=NumberSelectorMode.BOX,
+        ),
+    ),
+    vol.Coerce(int),
+)
+_TARGET_STEP_SELECTOR = vol.All(
+    NumberSelector(
+        NumberSelectorConfig(min=0.1, max=1.0, mode=NumberSelectorMode.BOX),
+    ),
+    vol.Coerce(float),
 )
 
 # Options flow schemas
@@ -211,6 +246,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         errors: dict[str, str] = {}
         description_placeholders: dict[str, str] = {}
         variables: list[sscp_variable] = []
+        entity_ids: dict[str, str] = {}
         step = "temp_hum"
         schema = _get_temp_hum_schema(user_input)
 
@@ -220,20 +256,31 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         # Create variables list from user input
         # Our entity ID's are uid-length-offset of the variable
         _LOGGER.debug("User input: %s", user_input)
+        target = user_input.get(OPT_TEMPERATURE_TARGET)
+        target_uid = target.get(OPT_UID)
+        target_max = target.get(OPT_MAXIMUM)
+        target_min = target.get(OPT_MINIMUM)
+        target_step = target.get(OPT_STEP)
         temperature = user_input.get(OPT_TEMPERATURE)
         temperature_uid = temperature.get(OPT_UID)
         humidity = user_input.get(OPT_HUMIDITY)
         humidity_uid = humidity.get(OPT_UID)
+        if target_uid != 0:
+            variables.append(sscp_variable(uid=target_uid, offset=0, length=4, type=13))
+            target_entity_id = str(target_uid) + "-0-4"
+            entity_ids.update({target_entity_id: target_uid})
         if temperature_uid != 0:
             variables.append(
                 sscp_variable(uid=temperature_uid, offset=0, length=4, type=13)
             )
             temperature_entity_id = str(temperature_uid) + "-0-4"
+            entity_ids.update({temperature_entity_id: temperature_uid})
         if humidity_uid != 0:
             variables.append(
                 sscp_variable(uid=humidity_uid, offset=0, length=4, type=13)
             )
             humidity_entity_id = str(humidity_uid) + "-0-4"
+            entity_ids.update({humidity_entity_id: humidity_uid})
 
         if len(variables) == 0:
             # No user variables
@@ -241,11 +288,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             description_placeholders = {"error": "UID All Zero", "variables": "0"}
         else:
             err_info = self._check_exists(
-                device_name=user_input.get(OPT_DEVICE),
-                entity_ids={
-                    temperature_entity_id: temperature_uid,
-                    humidity_entity_id: humidity_uid,
-                },
+                device_name=user_input.get(OPT_DEVICE), entity_ids=entity_ids
             )
             if "device" in err_info:
                 errors["base"] = "variable_error"
@@ -286,34 +329,58 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         "variables": info["error_variables"],
                     }
                 else:
-                    data.update(
-                        {
-                            temperature_entity_id: {
-                                # "name": temperature.get(OPT_NAME),
-                                "uid": temperature_uid,
-                                "offset": 0,
-                                "length": 4,
-                                "type": 13,
-                                "class": SensorDeviceClass.TEMPERATURE,
-                                "unit": UnitOfTemperature.CELSIUS,
-                                "precision": 1,
-                                "entity": Platform.SENSOR,
-                                "device": user_input.get(OPT_DEVICE),
-                            },
-                            humidity_entity_id: {
-                                # "name": humidity.get(OPT_NAME),
-                                "uid": humidity_uid,
-                                "offset": 0,
-                                "length": 4,
-                                "type": 13,
-                                "class": SensorDeviceClass.HUMIDITY,
-                                "unit": PERCENTAGE,
-                                "precision": 1,
-                                "entity": Platform.SENSOR,
-                                "device": user_input.get(OPT_DEVICE),
-                            },
-                        }
-                    )
+                    if target_uid != 0:
+                        data.update(
+                            {
+                                target_entity_id: {
+                                    "uid": target_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "feature": WaterHeaterEntityFeature.TARGET_TEMPERATURE,
+                                    "unit": UnitOfTemperature.CELSIUS,
+                                    "precision": PRECISION_TENTHS,
+                                    "max": target_max,
+                                    "min": target_min,
+                                    "step": target_step,
+                                    "entity": Platform.WATER_HEATER,
+                                    "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:thermometer-lines",
+                                }
+                            }
+                        )
+                    if temperature_uid != 0:
+                        data.update(
+                            {
+                                temperature_entity_id: {
+                                    "uid": temperature_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.TEMPERATURE,
+                                    "unit": UnitOfTemperature.CELSIUS,
+                                    "precision": 1,
+                                    "entity": Platform.SENSOR,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if humidity_uid != 0:
+                        data.update(
+                            {
+                                humidity_entity_id: {
+                                    "uid": humidity_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.HUMIDITY,
+                                    "unit": PERCENTAGE,
+                                    "precision": 1,
+                                    "entity": Platform.SENSOR,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
                     return self.async_create_entry(data=data)
 
         # There was some validation problem - previous input as defaults
@@ -525,7 +592,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             description_placeholders=description_placeholders,
         )
 
-    async def async_step_air(
+    async def async_step_air(  # noqa: C901
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options for adding an air recuperation device."""
@@ -987,11 +1054,25 @@ def _get_temp_hum_schema(
 
     # Fill in defaults from input or initial defaults
     default_device = ""
-    default_temperature_uid = default_humidity_uid = 0
+    default_target_uid = default_temperature_uid = default_humidity_uid = 0
     # default_temperature_name = "Temperature"
     # default_humidity_name = "Humidity"
+    default_target_max = OPT_TEMPERATURE_TARGET_MAXIMUM
+    default_target_min = OPT_TEMPERATURE_TARGET_MINIMUM
+    default_target_step = OPT_TEMPERATURE_TARGET_STEP
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE, "")
+        target = input_data.get(OPT_TEMPERATURE_TARGET)
+        default_target_uid = target.get(OPT_UID, 0)
+        default_target_max = target.get(
+            OPT_TEMPERATURE_TARGET_MAXIMUM, default_target_max
+        )
+        default_target_min = target.get(
+            OPT_TEMPERATURE_TARGET_MINIMUM, default_target_min
+        )
+        default_target_step = target.get(
+            OPT_TEMPERATURE_TARGET_STEP, default_target_step
+        )
         temperature = input_data.get(OPT_TEMPERATURE)
         default_temperature_uid = temperature.get(OPT_UID, 0)
         # default_temperature_name = temperature.get(OPT_NAME)
@@ -1001,6 +1082,25 @@ def _get_temp_hum_schema(
     return vol.Schema(
         {
             vol.Required(OPT_DEVICE, default=default_device): str,
+            vol.Required(OPT_TEMPERATURE_TARGET): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_UID, default=default_target_uid
+                        ): _UID_SELECTOR,
+                        vol.Optional(
+                            OPT_MINIMUM, default=default_target_min
+                        ): _TARGET_MAX_SELECTOR,
+                        vol.Optional(
+                            OPT_MAXIMUM, default=default_target_max
+                        ): _TARGET_MIN_SELECTOR,
+                        vol.Optional(
+                            OPT_STEP, default=default_target_step
+                        ): _TARGET_STEP_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
             vol.Required(OPT_TEMPERATURE): section(
                 vol.Schema(
                     {

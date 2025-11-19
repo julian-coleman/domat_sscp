@@ -22,6 +22,7 @@ DEFAULT_SSCP_ADDRESS = 1
 # Options flow constants
 OPT_DEVICE = "device"
 OPT_NAME = "name"
+OPT_TEMPERATURE_TARGET = "temperature_target"
 OPT_TEMPERATURE = "temperature"
 OPT_HUMIDITY = "humidity"
 OPT_METER_ELECTRICITY = "meter_electricity"
@@ -38,12 +39,16 @@ OPT_VENTILATION_FLOW_TARGET = "ventilator_flow_target"
 OPT_VENTILATION_IN = "ventilator_in"
 OPT_VENTILATION_OUT = "ventilator_out"
 OPT_VENTILATION_FLOW_SETTING = "ventilator_flow_setting"
-OPT_UID = "UID"
+OPT_UID = "uid"
 OPT_OFFSET = "offset"
 OPT_LENGTH = "length"
 OPT_MINIMUM = "minimum"
-OPT_MAXIMUM = "minimum"
+OPT_MAXIMUM = "maximum"
+OPT_STEP = "step"
 
 # Variable defaults
+OPT_TEMPERATURE_TARGET_MINIMUM = 16
+OPT_TEMPERATURE_TARGET_MAXIMUM = 30
+OPT_TEMPERATURE_TARGET_STEP = 0.5
 OPT_VENTILATION_FLOW_MINIMUM = 80
 OPT_VENTILATION_FLOW_MAXIMUM = 200

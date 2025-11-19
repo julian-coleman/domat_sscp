@@ -10,7 +10,10 @@
     "name": "Name",
     "uid": "UID",
     "length": "Length",
-    "offset": "Offset"
+    "offset": "Offset",
+    "minimum": "Minimum",
+    "maximum": "Maximum",
+    "step": "Step"
   },
   "config": {
     "step": {
@@ -63,6 +66,16 @@
           "device": "[%key:component::domat_sscp::common::device%]"
         },
         "sections": {
+          "temperature_target": {
+            "name": "Target temperature:",
+            "data": {
+              "name": "[%key:component::domat_sscp::common::name%]",
+              "uid": "[%key:component::domat_sscp::common::uid%]",
+              "minimum": "[%key:component::domat_sscp::common::uid%]",
+              "maximum": "[%key:component::domat_sscp::common::uid%]",
+              "step": "[%key:component::domat_sscp::common::uid%]"
+            }
+          },
           "temperature": {
             "name": "Temperature:",
             "data": {

@@ -56,6 +56,16 @@
           "device": "Device name"
         },
         "sections": {
+          "temperature_target": {
+            "name": "Target temperature:",
+            "data": {
+              "name": "Name",
+              "uid": "UID",
+              "minimum": "Minimum",
+              "maximum": "Maximum",
+              "step": "Step"
+            }
+          },
           "temperature": {
             "name": "Temperature:",
             "data": {
