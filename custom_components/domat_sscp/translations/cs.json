@@ -14,7 +14,8 @@
           "port": "Port",
           "username": "Uživatelské jméno",
           "password": "Heslo",
-          "sscp_address": "Adresa SSCP"
+          "sscp_address": "Adresa SSCP",
+          "language": "Jazyk"
         }
       },
       "reconfigure": {

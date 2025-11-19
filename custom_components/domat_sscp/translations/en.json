@@ -14,7 +14,8 @@
           "port": "Port",
           "username": "Username",
           "password": "Password",
-          "sscp_address": "SSCP address"
+          "sscp_address": "SSCP address",
+          "language": "Language"
         }
       },
       "reconfigure": {
