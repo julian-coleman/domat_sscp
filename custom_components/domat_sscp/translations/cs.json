@@ -46,13 +46,13 @@
       "init": {
         "title": "Přidat zařízení SSCP",
         "menu_options": {
-          "temp_hum": "Teplota a vlhkost",
-          "energy": "Měřiče energie",
+          "room": "Ovládání pokoje",
+          "energy": "Odečty energií",
           "air": "Vzduchotechnika"
         }
       },
-      "temp_hum": {
-        "title": "Přidat zařízení pro měření teploty a vlhkosti",
+      "room": {
+        "title": "Přidat ovládání pokoje",
         "data": {
           "device": "Název zařízení"
         },
@@ -84,7 +84,7 @@
         }
       },
       "energy": {
-        "title": "Přidat měřiče energie",
+        "title": "Přidat odečty energií",
         "sections": {
           "meter_electricity": {
             "name": "Elektroměr:",
@@ -124,7 +124,7 @@
         }
       },
       "air": {
-        "title": "Přidat zařízení vzduchotechniky",
+        "title": "Přidat vzduchotechniku",
         "data": {
           "device": "Název zařízení"
         },

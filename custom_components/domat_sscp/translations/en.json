@@ -46,13 +46,13 @@
       "init": {
         "title": "Add SSCP devices",
         "menu_options": {
-          "temp_hum": "Temperature and humidity",
-          "energy": "Energy meters",
-          "air": "Air ventilation"
+          "room": "Room Controls",
+          "energy": "Energy Readings",
+          "air": "Ventilation"
         }
       },
-      "temp_hum": {
-        "title": "Add a temperature and humidity device",
+      "room": {
+        "title": "Add a room control device",
         "data": {
           "device": "Device name"
         },
@@ -84,7 +84,7 @@
         }
       },
       "energy": {
-        "title": "Add energy meter devices",
+        "title": "Add energy reading devices",
         "sections": {
           "meter_electricity": {
             "name": "Electricity Meter:",
@@ -124,7 +124,7 @@
         }
       },
       "air": {
-        "title": "Add an air ventilation device",
+        "title": "Add ventilation",
         "data": {
           "device": "Device name"
         },

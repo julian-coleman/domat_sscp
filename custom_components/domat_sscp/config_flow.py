@@ -185,7 +185,7 @@ _TARGET_STEP_SELECTOR = vol.All(
 )
 
 # Options flow schemas
-_DEVICE_MENU = ["temp_hum", "energy", "air"]
+_DEVICE_MENU = ["room", "energy", "air"]
 
 
 class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -284,7 +284,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         # Display a menu with step id's
         return self.async_show_menu(step_id="init", menu_options=_DEVICE_MENU)
 
-    async def async_step_temp_hum(
+    async def async_step_room(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options for adding a temperature/humidity device."""
@@ -295,9 +295,9 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         description_placeholders: dict[str, str] = {}
         variables: list[sscp_variable] = []
         entity_ids: dict[str, str] = {}
-        step = "temp_hum"
+        step = "room"
         lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
-        schema = _get_temp_hum_schema(lang, user_input)
+        schema = _get_room_schema(lang, user_input)
 
         if user_input is None:
             return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
@@ -1109,7 +1109,7 @@ def _get_user_schema(
     )
 
 
-def _get_temp_hum_schema(
+def _get_room_schema(
     lang: str,
     input_data: dict[str, Any] | None = None,
 ) -> vol.Schema:
