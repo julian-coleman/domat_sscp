@@ -36,6 +36,8 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.selector import (
+    LanguageSelector,
+    LanguageSelectorConfig,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -45,6 +47,7 @@ from .const import (
     CONF_CONNECTION_NAME,
     CONF_FAST_COUNT,
     CONF_FAST_INTERVAL,
+    CONF_LANGUAGE,
     CONF_SCAN_INTERVAL,
     CONF_SSCP_ADDRESS,
     DEFAULT_FAST_COUNT,
@@ -54,34 +57,74 @@ from .const import (
     DEFAULT_SSCP_PORT,
     DOMAIN,
     OPT_CALORIMETER_COLD,
+    OPT_CALORIMETER_COLD_NAME_CS,
+    OPT_CALORIMETER_COLD_NAME_EN,
     OPT_CALORIMETER_HOT,
+    OPT_CALORIMETER_HOT_NAME_CS,
+    OPT_CALORIMETER_HOT_NAME_EN,
     OPT_CO2_ACTUAL,
+    OPT_CO2_ACTUAL_NAME_CS,
+    OPT_CO2_ACTUAL_NAME_EN,
     OPT_CO2_TARGET,
+    OPT_CO2_TARGET_NAME_CS,
+    OPT_CO2_TARGET_NAME_EN,
     OPT_DEVICE,
+    OPT_ENERGY_NAME_CS,
+    OPT_ENERGY_NAME_EN,
     OPT_HUMIDITY,
+    OPT_HUMIDITY_NAME_CS,
+    OPT_HUMIDITY_NAME_EN,
     OPT_MAXIMUM,
     OPT_METER_ELECTRICITY,
+    OPT_METER_ELECTRICITY_NAME_CS,
+    OPT_METER_ELECTRICITY_NAME_EN,
     OPT_METER_WATER_COLD,
+    OPT_METER_WATER_COLD_NAME_CS,
+    OPT_METER_WATER_COLD_NAME_EN,
     OPT_METER_WATER_HOT,
+    OPT_METER_WATER_HOT_NAME_CS,
+    OPT_METER_WATER_HOT_NAME_EN,
     OPT_MINIMUM,
     # TODO: Add translated name and czech translations
     OPT_NAME,
+    OPT_ROOM_CONTROLS_NAME_CS,
+    OPT_ROOM_CONTROLS_NAME_EN,
     OPT_STEP,
     OPT_TEMPERATURE,
+    OPT_TEMPERATURE_NAME_CS,
+    OPT_TEMPERATURE_NAME_EN,
     OPT_TEMPERATURE_TARGET,
     OPT_TEMPERATURE_TARGET_MAXIMUM,
     OPT_TEMPERATURE_TARGET_MINIMUM,
+    OPT_TEMPERATURE_TARGET_NAME_CS,
+    OPT_TEMPERATURE_TARGET_NAME_EN,
     OPT_TEMPERATURE_TARGET_STEP,
     OPT_UID,
     OPT_VENTILATION_ERROR,
+    OPT_VENTILATION_ERROR_NAME_CS,
+    OPT_VENTILATION_ERROR_NAME_EN,
     OPT_VENTILATION_FILTER,
+    OPT_VENTILATION_FILTER_NAME_CS,
+    OPT_VENTILATION_FILTER_NAME_EN,
     OPT_VENTILATION_FLOW_MAXIMUM,
     OPT_VENTILATION_FLOW_MINIMUM,
     OPT_VENTILATION_FLOW_SETTING,
+    OPT_VENTILATION_FLOW_SETTING_NAME_CS,
+    OPT_VENTILATION_FLOW_SETTING_NAME_EN,
     OPT_VENTILATION_FLOW_TARGET,
+    OPT_VENTILATION_FLOW_TARGET_NAME_CS,
+    OPT_VENTILATION_FLOW_TARGET_NAME_EN,
     OPT_VENTILATION_IN,
+    OPT_VENTILATION_IN_NAME_CS,
+    OPT_VENTILATION_IN_NAME_EN,
+    OPT_VENTILATION_NAME_CS,
+    OPT_VENTILATION_NAME_EN,
     OPT_VENTILATION_OUT,
+    OPT_VENTILATION_OUT_NAME_CS,
+    OPT_VENTILATION_OUT_NAME_EN,
     OPT_VENTILATION_STATE,
+    OPT_VENTILATION_STATE_NAME_CS,
+    OPT_VENTILATION_STATE_NAME_EN,
 )
 from .coordinator import DomatSSCPCoordinator
 from .sscp_connection import sscp_connection
@@ -91,6 +134,11 @@ from .sscp_variable import sscp_variable
 _LOGGER = logging.getLogger(__name__)
 
 # Config flow schemas
+
+# Languages matching our translations
+_LANG_SELECTOR = vol.All(
+    LanguageSelector(LanguageSelectorConfig(languages=["en", "cs"]))
+)
 _PORT_SELECTOR = vol.All(
     NumberSelector(
         NumberSelectorConfig(min=1, max=65535, mode=NumberSelectorMode.BOX),
@@ -248,7 +296,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         variables: list[sscp_variable] = []
         entity_ids: dict[str, str] = {}
         step = "temp_hum"
-        schema = _get_temp_hum_schema(user_input)
+        lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
+        schema = _get_temp_hum_schema(lang, user_input)
 
         if user_input is None:
             return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
@@ -406,7 +455,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         variables: list[sscp_variable] = []
         entity_ids: dict[str, str] = {}
         step = "energy"
-        schema = _get_energy_schema(user_input)
+        lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
+        schema = _get_energy_schema(lang, user_input)
 
         if user_input is None:
             return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
@@ -612,7 +662,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         variables: list[sscp_variable] = []
         entity_ids: dict[str, str] = {}
         step = "air"
-        schema = _get_air_schema(user_input)
+        lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
+        schema = _get_air_schema(lang, user_input)
 
         if user_input is None:
             return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
@@ -1032,6 +1083,7 @@ def _get_user_schema(
     default_username = ""
     default_password = ""
     default_sscp_address = DEFAULT_SSCP_ADDRESS
+    default_language = "en"  # TODO: Choose system language
     if input_data is not None:
         default_connection_name = input_data.get(
             CONF_CONNECTION_NAME, default_connection_name
@@ -1041,6 +1093,7 @@ def _get_user_schema(
         default_username = input_data.get(CONF_USERNAME, default_username)
         default_password = input_data.get(CONF_PASSWORD, default_password)
         default_sscp_address = input_data.get(CONF_SSCP_ADDRESS, default_sscp_address)
+        default_language = input_data.get(CONF_LANGUAGE, default_language)
     return vol.Schema(
         {
             vol.Required(CONF_CONNECTION_NAME, default=default_connection_name): str,
@@ -1051,35 +1104,43 @@ def _get_user_schema(
             vol.Required(
                 CONF_SSCP_ADDRESS, default=default_sscp_address
             ): _ADDR_SELECTOR,
+            vol.Required(CONF_LANGUAGE, default=default_language): _LANG_SELECTOR,
         }
     )
 
 
 def _get_temp_hum_schema(
+    lang: str,
     input_data: dict[str, Any] | None = None,
 ) -> vol.Schema:
     """Return a temperature/humidity flow schema with defaults based on the user input."""
 
     # Fill in defaults from input or initial defaults
-    default_device = "Temperature and Humidity"
+    if lang == "en":
+        default_device = OPT_ROOM_CONTROLS_NAME_EN
+        default_temperature_name =OPT_TEMPERATURE_NAME_EN
+        default_humidity_name = OPT_HUMIDITY_NAME_EN
+        default_target_name = OPT_TEMPERATURE_TARGET_NAME_EN
+    if lang == "cs":
+        default_device = OPT_ROOM_CONTROLS_NAME_CS
+        default_temperature_name =OPT_TEMPERATURE_NAME_CS
+        default_humidity_name = OPT_HUMIDITY_NAME_CS
+        default_target_name = OPT_TEMPERATURE_TARGET_NAME_CS
     default_temperature_uid = default_humidity_uid = 0
     default_target_uid = 0
-    default_temperature_name = "Temperature"
-    default_humidity_name = "Humidity"
-    default_target_name = "Target temperature"
     default_target_max = OPT_TEMPERATURE_TARGET_MAXIMUM
     default_target_min = OPT_TEMPERATURE_TARGET_MINIMUM
     default_target_step = OPT_TEMPERATURE_TARGET_STEP
     if input_data is not None:
-        default_device = input_data.get(OPT_DEVICE, default_device)
+        default_device = input_data.get(OPT_DEVICE)
         temperature = input_data.get(OPT_TEMPERATURE)
-        default_temperature_name = temperature.get(OPT_NAME, default_temperature_name)
+        default_temperature_name = temperature.get(OPT_NAME)
         default_temperature_uid = temperature.get(OPT_UID, 0)
         humidity = input_data.get(OPT_HUMIDITY)
-        default_humidity_name = humidity.get(OPT_NAME, default_humidity_name)
+        default_humidity_name = humidity.get(OPT_NAME)
         default_humidity_uid = humidity.get(OPT_UID, 0)
         target = input_data.get(OPT_TEMPERATURE_TARGET)
-        default_target_name = target.get(OPT_NAME, default_target_name)
+        default_target_name = target.get(OPT_NAME)
         default_target_uid = target.get(OPT_UID, 0)
         default_target_max = target.get(
             OPT_TEMPERATURE_TARGET_MAXIMUM, default_target_max
@@ -1140,21 +1201,30 @@ def _get_temp_hum_schema(
 
 
 def _get_energy_schema(
+    lang: str,
     input_data: dict[str, Any] | None = None,
 ) -> vol.Schema:
     """Return an energy flow schema with defaults based on the user input."""
 
     # Fill in defaults from input or initial defaults
     # Order is the same as in the app
-    default_device = "Energy meters"
+    if lang == "en":
+        default_device = OPT_ENERGY_NAME_EN
+        default_meter_electricity_name = OPT_METER_ELECTRICITY_NAME_EN
+        default_meter_water_cold_name = OPT_METER_WATER_COLD_NAME_EN
+        default_meter_water_hot_name = OPT_METER_WATER_HOT_NAME_EN
+        default_calorimeter_hot_name = OPT_CALORIMETER_HOT_NAME_EN
+        default_calorimeter_cold_name = OPT_CALORIMETER_COLD_NAME_EN
+    if lang == "cs":
+        default_device = OPT_ENERGY_NAME_CS
+        default_meter_electricity_name = OPT_METER_ELECTRICITY_NAME_CS
+        default_meter_water_cold_name = OPT_METER_WATER_COLD_NAME_CS
+        default_meter_water_hot_name = OPT_METER_WATER_HOT_NAME_CS
+        default_calorimeter_hot_name = OPT_CALORIMETER_HOT_NAME_CS
+        default_calorimeter_cold_name = OPT_CALORIMETER_COLD_NAME_CS
     default_meter_electricity_uid = 0
     default_meter_water_cold_uid = default_meter_water_hot_uid = 0
     default_calorimeter_hot_uid = default_calorimeter_cold_uid = 0
-    default_meter_electricity_name = "Electricity Meter"
-    default_meter_water_cold_name = "Cold Water Meter"
-    default_meter_water_hot_name = "Hot Water Meter"
-    default_calorimeter_hot_name = "Hot Calorimeter"
-    default_calorimeter_cold_name = "Cold Calorimeter"
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE, default_device)
         meter_electricity = input_data.get(OPT_METER_ELECTRICITY)
@@ -1266,28 +1336,41 @@ def _get_energy_schema(
 
 
 def _get_air_schema(
+    lang: str,
     input_data: dict[str, Any] | None = None,
 ) -> vol.Schema:
     """Return an air ventilation schema with defaults based on the user input."""
 
     # Fill in defaults from input or initial defaults
     # Order is the same as in the app
-    default_device = "Ventilation"
+    if lang == "en":
+        default_device = OPT_VENTILATION_NAME_EN
+        default_ventilation_error_name = OPT_VENTILATION_ERROR_NAME_EN
+        default_ventilation_filter_name = OPT_VENTILATION_FILTER_NAME_EN
+        default_ventilation_state_name = OPT_VENTILATION_STATE_NAME_EN
+        default_co2_target_name = OPT_CO2_TARGET_NAME_EN
+        default_co2_actual_name = OPT_CO2_ACTUAL_NAME_EN
+        default_ventilation_flow_target_name = OPT_VENTILATION_FLOW_TARGET_NAME_EN
+        default_ventilation_in_name = OPT_VENTILATION_IN_NAME_EN
+        default_ventilation_out_name = OPT_VENTILATION_OUT_NAME_EN
+        default_ventilation_flow_setting_name = OPT_VENTILATION_FLOW_SETTING_NAME_EN
+    if lang == "cs":
+        default_device = OPT_VENTILATION_NAME_CS
+        default_ventilation_error_name = OPT_VENTILATION_ERROR_NAME_CS
+        default_ventilation_filter_name = OPT_VENTILATION_FILTER_NAME_CS
+        default_ventilation_state_name = OPT_VENTILATION_STATE_NAME_CS
+        default_co2_target_name = OPT_CO2_TARGET_NAME_CS
+        default_co2_actual_name = OPT_CO2_ACTUAL_NAME_CS
+        default_ventilation_flow_target_name = OPT_VENTILATION_FLOW_TARGET_NAME_CS
+        default_ventilation_in_name = OPT_VENTILATION_IN_NAME_CS
+        default_ventilation_out_name = OPT_VENTILATION_OUT_NAME_CS
+        default_ventilation_flow_setting_name = OPT_VENTILATION_FLOW_SETTING_NAME_CS
     default_ventilation_error_uid = 0
     default_ventilation_filter_uid = default_ventilation_state_uid = 0
     default_co2_target_uid = default_co2_actual_uid = 0
     default_ventilation_flow_target_uid = 0
     default_ventilation_in_uid = default_ventilation_out_uid = 0
     default_ventilation_flow_setting_uid = 0
-    default_ventilation_error_name = "Fault"
-    default_ventilation_filter_name = "Filters Clogged"
-    default_ventilation_state_name = "Run State"
-    default_co2_target_name = "CO2 Target"
-    default_co2_actual_name = "CO2 Actual"
-    default_ventilation_flow_target_name = "Flow Target"
-    default_ventilation_in_name = "Inflow"
-    default_ventilation_out_name = "Outflow"
-    default_ventilation_flow_setting_name = "Set Flow Target"
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE, default_device)
         default_ventilation_error = input_data.get(OPT_VENTILATION_ERROR)
