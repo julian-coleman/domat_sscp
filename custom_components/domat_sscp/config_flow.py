@@ -564,7 +564,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 4,
                                     "entity": Platform.SENSOR,
-                                    "device": user_input.get(OPT_NAME),
+                                    "device": user_input.get(OPT_DEVICE),
                                 },
                             }
                         )
@@ -582,7 +582,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 4,
                                     "entity": Platform.SENSOR,
-                                    "device": user_input.get(OPT_NAME),
+                                    "device": user_input.get(OPT_DEVICE),
                                 },
                             }
                         )
@@ -600,7 +600,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 4,
                                     "entity": Platform.SENSOR,
-                                    "device": user_input.get(OPT_NAME),
+                                    "device": user_input.get(OPT_DEVICE),
                                 },
                             }
                         )
@@ -618,7 +618,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 4,
                                     "entity": Platform.SENSOR,
-                                    "device": user_input.get(OPT_NAME),
+                                    "device": user_input.get(OPT_DEVICE),
                                 },
                             }
                         )
@@ -636,7 +636,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 4,
                                     "entity": Platform.SENSOR,
-                                    "device": user_input.get(OPT_NAME),
+                                    "device": user_input.get(OPT_DEVICE),
                                 },
                             }
                         )
