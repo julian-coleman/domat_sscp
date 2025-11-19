@@ -329,30 +329,11 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         "variables": info["error_variables"],
                     }
                 else:
-                    if target_uid != 0:
-                        data.update(
-                            {
-                                target_entity_id: {
-                                    "uid": target_uid,
-                                    "offset": 0,
-                                    "length": 4,
-                                    "type": 13,
-                                    "feature": WaterHeaterEntityFeature.TARGET_TEMPERATURE,
-                                    "unit": UnitOfTemperature.CELSIUS,
-                                    "precision": PRECISION_TENTHS,
-                                    "max": target_max,
-                                    "min": target_min,
-                                    "step": target_step,
-                                    "entity": Platform.WATER_HEATER,
-                                    "device": user_input.get(OPT_DEVICE),
-                                    "icon": "mdi:thermometer-lines",
-                                }
-                            }
-                        )
                     if temperature_uid != 0:
                         data.update(
                             {
                                 temperature_entity_id: {
+                                    "name": temperature.get(OPT_NAME),
                                     "uid": temperature_uid,
                                     "offset": 0,
                                     "length": 4,
@@ -369,6 +350,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         data.update(
                             {
                                 humidity_entity_id: {
+                                    "name": humidity.get(OPT_NAME),
                                     "uid": humidity_uid,
                                     "offset": 0,
                                     "length": 4,
@@ -379,6 +361,27 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "entity": Platform.SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
                                 },
+                            }
+                        )
+                    if target_uid != 0:
+                        data.update(
+                            {
+                                target_entity_id: {
+                                    "name": target.get(OPT_NAME),
+                                    "uid": target_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "feature": WaterHeaterEntityFeature.TARGET_TEMPERATURE,
+                                    "unit": UnitOfTemperature.CELSIUS,
+                                    "precision": PRECISION_TENTHS,
+                                    "max": target_max,
+                                    "min": target_min,
+                                    "step": target_step,
+                                    "entity": Platform.WATER_HEATER,
+                                    "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:thermometer-lines",
+                                }
                             }
                         )
                     return self.async_create_entry(data=data)
@@ -501,6 +504,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         data.update(
                             {
                                 meter_electricity_entity_id: {
+                                    "name": meter_electricity.get(OPT_NAME),
                                     "uid": meter_electricity_uid,
                                     "offset": 0,
                                     "length": 4,
@@ -510,7 +514,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 4,
                                     "entity": Platform.SENSOR,
-                                    "device": meter_electricity.get(OPT_NAME),
+                                    "device": user_input.get(OPT_NAME),
                                 },
                             }
                         )
@@ -518,6 +522,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         data.update(
                             {
                                 meter_water_cold_entity_id: {
+                                    "name": meter_water_cold.get(OPT_NAME),
                                     "uid": meter_water_cold_uid,
                                     "offset": 0,
                                     "length": 4,
@@ -527,7 +532,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 4,
                                     "entity": Platform.SENSOR,
-                                    "device": meter_water_cold.get(OPT_NAME),
+                                    "device": user_input.get(OPT_NAME),
                                 },
                             }
                         )
@@ -535,6 +540,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         data.update(
                             {
                                 meter_water_hot_entity_id: {
+                                    "name": meter_water_hot.get(OPT_NAME),
                                     "uid": meter_water_hot_uid,
                                     "offset": 0,
                                     "length": 4,
@@ -544,7 +550,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 4,
                                     "entity": Platform.SENSOR,
-                                    "device": meter_water_hot.get(OPT_NAME),
+                                    "device": user_input.get(OPT_NAME),
                                 },
                             }
                         )
@@ -552,6 +558,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         data.update(
                             {
                                 calorimeter_hot_entity_id: {
+                                    "name": calorimeter_hot.get(OPT_NAME),
                                     "uid": calorimeter_hot_uid,
                                     "offset": 0,
                                     "length": 4,
@@ -561,7 +568,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 4,
                                     "entity": Platform.SENSOR,
-                                    "device": calorimeter_hot.get(OPT_NAME),
+                                    "device": user_input.get(OPT_NAME),
                                 },
                             }
                         )
@@ -569,6 +576,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         data.update(
                             {
                                 calorimeter_cold_entity_id: {
+                                    "name": calorimeter_cold.get(OPT_NAME),
                                     "uid": calorimeter_cold_uid,
                                     "offset": 0,
                                     "length": 4,
@@ -578,7 +586,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "state": SensorStateClass.TOTAL_INCREASING,
                                     "precision": 4,
                                     "entity": Platform.SENSOR,
-                                    "device": calorimeter_cold.get(OPT_NAME),
+                                    "device": user_input.get(OPT_NAME),
                                 },
                             }
                         )
@@ -1053,16 +1061,25 @@ def _get_temp_hum_schema(
     """Return a temperature/humidity flow schema with defaults based on the user input."""
 
     # Fill in defaults from input or initial defaults
-    default_device = ""
-    default_target_uid = default_temperature_uid = default_humidity_uid = 0
-    # default_temperature_name = "Temperature"
-    # default_humidity_name = "Humidity"
+    default_device = "Temperature and Humidity"
+    default_temperature_uid = default_humidity_uid = 0
+    default_target_uid = 0
+    default_temperature_name = "Temperature"
+    default_humidity_name = "Humidity"
+    default_target_name = "Target temperature"
     default_target_max = OPT_TEMPERATURE_TARGET_MAXIMUM
     default_target_min = OPT_TEMPERATURE_TARGET_MINIMUM
     default_target_step = OPT_TEMPERATURE_TARGET_STEP
     if input_data is not None:
-        default_device = input_data.get(OPT_DEVICE, "")
+        default_device = input_data.get(OPT_DEVICE, default_device)
+        temperature = input_data.get(OPT_TEMPERATURE)
+        default_temperature_name = temperature.get(OPT_NAME, default_temperature_name)
+        default_temperature_uid = temperature.get(OPT_UID, 0)
+        humidity = input_data.get(OPT_HUMIDITY)
+        default_humidity_name = humidity.get(OPT_NAME, default_humidity_name)
+        default_humidity_uid = humidity.get(OPT_UID, 0)
         target = input_data.get(OPT_TEMPERATURE_TARGET)
+        default_target_name = target.get(OPT_NAME, default_target_name)
         default_target_uid = target.get(OPT_UID, 0)
         default_target_max = target.get(
             OPT_TEMPERATURE_TARGET_MAXIMUM, default_target_max
@@ -1073,18 +1090,35 @@ def _get_temp_hum_schema(
         default_target_step = target.get(
             OPT_TEMPERATURE_TARGET_STEP, default_target_step
         )
-        temperature = input_data.get(OPT_TEMPERATURE)
-        default_temperature_uid = temperature.get(OPT_UID, 0)
-        # default_temperature_name = temperature.get(OPT_NAME)
-        humidity = input_data.get(OPT_HUMIDITY)
-        default_humidity_uid = humidity.get(OPT_UID, 0)
-        # default_humidity_name = humidity.get(OPT_NAME)
     return vol.Schema(
         {
             vol.Required(OPT_DEVICE, default=default_device): str,
+            vol.Required(OPT_TEMPERATURE): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_temperature_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_temperature_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_HUMIDITY): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_humidity_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_humidity_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
             vol.Required(OPT_TEMPERATURE_TARGET): section(
                 vol.Schema(
                     {
+                        vol.Optional(OPT_NAME, default=default_target_name): str,
                         vol.Optional(
                             OPT_UID, default=default_target_uid
                         ): _UID_SELECTOR,
@@ -1101,28 +1135,6 @@ def _get_temp_hum_schema(
                 ),
                 {"collapsed": False},
             ),
-            vol.Required(OPT_TEMPERATURE): section(
-                vol.Schema(
-                    {
-                        # vol.Optional(OPT_NAME, default=default_temperature_name): str,
-                        vol.Optional(
-                            OPT_UID, default=default_temperature_uid
-                        ): _UID_SELECTOR,
-                    }
-                ),
-                {"collapsed": False},
-            ),
-            vol.Required(OPT_HUMIDITY): section(
-                vol.Schema(
-                    {
-                        # vol.Optional(OPT_NAME, default=default_humidity_name): str,
-                        vol.Optional(
-                            OPT_UID, default=default_humidity_uid
-                        ): _UID_SELECTOR,
-                    }
-                ),
-                {"collapsed": False},
-            ),
         }
     )
 
@@ -1134,6 +1146,7 @@ def _get_energy_schema(
 
     # Fill in defaults from input or initial defaults
     # Order is the same as in the app
+    default_device = "Energy meters"
     default_meter_electricity_uid = 0
     default_meter_water_cold_uid = default_meter_water_hot_uid = 0
     default_calorimeter_hot_uid = default_calorimeter_cold_uid = 0
@@ -1143,6 +1156,7 @@ def _get_energy_schema(
     default_calorimeter_hot_name = "Hot Calorimeter"
     default_calorimeter_cold_name = "Cold Calorimeter"
     if input_data is not None:
+        default_device = input_data.get(OPT_DEVICE, default_device)
         meter_electricity = input_data.get(OPT_METER_ELECTRICITY)
         default_meter_electricity_uid = meter_electricity.get(
             OPT_UID, default_meter_electricity_uid
@@ -1181,6 +1195,7 @@ def _get_energy_schema(
 
     return vol.Schema(
         {
+            vol.Required(OPT_DEVICE, default=default_device): str,
             vol.Required(OPT_METER_ELECTRICITY): section(
                 vol.Schema(
                     {
@@ -1274,7 +1289,7 @@ def _get_air_schema(
     default_ventilation_out_name = "Outflow"
     default_ventilation_flow_setting_name = "Set Flow Target"
     if input_data is not None:
-        default_device = input_data.get(OPT_DEVICE, "")
+        default_device = input_data.get(OPT_DEVICE, default_device)
         default_ventilation_error = input_data.get(OPT_VENTILATION_ERROR)
         default_ventilation_error_uid = default_ventilation_error.get(
             OPT_UID, default_ventilation_error_uid
