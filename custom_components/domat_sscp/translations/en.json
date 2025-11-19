@@ -48,7 +48,8 @@
         "menu_options": {
           "room": "Room Controls",
           "energy": "Energy Readings",
-          "air": "Ventilation"
+          "air": "Ventilation",
+          "info": "Write configuration information to the log"
         }
       },
       "room": {
@@ -200,6 +201,9 @@
       "invalid_auth": "Invalid authentication",
       "timeout_connect": "Connection timed out",
       "variable_error": "Error ({error}) with variable(s): {variables}"
+    },
+    "abort": {
+      "info_written": "Configuration information was written to the log"
     }
   }
 }

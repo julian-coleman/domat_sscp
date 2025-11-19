@@ -48,7 +48,8 @@
         "menu_options": {
           "room": "Ovládání pokoje",
           "energy": "Odečty energií",
-          "air": "Vzduchotechnika"
+          "air": "Vzduchotechnika",
+          "info": "Zapsat informace o konfiguraci do logu"
         }
       },
       "room": {
@@ -200,6 +201,9 @@
       "invalid_auth": "Neplatné ověření",
       "timeout_connect": "Časový limit připojení vypršel",
       "variable_error": "Chyba ({error}) s proměnnou(ami): {variables}"
+    },
+    "abort": {
+      "info_written": "Informace o konfiguraci byly zapsány do logu"
     }
   }
 }

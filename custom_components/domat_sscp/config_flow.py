@@ -185,7 +185,7 @@ _TARGET_STEP_SELECTOR = vol.All(
 )
 
 # Options flow schemas
-_DEVICE_MENU = ["room", "energy", "air"]
+_DEVICE_MENU = ["room", "energy", "air", "info"]
 
 
 class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -971,6 +971,23 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             errors=errors,
             description_placeholders=description_placeholders,
         )
+
+    async def async_step_info(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Write our configuration and  options to the log."""
+
+        conf_data: dict[str, Any] = self.config_entry.data.copy()
+        conf_data["password"] = "********"
+        coordinator: DomatSSCPCoordinator = self.config_entry.coordinator
+        level = _LOGGER.getEffectiveLevel()
+
+        _LOGGER.setLevel(logging.INFO)
+        _LOGGER.info("Co-ordinator name: %s", coordinator.name)
+        _LOGGER.info("Configuration data: %s", conf_data)
+        _LOGGER.info("Options: %s", self.config_entry.options)
+        _LOGGER.setLevel(level)
+        return self.async_abort(reason="info_written")
 
     def _check_exists(
         self, device_name: str | None, entity_ids: dict[str, str]
