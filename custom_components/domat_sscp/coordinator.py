@@ -12,21 +12,20 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
-import homeassistant.helpers.entity_registry as er
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
     CONF_CONNECTION_NAME,
-    CONF_FAST_COUNT,
-    CONF_FAST_INTERVAL,
-    CONF_SCAN_INTERVAL,
     CONF_SSCP_ADDRESS,
-    CONF_WRITE_RETRIES,
     DEFAULT_FAST_COUNT,
     DEFAULT_FAST_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_WRITE_RETRIES,
     DOMAIN,
+    OPT_FAST_COUNT,
+    OPT_FAST_INTERVAL,
+    OPT_SCAN_INTERVAL,
+    OPT_WRITE_RETRIES,
 )
 from .sscp_connection import sscp_connection
 from .sscp_variable import sscp_variable
@@ -55,16 +54,16 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
 
         self.data: dict[str, Any] = {}
         self.scan_interval = self.config_entry.data.get(
-            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+            OPT_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
         )
         self.fast_interval = self.config_entry.data.get(
-            CONF_FAST_INTERVAL, DEFAULT_FAST_INTERVAL
+            OPT_FAST_INTERVAL, DEFAULT_FAST_INTERVAL
         )
         self.fast_count = self.config_entry.data.get(
-            CONF_FAST_COUNT, DEFAULT_FAST_COUNT
+            OPT_FAST_COUNT, DEFAULT_FAST_COUNT
         )
         self.write_retries = self.config_entry.data.get(
-            CONF_WRITE_RETRIES, DEFAULT_WRITE_RETRIES
+            OPT_WRITE_RETRIES, DEFAULT_WRITE_RETRIES
         )
         self.fast_max = min(self.scan_interval, self.fast_interval * self.fast_count)
         self.update_interval = timedelta(seconds=self.scan_interval)
@@ -76,16 +75,6 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             self.fast_max,
         )
         self.last_connect: datetime = datetime.now(tz=None)
-        entity_registry = er.async_get(self.hass)
-
-        # Check entity registry against options
-        for entity in entity_registry.entities.get_entries_for_config_entry_id(
-            self.config_entry.entry_id
-        ):
-            if entity.unique_id not in self.config_entry.options:
-                _LOGGER.error(
-                    "Entity %s in registry but not in options", entity.unique_id
-                )
 
     async def _async_update_data(self):
         """Fetch entity data from the server/PLC."""
