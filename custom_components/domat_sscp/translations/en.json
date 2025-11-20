@@ -1,10 +1,4 @@
 {
-  "common": {
-    "scan_interval": "Polling interval (seconds)",
-    "fast_interval": "Fast polling interval (seconds)",
-    "fast_count": "Number of times to run fast polling",
-    "write_retries": "Number of retries for entity writes"
-  },
   "config": {
     "step": {
       "user": {
@@ -46,9 +40,10 @@
       "init": {
         "title": "Add SSCP devices",
         "menu_options": {
-          "room": "Room Controls",
-          "energy": "Energy Readings",
-          "air": "Ventilation",
+          "room": "Add room Controls",
+          "energy": "Add energy Readings",
+          "air": "Add ventilation",
+          "poll": "Set connection intervals",
           "info": "Write configuration information to the log"
         }
       },
@@ -193,6 +188,15 @@
               "uid": "UID"
             }
           }
+        }
+      },
+      "poll": {
+        "title": "Set connection intervals",
+        "data": {
+          "scan_interval": "Interval between requests (seconds)",
+          "fast_interval": "Fast requests interval (seconds)",
+          "fast_count": "Number of fast requests",
+          "write_retries": "Number of retries for writes"
         }
       }
     },

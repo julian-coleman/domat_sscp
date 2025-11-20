@@ -1,10 +1,4 @@
 {
-  "common": {
-    "scan_interval": "Polling interval (seconds)",
-    "fast_interval": "Fast polling interval (seconds)",
-    "fast_count": "Kolikrát to run fast polling",
-    "write_retries": "Number of retries for entity writes"
-  },
   "config": {
     "step": {
       "user": {
@@ -46,9 +40,10 @@
       "init": {
         "title": "Přidat zařízení SSCP",
         "menu_options": {
-          "room": "Ovládání pokoje",
-          "energy": "Odečty energií",
-          "air": "Vzduchotechnika",
+          "room": "Přidat ovládání pokoje",
+          "energy": "Přidat odečty energií",
+          "air": "Přidat vzduchotechniku",
+          "poll": "Nastavit intervaly připojení",
           "info": "Zapsat informace o konfiguraci do logu"
         }
       },
@@ -193,6 +188,15 @@
               "uid": "UID"
             }
           }
+        }
+      },
+      "poll": {
+        "title": "Nastavit intervaly připojení",
+        "data": {
+          "scan_interval": "Interval mezi požadavky (vteřiny)",
+          "fast_interval": "Interval rychlých požadavků (vteřiny)",
+          "fast_count": "Počet rychlých požadavků",
+          "write_retries": "Počet opakovaných pokusů o zápis"
         }
       }
     },

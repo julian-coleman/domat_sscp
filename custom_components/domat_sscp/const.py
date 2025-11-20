@@ -7,10 +7,6 @@ DOMAIN = "domat_sscp"
 CONF_CONNECTION_NAME = "connection_name"
 CONF_SSCP_ADDRESS = "sscp_address"
 CONF_LANGUAGE = "language"
-CONF_SCAN_INTERVAL = "scan_interval"
-CONF_FAST_INTERVAL = "fast_interval"
-CONF_FAST_COUNT = "fast_count"
-CONF_WRITE_RETRIES = "write_retries"
 
 # Configuration defaults
 DEFAULT_SCAN_INTERVAL = 300
@@ -21,6 +17,12 @@ DEFAULT_SSCP_PORT = 12346
 DEFAULT_SSCP_ADDRESS = 1
 
 # Options flow constants
+OPT_POLLING = "polling"
+OPT_SCAN_INTERVAL = "scan_interval"
+OPT_FAST_INTERVAL = "fast_interval"
+OPT_FAST_COUNT = "fast_count"
+OPT_WRITE_RETRIES = "write_retries"
+
 OPT_DEVICE = "device"
 OPT_NAME = "name"
 OPT_TEMPERATURE_TARGET = "temperature_target"
@@ -73,7 +75,7 @@ OPT_CALORIMETER_COLD_NAME_EN = "Cold Calorimeter"
 OPT_ENERGY_NAME_CS = "Odečty energií"
 OPT_METER_ELECTRICITY_NAME_CS = "Elektroměr"
 OPT_METER_WATER_COLD_NAME_CS = "Voda - studená"
-OPT_METER_WATER_HOT_NAME_CS = "voda - teplá"
+OPT_METER_WATER_HOT_NAME_CS = "Voda - teplá"
 OPT_CALORIMETER_HOT_NAME_CS = "Kalorimetr topení"
 OPT_CALORIMETER_COLD_NAME_CS = "Kalorimetr chlazení"
 

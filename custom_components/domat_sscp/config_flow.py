@@ -45,16 +45,14 @@ from homeassistant.helpers.selector import (
 
 from .const import (
     CONF_CONNECTION_NAME,
-    CONF_FAST_COUNT,
-    CONF_FAST_INTERVAL,
     CONF_LANGUAGE,
-    CONF_SCAN_INTERVAL,
     CONF_SSCP_ADDRESS,
     DEFAULT_FAST_COUNT,
     DEFAULT_FAST_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SSCP_ADDRESS,
     DEFAULT_SSCP_PORT,
+    DEFAULT_WRITE_RETRIES,
     DOMAIN,
     OPT_CALORIMETER_COLD,
     OPT_CALORIMETER_COLD_NAME_CS,
@@ -71,6 +69,8 @@ from .const import (
     OPT_DEVICE,
     OPT_ENERGY_NAME_CS,
     OPT_ENERGY_NAME_EN,
+    OPT_FAST_COUNT,
+    OPT_FAST_INTERVAL,
     OPT_HUMIDITY,
     OPT_HUMIDITY_NAME_CS,
     OPT_HUMIDITY_NAME_EN,
@@ -85,10 +85,11 @@ from .const import (
     OPT_METER_WATER_HOT_NAME_CS,
     OPT_METER_WATER_HOT_NAME_EN,
     OPT_MINIMUM,
-    # TODO: Add translated name and czech translations
     OPT_NAME,
+    OPT_POLLING,
     OPT_ROOM_CONTROLS_NAME_CS,
     OPT_ROOM_CONTROLS_NAME_EN,
+    OPT_SCAN_INTERVAL,
     OPT_STEP,
     OPT_TEMPERATURE,
     OPT_TEMPERATURE_NAME_CS,
@@ -125,6 +126,7 @@ from .const import (
     OPT_VENTILATION_STATE,
     OPT_VENTILATION_STATE_NAME_CS,
     OPT_VENTILATION_STATE_NAME_EN,
+    OPT_WRITE_RETRIES,
 )
 from .coordinator import DomatSSCPCoordinator
 from .sscp_connection import sscp_connection
@@ -139,6 +141,8 @@ _LOGGER = logging.getLogger(__name__)
 _LANG_SELECTOR = vol.All(
     LanguageSelector(LanguageSelectorConfig(languages=["en", "cs"]))
 )
+
+# Config flow
 _PORT_SELECTOR = vol.All(
     NumberSelector(
         NumberSelectorConfig(min=1, max=65535, mode=NumberSelectorMode.BOX),
@@ -151,6 +155,7 @@ _ADDR_SELECTOR = vol.All(
     ),
     vol.Coerce(int),
 )
+# Options flows schemas
 _UID_SELECTOR = vol.All(
     NumberSelector(
         NumberSelectorConfig(min=0, max=0xFFFFFFFF, mode=NumberSelectorMode.BOX),
@@ -183,9 +188,33 @@ _TARGET_STEP_SELECTOR = vol.All(
     ),
     vol.Coerce(float),
 )
+_SCAN_INTERVAL_SELECTOR = vol.All(
+    NumberSelector(
+        NumberSelectorConfig(min=15, mode=NumberSelectorMode.BOX),
+    ),
+    vol.Coerce(int),
+)
+_FAST_INTERVAL_SELECTOR = vol.All(
+    NumberSelector(
+        NumberSelectorConfig(min=2, max=15, mode=NumberSelectorMode.BOX),
+    ),
+    vol.Coerce(int),
+)
+_FAST_COUNT_SELECTOR = vol.All(
+    NumberSelector(
+        NumberSelectorConfig(min=1, max=10, mode=NumberSelectorMode.BOX),
+    ),
+    vol.Coerce(int),
+)
+_WRITE_RETRIES_SELECTOR = vol.All(
+    NumberSelector(
+        NumberSelectorConfig(min=2, max=10, mode=NumberSelectorMode.BOX),
+    ),
+    vol.Coerce(int),
+)
 
-# Options flow schemas
-_DEVICE_MENU = ["room", "energy", "air", "info"]
+# Options flow menu
+_DEVICE_MENU = ["room", "energy", "air", "poll", "info"]
 
 
 class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -193,7 +222,7 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
 
     # Config flow version
     VERSION = 1
-    MINOR_VERSION = 2
+    MINOR_VERSION = 3
 
     # TODO: Add a checkbox for InSady
     async def async_step_user(
@@ -268,7 +297,6 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
         return DomatSSCPOptionsFlowHandler(config_entry)
 
 
-# TODO: Add a step for scan/fast/count/w_retries
 class DomatSSCPOptionsFlowHandler(OptionsFlow):
     """Handles options flow for Domat SSCP."""
 
@@ -971,6 +999,52 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             errors=errors,
             description_placeholders=description_placeholders,
         )
+
+    async def async_step_poll(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Change polling parameters."""
+
+        data: dict[str, Any] = self.config_entry.options.copy()
+        step = "poll"
+
+        default_scan_interval = DEFAULT_SCAN_INTERVAL
+        default_fast_interval = DEFAULT_FAST_INTERVAL
+        default_fast_count = DEFAULT_FAST_COUNT
+        default_write_retries = DEFAULT_WRITE_RETRIES
+        if OPT_POLLING in data:
+            polling = data[OPT_POLLING]
+            default_scan_interval = polling.get(OPT_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+            default_fast_interval = polling.get(OPT_FAST_INTERVAL, DEFAULT_FAST_INTERVAL)
+            default_fast_count = polling.get(OPT_FAST_COUNT, DEFAULT_FAST_COUNT)
+            default_write_retries = polling.get(OPT_WRITE_RETRIES, DEFAULT_WRITE_RETRIES)
+        if user_input is not None:
+            default_scan_interval = user_input.get(OPT_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+            default_fast_interval = user_input.get(OPT_FAST_INTERVAL, DEFAULT_FAST_INTERVAL)
+            default_fast_count = user_input.get(OPT_FAST_COUNT, DEFAULT_FAST_COUNT)
+            default_write_retries = user_input.get(OPT_WRITE_RETRIES, DEFAULT_WRITE_RETRIES)
+        schema = vol.Schema(
+            {
+                vol.Required(OPT_SCAN_INTERVAL, default=default_scan_interval): _SCAN_INTERVAL_SELECTOR,
+                vol.Required(OPT_FAST_INTERVAL, default=default_fast_interval): _FAST_INTERVAL_SELECTOR,
+                vol.Required(OPT_FAST_COUNT, default=default_fast_count): _FAST_COUNT_SELECTOR,
+                vol.Required(OPT_WRITE_RETRIES, default=default_write_retries): _WRITE_RETRIES_SELECTOR,
+            }
+        )
+        if user_input is None:
+            return self.async_show_form(step_id=step, data_schema=schema)
+
+        data.update(
+            {
+                OPT_POLLING: {
+                    OPT_SCAN_INTERVAL: user_input.get(OPT_SCAN_INTERVAL),
+                    OPT_FAST_INTERVAL: user_input.get(OPT_FAST_INTERVAL),
+                    OPT_FAST_COUNT: user_input.get(OPT_FAST_COUNT),
+                    OPT_WRITE_RETRIES: user_input.get(OPT_WRITE_RETRIES)
+                }
+            }
+        )
+        return self.async_create_entry(data=data)
 
     async def async_step_info(
         self, user_input: dict[str, Any] | None = None

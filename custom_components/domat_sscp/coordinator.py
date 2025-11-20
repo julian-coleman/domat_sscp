@@ -24,6 +24,7 @@ from .const import (
     DOMAIN,
     OPT_FAST_COUNT,
     OPT_FAST_INTERVAL,
+    OPT_POLLING,
     OPT_SCAN_INTERVAL,
     OPT_WRITE_RETRIES,
 )
@@ -53,26 +54,35 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         )
 
         self.data: dict[str, Any] = {}
-        self.scan_interval = self.config_entry.data.get(
-            OPT_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
-        )
-        self.fast_interval = self.config_entry.data.get(
-            OPT_FAST_INTERVAL, DEFAULT_FAST_INTERVAL
-        )
-        self.fast_count = self.config_entry.data.get(
-            OPT_FAST_COUNT, DEFAULT_FAST_COUNT
-        )
-        self.write_retries = self.config_entry.data.get(
-            OPT_WRITE_RETRIES, DEFAULT_WRITE_RETRIES
-        )
+
+        if OPT_POLLING in self.config_entry.options:
+            polling = self.config_entry.options[OPT_POLLING]
+            self.scan_interval = polling.get(
+                OPT_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+            )
+            self.fast_interval = polling.get(
+                OPT_FAST_INTERVAL, DEFAULT_FAST_INTERVAL
+            )
+            self.fast_count = polling.get(
+                OPT_FAST_COUNT, DEFAULT_FAST_COUNT
+            )
+            self.write_retries = polling.get(
+                OPT_WRITE_RETRIES, DEFAULT_WRITE_RETRIES
+            )
+        else:
+            self.scan_interval = DEFAULT_SCAN_INTERVAL
+            self.fast_interval = DEFAULT_FAST_INTERVAL
+            self.fast_count = DEFAULT_FAST_COUNT
+            self.write_retries = DEFAULT_WRITE_RETRIES
         self.fast_max = min(self.scan_interval, self.fast_interval * self.fast_count)
         self.update_interval = timedelta(seconds=self.scan_interval)
         _LOGGER.debug(
-            "Coordinator update intervals: %s %s %s (%s)",
+            "Connection update intervals: %s %s %s (%s) %s",
             self.scan_interval,
             self.fast_interval,
             self.fast_count,
             self.fast_max,
+            self.write_retries
         )
         self.last_connect: datetime = datetime.now(tz=None)
 
@@ -143,7 +153,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                 length=self.config_entry.options[opt_var]["length"],
                 type=self.config_entry.options[opt_var]["type"],
             )
-            for opt_var in self.config_entry.options
+            for opt_var in self.config_entry.options if "uid" in self.config_entry.options[opt_var]
         )
         try:
             error_vars, _error_codes = await conn.sscp_read_variables(sscp_vars)

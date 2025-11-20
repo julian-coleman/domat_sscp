@@ -1,52 +1,37 @@
 {
-  "common": {
-    "connection_name": "Connection name",
-    "sscp_address": "SSCP address",
-    "scan_interval": "Polling interval (seconds)",
-    "fast_interval": "Fast polling interval (seconds)",
-    "fast_count": "Number of times to run fast polling",
-    "write_retries": "Number of retries for entity writes",
-    "device": "Device name",
-    "name": "Name",
-    "uid": "UID",
-    "length": "Length",
-    "offset": "Offset",
-    "minimum": "Minimum",
-    "maximum": "Maximum",
-    "step": "Step"
-  },
   "config": {
     "step": {
       "user": {
         "data": {
-          "connection_name": "[%key:component::domat_sscp::common::connection_name%]",
-          "ip_address": "[%key:common::config_flow::data::ip%]",
-          "port": "[%key:common::config_flow::data::port%]",
-          "username": "[%key:common::config_flow::data::username%]",
-          "password": "[%key:common::config_flow::data::password%]",
-          "sscp_address": "[%key:component::domat_sscp::common::sscp_address%]"
+          "connection_name": "Connection name",
+          "ip_address": "IP address",
+          "port": "Port",
+          "username": "Username",
+          "password": "Password",
+          "sscp_address": "SSCP address",
+          "language": "Language"
         }
       },
       "reconfigure": {
         "data": {
-          "connection_name": "[%key:component::domat_sscp::common::connection_name%]",
-          "ip_address": "[%key:common::config_flow::data::ip%]",
-          "port": "[%key:common::config_flow::data::port%]",
-          "username": "[%key:common::config_flow::data::username%]",
-          "password": "[%key:common::config_flow::data::password%]",
-          "sscp_address": "[%key:component::domat_sscp::common::sscp_address%]"
+          "connection_name": "Connection name",
+          "ip_address": "IP address",
+          "port": "Port",
+          "username": "Username",
+          "password": "Password",
+          "sscp_address": "SSCP address"
         }
       }
     },
     "error": {
-      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
-      "timeout_connect": "[%key:common::config_flow::error::timeout_connect%]",
-      "unknown": "[%key:common::config_flow::error::unknown%]"
+      "cannot_connect": "Cannot connect to the server",
+      "invalid_auth": "Invalid authentication",
+      "timeout_connect": "Connection timed out",
+      "unknown": "Unknown error"
     },
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
-      "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]",
+      "already_configured": "The connection is already configured",
+      "reconfigure_successful": "Reconfiguration was successful",
       "wrong_plc": "The reconfigured device is not the same as the one already configured"
     }
   },
@@ -55,160 +40,174 @@
       "init": {
         "title": "Add SSCP devices",
         "menu_options": {
-          "temp_hum": "Temperature and humidity",
-          "energy": "Energy meters",
-          "air": "Air ventilation"
+          "room": "Add room Controls",
+          "energy": "Add energy Readings",
+          "air": "Add ventilation",
+          "poll": "Set connection intervals",
+          "info": "Write configuration information to the log"
         }
       },
-      "temp_hum": {
-        "title": "Add a temperature and humidity device",
+      "room": {
+        "title": "Add a room control device",
         "data": {
-          "device": "[%key:component::domat_sscp::common::device%]"
+          "device": "Device name"
         },
         "sections": {
           "temperature_target": {
             "name": "Target temperature:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]",
-              "minimum": "[%key:component::domat_sscp::common::uid%]",
-              "maximum": "[%key:component::domat_sscp::common::uid%]",
-              "step": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID",
+              "minimum": "Minimum",
+              "maximum": "Maximum",
+              "step": "Step"
             }
           },
           "temperature": {
             "name": "Temperature:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID"
             }
           },
           "humidity": {
             "name": "Humidity:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID"
             }
           }
         }
       },
       "energy": {
-        "title": "Add energy meter devices",
+        "title": "Add energy reading devices",
         "sections": {
           "meter_electricity": {
             "name": "Electricity Meter:",
             "data": {
-              "device": "[%key:component::domat_sscp::common::device%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "device": "Device name",
+              "uid": "UID"
             }
           },
           "meter_water_cold": {
             "name": "Cold Water Meter:",
             "data": {
-              "device": "[%key:component::domat_sscp::common::device%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "device": "Device name",
+              "uid": "UID"
             }
           },
           "meter_water_hot": {
             "name": "Hot Water Meter:",
             "data": {
-              "device": "[%key:component::domat_sscp::common::device%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "device": "Device name",
+              "uid": "UID"
             }
           },
           "calorimeter_hot": {
             "name": "Hot Calorimeter:",
             "data": {
-              "device": "[%key:component::domat_sscp::common::device%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "device": "Device name",
+              "uid": "UID"
             }
           },
           "calorimeter_cold": {
             "name": "Cold Calorimeter:",
             "data": {
-              "device": "[%key:component::domat_sscp::common::device%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "device": "Device name",
+              "uid": "UID"
             }
           }
         }
       },
       "air": {
-        "title": "Add an air ventilation device",
+        "title": "Add ventilation",
         "data": {
-          "device": "[%key:component::domat_sscp::common::device%]"
+          "device": "Device name"
         },
         "sections": {
           "ventilator_error": {
             "name": "Ventilation Fault:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID"
             }
           },
           "ventilator_filter": {
             "name": "Filters Clogged:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID"
             }
           },
           "ventilator_state": {
             "name": "Run State:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID"
             }
           },
           "cotwo_target": {
             "name": "CO2 Target:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID"
             }
           },
           "cotwo_actual": {
             "name": "CO2 Actual:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID"
             }
           },
           "ventilator_flow_target": {
             "name": "Ventilation Flow Target:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID"
             }
           },
           "ventilator_in": {
             "name": "Ventilation Inflow:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID"
             }
           },
           "ventilator_out": {
             "name": "Ventilation Outflow:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID"
             }
           },
           "ventilator_flow_setting": {
             "name": "Set Ventilation Flow:",
             "data": {
-              "name": "[%key:component::domat_sscp::common::name%]",
-              "uid": "[%key:component::domat_sscp::common::uid%]"
+              "name": "Name",
+              "uid": "UID"
             }
           }
+        }
+      },
+      "poll": {
+        "title": "Set connection intervals",
+        "data": {
+          "scan_interval": "Interval between requests (seconds)",
+          "fast_interval": "Fast requests interval (seconds)",
+          "fast_count": "Number of fast requests",
+          "write_retries": "Number of retries for writes"
         }
       }
     },
     "error": {
-      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
-      "timeout_connect": "[%key:common::config_flow::error::timeout_connect%]",
+      "cannot_connect": "Cannot connect to the server",
+      "invalid_auth": "Invalid authentication",
+      "timeout_connect": "Connection timed out",
       "variable_error": "Error ({error}) with variable(s): {variables}"
+    },
+    "abort": {
+      "info_written": "Configuration information was written to the log"
     }
   }
 }
