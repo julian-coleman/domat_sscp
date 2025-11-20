@@ -76,6 +76,13 @@
               "maximum": "Maximum",
               "step": "Step"
             }
+          },
+          "temperature_target": {
+            "name": "Target temperature:",
+            "data": {
+              "name": "Name",
+              "uid": "UID"
+            }
           }
         }
       },
