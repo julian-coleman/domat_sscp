@@ -25,14 +25,28 @@ OPT_WRITE_RETRIES = "write_retries"
 
 OPT_DEVICE = "device"
 OPT_NAME = "name"
-OPT_TEMPERATURE_SETTING = "temperature_setting"
+OPT_UID = "uid"
+OPT_OFFSET = "offset"
+OPT_LENGTH = "length"
+OPT_MINIMUM = "minimum"
+OPT_MAXIMUM = "maximum"
+OPT_STEP = "step"
+
 OPT_TEMPERATURE = "temperature"
 OPT_HUMIDITY = "humidity"
+OPT_TEMPERATURE_SETTING = "temperature_setting"
+OPT_TEMPERATURE_TARGET = "temperature_target"
+OPT_AWAY_SETTING = "away_setting"
+OPT_AWAY_TARGET = "away_target"
+OPT_VALVE_COOLING = "valve_cooling"
+OPT_VALVE_HEATING = "valve_heating"
+
 OPT_METER_ELECTRICITY = "meter_electricity"
 OPT_METER_WATER_COLD = "meter_water_cold"
 OPT_METER_WATER_HOT = "meter_water_hot"
 OPT_CALORIMETER_HOT = "calorimeter_hot"
 OPT_CALORIMETER_COLD = "calorimeter_cold"
+
 OPT_VENTILATION_ERROR = "ventilator_error"
 OPT_VENTILATION_FILTER = "ventilator_filter"
 OPT_VENTILATION_STATE = "ventilator_state"
@@ -42,17 +56,15 @@ OPT_VENTILATION_FLOW_TARGET = "ventilator_flow_target"
 OPT_VENTILATION_IN = "ventilator_in"
 OPT_VENTILATION_OUT = "ventilator_out"
 OPT_VENTILATION_FLOW_SETTING = "ventilator_flow_setting"
-OPT_UID = "uid"
-OPT_OFFSET = "offset"
-OPT_LENGTH = "length"
-OPT_MINIMUM = "minimum"
-OPT_MAXIMUM = "maximum"
-OPT_STEP = "step"
 
 # Variable defaults
 OPT_TEMPERATURE_SETTING_MINIMUM = 16
 OPT_TEMPERATURE_SETTING_MAXIMUM = 30
 OPT_TEMPERATURE_SETTING_STEP = 0.5
+OPT_AWAY_SETTING_MINIMUM = 0
+OPT_AWAY_SETTING_MAXIMUM = 4
+OPT_AWAY_SETTING_STEP = 0.1
+
 OPT_VENTILATION_FLOW_MINIMUM = 80
 OPT_VENTILATION_FLOW_MAXIMUM = 200
 
@@ -61,10 +73,20 @@ OPT_ROOM_CONTROLS_NAME_EN="Room Controls"
 OPT_TEMPERATURE_NAME_EN="Actual temperature"
 OPT_HUMIDITY_NAME_EN="Actual humidity"
 OPT_TEMPERATURE_SETTING_NAME_EN="Set target temperature"
+OPT_TEMPERATURE_TARGET_NAME_EN="Target temperature"
+OPT_AWAY_SETTING_NAME_EN = "Set minimum temperature"
+OPT_AWAY_TARGET_NAME_EN = "Minimum temperature"
+OPT_VALVE_COOLING_NAME_EN = "Cooling valve"
+OPT_VALVE_HEATING_NAME_EN = "Heating valve"
 OPT_ROOM_CONTROLS_NAME_CS="Ovládání pokoje"
 OPT_TEMPERATURE_NAME_CS="Teplota aktuální"
 OPT_HUMIDITY_NAME_CS="Vlhkost aktuální"
 OPT_TEMPERATURE_SETTING_NAME_CS="Teplota žádaná - nastavení"
+OPT_TEMPERATURE_TARGET_NAME_CS="Teplota žádaná nastavená"
+OPT_AWAY_SETTING_NAME_CS = "Útlum nastavený"
+OPT_AWAY_TARGET_NAME_CS = "Útlum - nastavení"
+OPT_VALVE_COOLING_NAME_CS = "Ventil chlazení"
+OPT_VALVE_HEATING_NAME_CS = "Ventil topení"
 
 OPT_ENERGY_NAME_EN = "Energy Readings"
 OPT_METER_ELECTRICITY_NAME_EN = "Electricity Meter"
