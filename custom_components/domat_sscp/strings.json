@@ -71,14 +71,39 @@
             "name": "Set target temperature:",
             "data": {
               "name": "Name",
-              "uid": "UID",
-              "minimum": "Minimum",
-              "maximum": "Maximum",
-              "step": "Step"
+              "uid": "UID"
             }
           },
           "temperature_target": {
             "name": "Target temperature:",
+            "data": {
+              "name": "Name",
+              "uid": "UID"
+            }
+          },
+          "low_setting": {
+            "name": "Set low temperature:",
+            "data": {
+              "name": "Name",
+              "uid": "UID"
+            }
+          },
+          "low_target": {
+            "name": "Low temperature:",
+            "data": {
+              "name": "Name",
+              "uid": "UID"
+            }
+          },
+          "valve_heating": {
+            "name": "Heating valve:",
+            "data": {
+              "name": "Name",
+              "uid": "UID"
+            }
+          },
+          "valve_cooling": {
+            "name": "Cooling valve:",
             "data": {
               "name": "Name",
               "uid": "UID"
