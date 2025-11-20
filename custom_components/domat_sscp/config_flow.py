@@ -74,6 +74,15 @@ from .const import (
     OPT_HUMIDITY,
     OPT_HUMIDITY_NAME_CS,
     OPT_HUMIDITY_NAME_EN,
+    OPT_LOW_SETTING,
+    OPT_LOW_SETTING_MAXIMUM,
+    OPT_LOW_SETTING_MINIMUM,
+    OPT_LOW_SETTING_NAME_CS,
+    OPT_LOW_SETTING_NAME_EN,
+    OPT_LOW_SETTING_STEP,
+    OPT_LOW_TARGET,
+    OPT_LOW_TARGET_NAME_CS,
+    OPT_LOW_TARGET_NAME_EN,
     OPT_MAXIMUM,
     OPT_METER_ELECTRICITY,
     OPT_METER_ELECTRICITY_NAME_CS,
@@ -100,7 +109,16 @@ from .const import (
     OPT_TEMPERATURE_SETTING_NAME_CS,
     OPT_TEMPERATURE_SETTING_NAME_EN,
     OPT_TEMPERATURE_SETTING_STEP,
+    OPT_TEMPERATURE_TARGET,
+    OPT_TEMPERATURE_TARGET_NAME_CS,
+    OPT_TEMPERATURE_TARGET_NAME_EN,
     OPT_UID,
+    OPT_VALVE_COOLING,
+    OPT_VALVE_COOLING_NAME_CS,
+    OPT_VALVE_COOLING_NAME_EN,
+    OPT_VALVE_HEATING,
+    OPT_VALVE_HEATING_NAME_CS,
+    OPT_VALVE_HEATING_NAME_EN,
     OPT_VENTILATION_ERROR,
     OPT_VENTILATION_ERROR_NAME_CS,
     OPT_VENTILATION_ERROR_NAME_EN,
@@ -161,32 +179,6 @@ _UID_SELECTOR = vol.All(
         NumberSelectorConfig(min=0, max=0xFFFFFFFF, mode=NumberSelectorMode.BOX),
     ),
     vol.Coerce(int),
-)
-_TEMPERATURE_SETTING_SELECTOR = vol.All(
-    NumberSelector(
-        NumberSelectorConfig(
-            min=OPT_TEMPERATURE_SETTING_MINIMUM,
-            max=OPT_TEMPERATURE_SETTING_MAXIMUM,
-            mode=NumberSelectorMode.BOX,
-        ),
-    ),
-    vol.Coerce(int),
-)
-_TEMPERATURE_SETTING_SELECTOR = vol.All(
-    NumberSelector(
-        NumberSelectorConfig(
-            min=OPT_TEMPERATURE_SETTING_MINIMUM,
-            max=OPT_TEMPERATURE_SETTING_MAXIMUM,
-            mode=NumberSelectorMode.BOX,
-        ),
-    ),
-    vol.Coerce(int),
-)
-_TARGET_STEP_SELECTOR = vol.All(
-    NumberSelector(
-        NumberSelectorConfig(min=0.1, max=1.0, mode=NumberSelectorMode.BOX),
-    ),
-    vol.Coerce(float),
 )
 _SCAN_INTERVAL_SELECTOR = vol.All(
     NumberSelector(
@@ -315,7 +307,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     async def async_step_room(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manage the options for adding a temperature/humidity device."""
+        """Manage the options for adding a room controls device."""
 
         data: dict[str, Any] = self.config_entry.options.copy()
         coordinator: DomatSSCPCoordinator = self.config_entry.coordinator
@@ -339,9 +331,16 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         humidity_uid = humidity.get(OPT_UID)
         temperature_setting = user_input.get(OPT_TEMPERATURE_SETTING)
         temperature_setting_uid = temperature_setting.get(OPT_UID)
-        temperature_setting_max = temperature_setting.get(OPT_MAXIMUM)
-        temperature_setting_min = temperature_setting.get(OPT_MINIMUM)
-        temperature_setting_step = temperature_setting.get(OPT_STEP)
+        temperature_target = user_input.get(OPT_TEMPERATURE_TARGET)
+        temperature_target_uid = temperature_target.get(OPT_UID)
+        low_setting = user_input.get(OPT_LOW_SETTING)
+        low_setting_uid = low_setting.get(OPT_UID)
+        low_target = user_input.get(OPT_LOW_TARGET)
+        low_target_uid = low_target.get(OPT_UID)
+        valve_heating = user_input.get(OPT_VALVE_HEATING)
+        valve_heating_uid = valve_heating.get(OPT_UID)
+        valve_cooling = user_input.get(OPT_VALVE_COOLING)
+        valve_cooling_uid = valve_cooling.get(OPT_UID)
         if temperature_uid != 0:
             variables.append(
                 sscp_variable(uid=temperature_uid, offset=0, length=4, type=13)
@@ -355,9 +354,41 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             humidity_entity_id = str(humidity_uid) + "-0-4"
             entity_ids.update({humidity_entity_id: humidity_uid})
         if temperature_setting_uid != 0:
-            variables.append(sscp_variable(uid=temperature_setting_uid, offset=0, length=4, type=13))
+            variables.append(
+                sscp_variable(uid=temperature_setting_uid, offset=0, length=4, type=13)
+            )
             temperature_setting_entity_id = str(temperature_setting_uid) + "-0-4"
             entity_ids.update({temperature_setting_entity_id: temperature_setting_uid})
+        if temperature_target_uid != 0:
+            variables.append(
+                sscp_variable(uid=temperature_target_uid, offset=0, length=4, type=13)
+            )
+            temperature_target_entity_id = str(temperature_target_uid) + "-0-4"
+            entity_ids.update({temperature_target_entity_id: temperature_target_uid})
+        if low_setting_uid != 0:
+            variables.append(
+                sscp_variable(uid=low_setting_uid, offset=0, length=4, type=13)
+            )
+            low_setting_entity_id = str(low_setting_uid) + "-0-4"
+            entity_ids.update({low_setting_entity_id: low_setting_uid})
+        if low_target_uid != 0:
+            variables.append(
+                sscp_variable(uid=low_target_uid, offset=0, length=4, type=13)
+            )
+            low_target_entity_id = str(low_target_uid) + "-0-4"
+            entity_ids.update({low_target_entity_id: low_target_uid})
+        if valve_heating_uid != 0:
+            variables.append(
+                sscp_variable(uid=valve_heating_uid, offset=0, length=1, type=0)
+            )
+            valve_heating_entity_id = str(valve_heating_uid) + "-0-1"
+            entity_ids.update({valve_heating_entity_id: valve_heating_uid})
+        if valve_cooling_uid != 0:
+            variables.append(
+                sscp_variable(uid=valve_cooling_uid, offset=0, length=1, type=0)
+            )
+            valve_cooling_entity_id = str(valve_cooling_uid) + "-0-1"
+            entity_ids.update({valve_cooling_entity_id: valve_cooling_uid})
 
         if len(variables) == 0:
             # No user variables
@@ -452,13 +483,104 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "feature": WaterHeaterEntityFeature.TARGET_TEMPERATURE,
                                     "unit": UnitOfTemperature.CELSIUS,
                                     "precision": PRECISION_TENTHS,
-                                    "max": temperature_setting_max,
-                                    "min": temperature_setting_min,
-                                    "step": temperature_setting_step,
+                                    "max": OPT_TEMPERATURE_SETTING_MAXIMUM,
+                                    "min": OPT_TEMPERATURE_SETTING_MINIMUM,
+                                    "step": OPT_TEMPERATURE_SETTING_STEP,
                                     "entity": Platform.WATER_HEATER,
                                     "device": user_input.get(OPT_DEVICE),
                                     "icon": "mdi:thermometer-lines",
                                 }
+                            }
+                        )
+                    if temperature_target_uid != 0:
+                        data.update(
+                            {
+                                temperature_target_entity_id: {
+                                    "name": temperature_target.get(OPT_NAME),
+                                    "uid": temperature_target_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.TEMPERATURE,
+                                    "unit": UnitOfTemperature.CELSIUS,
+                                    "precision": 1,
+                                    "entity": Platform.SENSOR,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if low_setting_uid != 0:
+                        data.update(
+                            {
+                                low_setting_entity_id: {
+                                    "name": low_setting.get(OPT_NAME),
+                                    "uid": low_setting_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "feature": WaterHeaterEntityFeature.TARGET_TEMPERATURE,
+                                    "unit": UnitOfTemperature.CELSIUS,
+                                    "precision": PRECISION_TENTHS,
+                                    "max": OPT_LOW_SETTING_MAXIMUM,
+                                    "min": OPT_LOW_SETTING_MINIMUM,
+                                    "step": OPT_LOW_SETTING_STEP,
+                                    "entity": Platform.WATER_HEATER,
+                                    "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:thermometer-lines",
+                                }
+                            }
+                        )
+                    if low_target_uid != 0:
+                        data.update(
+                            {
+                                low_target_entity_id: {
+                                    "name": low_target.get(OPT_NAME),
+                                    "uid": low_target_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.TEMPERATURE,
+                                    "unit": UnitOfTemperature.CELSIUS,
+                                    "precision": 1,
+                                    "entity": Platform.SENSOR,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if valve_heating_uid != 0:
+                        data.update(
+                            {
+                                valve_heating_entity_id: {
+                                    "name": valve_heating.get(OPT_NAME),
+                                    "uid": valve_heating_uid,
+                                    "offset": 0,
+                                    "length": 1,
+                                    "type": 0,
+                                    "class": BinarySensorDeviceClass.OPENING,
+                                    "on": 1,
+                                    "off": 0,
+                                    "entity": Platform.BINARY_SENSOR,
+                                    "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:valve",
+                                },
+                            }
+                        )
+                    if valve_cooling_uid != 0:
+                        data.update(
+                            {
+                                valve_cooling_entity_id: {
+                                    "name": valve_cooling.get(OPT_NAME),
+                                    "uid": valve_cooling_uid,
+                                    "offset": 0,
+                                    "length": 1,
+                                    "type": 0,
+                                    "class": BinarySensorDeviceClass.OPENING,
+                                    "on": 1,
+                                    "off": 0,
+                                    "entity": Platform.BINARY_SENSOR,
+                                    "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:valve",
+                                },
                             }
                         )
                     return self.async_create_entry(data=data)
@@ -1069,10 +1191,11 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         """Check if entity already exists."""
 
         variables: str = ""
-        for option in self.config_entry.options:
+        for value in self.config_entry.options.values():
             if (
                 device_name is not None
-                and self.config_entry.options[option]["device"] == device_name
+                and "device" in value
+                and value["device"] == device_name
             ):
                 return {"device": device_name}
         for entity_id, entity_uid in entity_ids.items():
@@ -1204,24 +1327,33 @@ def _get_room_schema(
     lang: str,
     input_data: dict[str, Any] | None = None,
 ) -> vol.Schema:
-    """Return a temperature/humidity flow schema with defaults based on the user input."""
+    """Return a room controls flow schema with defaults based on the user input."""
 
     # Fill in defaults from input or initial defaults
     if lang == "en":
         default_device = OPT_ROOM_CONTROLS_NAME_EN
         default_temperature_name =OPT_TEMPERATURE_NAME_EN
         default_humidity_name = OPT_HUMIDITY_NAME_EN
-        default_target_name = OPT_TEMPERATURE_SETTING_NAME_EN
+        default_temperature_setting_name = OPT_TEMPERATURE_SETTING_NAME_EN
+        default_temperature_target_name = OPT_TEMPERATURE_TARGET_NAME_EN
+        default_low_setting_name = OPT_LOW_SETTING_NAME_EN
+        default_low_target_name = OPT_LOW_TARGET_NAME_EN
+        default_valve_heating_name = OPT_VALVE_HEATING_NAME_EN
+        default_valve_cooling_name = OPT_VALVE_COOLING_NAME_EN
     if lang == "cs":
         default_device = OPT_ROOM_CONTROLS_NAME_CS
         default_temperature_name =OPT_TEMPERATURE_NAME_CS
         default_humidity_name = OPT_HUMIDITY_NAME_CS
-        default_target_name = OPT_TEMPERATURE_SETTING_NAME_CS
+        default_temperature_setting_name = OPT_TEMPERATURE_SETTING_NAME_CS
+        default_temperature_target_name = OPT_TEMPERATURE_TARGET_NAME_CS
+        default_low_setting_name = OPT_LOW_SETTING_NAME_CS
+        default_low_target_name = OPT_LOW_TARGET_NAME_CS
+        default_valve_heating_name = OPT_VALVE_HEATING_NAME_CS
+        default_valve_cooling_name = OPT_VALVE_COOLING_NAME_CS
     default_temperature_uid = default_humidity_uid = 0
-    default_target_uid = 0
-    default_target_max = OPT_TEMPERATURE_SETTING_MAXIMUM
-    default_target_min = OPT_TEMPERATURE_SETTING_MINIMUM
-    default_target_step = OPT_TEMPERATURE_SETTING_STEP
+    default_temperature_setting_uid = default_temperature_target_uid = 0
+    default_low_setting_uid = default_low_target_uid = 0
+    default_valve_heating_uid = default_valve_cooling_uid = 0
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE)
         temperature = input_data.get(OPT_TEMPERATURE)
@@ -1230,18 +1362,24 @@ def _get_room_schema(
         humidity = input_data.get(OPT_HUMIDITY)
         default_humidity_name = humidity.get(OPT_NAME)
         default_humidity_uid = humidity.get(OPT_UID, 0)
-        target = input_data.get(OPT_TEMPERATURE_SETTING)
-        default_target_name = target.get(OPT_NAME)
-        default_target_uid = target.get(OPT_UID, 0)
-        default_target_max = target.get(
-            OPT_TEMPERATURE_SETTING_MAXIMUM, default_target_max
-        )
-        default_target_min = target.get(
-            OPT_TEMPERATURE_SETTING_MINIMUM, default_target_min
-        )
-        default_target_step = target.get(
-            OPT_TEMPERATURE_SETTING_STEP, default_target_step
-        )
+        temperature_setting = input_data.get(OPT_TEMPERATURE_SETTING)
+        default_temperature_setting_name = temperature_setting.get(OPT_NAME)
+        default_temperature_setting_uid = temperature_setting.get(OPT_UID, 0)
+        temperature_target = input_data.get(OPT_TEMPERATURE_TARGET)
+        default_temperature_target_name = temperature_target.get(OPT_NAME)
+        default_temperature_target_uid = temperature_target.get(OPT_UID, 0)
+        low_setting = input_data.get(OPT_LOW_SETTING)
+        default_low_setting_name = low_setting.get(OPT_NAME)
+        default_low_setting_uid = low_setting.get(OPT_UID, 0)
+        low_target = input_data.get(OPT_LOW_TARGET)
+        default_low_target_name = low_target.get(OPT_NAME)
+        default_low_target_uid = low_target.get(OPT_UID, 0)
+        valve_heating = input_data.get(OPT_VALVE_HEATING)
+        default_valve_heating_name = valve_heating.get(OPT_NAME)
+        default_valve_heating_uid = valve_heating.get(OPT_UID, 0)
+        valve_cooling = input_data.get(OPT_VALVE_COOLING)
+        default_valve_cooling_name = valve_cooling.get(OPT_NAME)
+        default_valve_cooling_uid = valve_cooling.get(OPT_UID, 0)
     return vol.Schema(
         {
             vol.Required(OPT_DEVICE, default=default_device): str,
@@ -1270,19 +1408,65 @@ def _get_room_schema(
             vol.Required(OPT_TEMPERATURE_SETTING): section(
                 vol.Schema(
                     {
-                        vol.Optional(OPT_NAME, default=default_target_name): str,
+                        vol.Optional(OPT_NAME, default=default_temperature_setting_name): str,
                         vol.Optional(
-                            OPT_UID, default=default_target_uid
+                            OPT_UID, default=default_temperature_setting_uid
                         ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_TEMPERATURE_TARGET): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_temperature_target_name): str,
                         vol.Optional(
-                            OPT_MINIMUM, default=default_target_min
-                        ): _TEMPERATURE_SETTING_SELECTOR,
+                            OPT_UID, default=default_temperature_target_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_LOW_SETTING): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_low_setting_name): str,
                         vol.Optional(
-                            OPT_MAXIMUM, default=default_target_max
-                        ): _TEMPERATURE_SETTING_SELECTOR,
+                            OPT_UID, default=default_low_setting_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_LOW_TARGET): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_low_target_name): str,
                         vol.Optional(
-                            OPT_STEP, default=default_target_step
-                        ): _TARGET_STEP_SELECTOR,
+                            OPT_UID, default=default_low_target_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_VALVE_HEATING): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_valve_heating_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_valve_heating_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_VALVE_COOLING): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_valve_cooling_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_valve_cooling_uid
+                        ): _UID_SELECTOR,
                     }
                 ),
                 {"collapsed": False},
