@@ -74,10 +74,11 @@ async def async_remove_config_entry_device(
             device_entry.identifiers,
         )
         devices.append(device)
-    for opt in data:
-        for device in devices:
-            if data[opt]["device"] == device:
-                remove.append(opt)  # noqa: PERF401
+    for opt, val in data.items():
+        if "device" in val:
+            for device in devices:
+                if val["device"] == device:
+                    remove.append(opt)
     for opt in remove:
         _LOGGER.debug("Removing entity: %s", opt)
         data.pop(opt, None)
