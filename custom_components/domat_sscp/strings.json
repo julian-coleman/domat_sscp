@@ -53,28 +53,28 @@
           "device": "Device name"
         },
         "sections": {
-          "temperature_target": {
-            "name": "Target temperature:",
-            "data": {
-              "name": "Name",
-              "uid": "UID",
-              "minimum": "Minimum",
-              "maximum": "Maximum",
-              "step": "Step"
-            }
-          },
           "temperature": {
-            "name": "Temperature:",
+            "name": "Actual temperature:",
             "data": {
               "name": "Name",
               "uid": "UID"
             }
           },
           "humidity": {
-            "name": "Humidity:",
+            "name": "Actual humidity:",
             "data": {
               "name": "Name",
               "uid": "UID"
+            }
+          },
+          "temperature_setting": {
+            "name": "Set target temperature:",
+            "data": {
+              "name": "Name",
+              "uid": "UID",
+              "minimum": "Minimum",
+              "maximum": "Maximum",
+              "step": "Step"
             }
           }
         }

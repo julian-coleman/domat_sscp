@@ -53,28 +53,28 @@
           "device": "Název zařízení"
         },
         "sections": {
-          "temperature_target": {
-            "name": "Teplota žádaná:",
-            "data": {
-              "name": "Název",
-              "uid": "UID",
-              "minimum": "Minimální",
-              "maximum": "Maximální",
-              "step": "Vzdálenost"
-            }
-          },
           "temperature": {
-            "name": "Teplota:",
+            "name": "Teplota aktuální:",
             "data": {
               "name": "Název",
               "uid": "UID"
             }
           },
           "humidity": {
-            "name": "Vlhkost:",
+            "name": "Vlhkost aktuální:",
             "data": {
               "name": "Název",
               "uid": "UID"
+            }
+          },
+          "temperature_setting": {
+            "name": "Teplota žádaná - nastavení:",
+            "data": {
+              "name": "Název",
+              "uid": "UID",
+              "minimum": "Minimální",
+              "maximum": "Maximální",
+              "step": "Vzdálenost"
             }
           }
         }

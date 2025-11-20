@@ -94,12 +94,12 @@ from .const import (
     OPT_TEMPERATURE,
     OPT_TEMPERATURE_NAME_CS,
     OPT_TEMPERATURE_NAME_EN,
-    OPT_TEMPERATURE_TARGET,
-    OPT_TEMPERATURE_TARGET_MAXIMUM,
-    OPT_TEMPERATURE_TARGET_MINIMUM,
-    OPT_TEMPERATURE_TARGET_NAME_CS,
-    OPT_TEMPERATURE_TARGET_NAME_EN,
-    OPT_TEMPERATURE_TARGET_STEP,
+    OPT_TEMPERATURE_SETTING,
+    OPT_TEMPERATURE_SETTING_MAXIMUM,
+    OPT_TEMPERATURE_SETTING_MINIMUM,
+    OPT_TEMPERATURE_SETTING_NAME_CS,
+    OPT_TEMPERATURE_SETTING_NAME_EN,
+    OPT_TEMPERATURE_SETTING_STEP,
     OPT_UID,
     OPT_VENTILATION_ERROR,
     OPT_VENTILATION_ERROR_NAME_CS,
@@ -162,21 +162,21 @@ _UID_SELECTOR = vol.All(
     ),
     vol.Coerce(int),
 )
-_TARGET_MIN_SELECTOR = vol.All(
+_TEMPERATURE_SETTING_SELECTOR = vol.All(
     NumberSelector(
         NumberSelectorConfig(
-            min=OPT_TEMPERATURE_TARGET_MINIMUM,
-            max=OPT_TEMPERATURE_TARGET_MAXIMUM,
+            min=OPT_TEMPERATURE_SETTING_MINIMUM,
+            max=OPT_TEMPERATURE_SETTING_MAXIMUM,
             mode=NumberSelectorMode.BOX,
         ),
     ),
     vol.Coerce(int),
 )
-_TARGET_MAX_SELECTOR = vol.All(
+_TEMPERATURE_SETTING_SELECTOR = vol.All(
     NumberSelector(
         NumberSelectorConfig(
-            min=OPT_TEMPERATURE_TARGET_MINIMUM,
-            max=OPT_TEMPERATURE_TARGET_MAXIMUM,
+            min=OPT_TEMPERATURE_SETTING_MINIMUM,
+            max=OPT_TEMPERATURE_SETTING_MAXIMUM,
             mode=NumberSelectorMode.BOX,
         ),
     ),
@@ -333,19 +333,15 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         # Create variables list from user input
         # Our entity ID's are uid-length-offset of the variable
         _LOGGER.debug("User input: %s", user_input)
-        target = user_input.get(OPT_TEMPERATURE_TARGET)
-        target_uid = target.get(OPT_UID)
-        target_max = target.get(OPT_MAXIMUM)
-        target_min = target.get(OPT_MINIMUM)
-        target_step = target.get(OPT_STEP)
         temperature = user_input.get(OPT_TEMPERATURE)
         temperature_uid = temperature.get(OPT_UID)
         humidity = user_input.get(OPT_HUMIDITY)
         humidity_uid = humidity.get(OPT_UID)
-        if target_uid != 0:
-            variables.append(sscp_variable(uid=target_uid, offset=0, length=4, type=13))
-            target_entity_id = str(target_uid) + "-0-4"
-            entity_ids.update({target_entity_id: target_uid})
+        temperature_setting = user_input.get(OPT_TEMPERATURE_SETTING)
+        temperature_setting_uid = temperature_setting.get(OPT_UID)
+        temperature_setting_max = temperature_setting.get(OPT_MAXIMUM)
+        temperature_setting_min = temperature_setting.get(OPT_MINIMUM)
+        temperature_setting_step = temperature_setting.get(OPT_STEP)
         if temperature_uid != 0:
             variables.append(
                 sscp_variable(uid=temperature_uid, offset=0, length=4, type=13)
@@ -358,6 +354,10 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             )
             humidity_entity_id = str(humidity_uid) + "-0-4"
             entity_ids.update({humidity_entity_id: humidity_uid})
+        if temperature_setting_uid != 0:
+            variables.append(sscp_variable(uid=temperature_setting_uid, offset=0, length=4, type=13))
+            temperature_setting_entity_id = str(temperature_setting_uid) + "-0-4"
+            entity_ids.update({temperature_setting_entity_id: temperature_setting_uid})
 
         if len(variables) == 0:
             # No user variables
@@ -440,21 +440,21 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                 },
                             }
                         )
-                    if target_uid != 0:
+                    if temperature_setting_uid != 0:
                         data.update(
                             {
-                                target_entity_id: {
-                                    "name": target.get(OPT_NAME),
-                                    "uid": target_uid,
+                                temperature_setting_entity_id: {
+                                    "name": temperature_setting.get(OPT_NAME),
+                                    "uid": temperature_setting_uid,
                                     "offset": 0,
                                     "length": 4,
                                     "type": 13,
                                     "feature": WaterHeaterEntityFeature.TARGET_TEMPERATURE,
                                     "unit": UnitOfTemperature.CELSIUS,
                                     "precision": PRECISION_TENTHS,
-                                    "max": target_max,
-                                    "min": target_min,
-                                    "step": target_step,
+                                    "max": temperature_setting_max,
+                                    "min": temperature_setting_min,
+                                    "step": temperature_setting_step,
                                     "entity": Platform.WATER_HEATER,
                                     "device": user_input.get(OPT_DEVICE),
                                     "icon": "mdi:thermometer-lines",
@@ -1211,17 +1211,17 @@ def _get_room_schema(
         default_device = OPT_ROOM_CONTROLS_NAME_EN
         default_temperature_name =OPT_TEMPERATURE_NAME_EN
         default_humidity_name = OPT_HUMIDITY_NAME_EN
-        default_target_name = OPT_TEMPERATURE_TARGET_NAME_EN
+        default_target_name = OPT_TEMPERATURE_SETTING_NAME_EN
     if lang == "cs":
         default_device = OPT_ROOM_CONTROLS_NAME_CS
         default_temperature_name =OPT_TEMPERATURE_NAME_CS
         default_humidity_name = OPT_HUMIDITY_NAME_CS
-        default_target_name = OPT_TEMPERATURE_TARGET_NAME_CS
+        default_target_name = OPT_TEMPERATURE_SETTING_NAME_CS
     default_temperature_uid = default_humidity_uid = 0
     default_target_uid = 0
-    default_target_max = OPT_TEMPERATURE_TARGET_MAXIMUM
-    default_target_min = OPT_TEMPERATURE_TARGET_MINIMUM
-    default_target_step = OPT_TEMPERATURE_TARGET_STEP
+    default_target_max = OPT_TEMPERATURE_SETTING_MAXIMUM
+    default_target_min = OPT_TEMPERATURE_SETTING_MINIMUM
+    default_target_step = OPT_TEMPERATURE_SETTING_STEP
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE)
         temperature = input_data.get(OPT_TEMPERATURE)
@@ -1230,17 +1230,17 @@ def _get_room_schema(
         humidity = input_data.get(OPT_HUMIDITY)
         default_humidity_name = humidity.get(OPT_NAME)
         default_humidity_uid = humidity.get(OPT_UID, 0)
-        target = input_data.get(OPT_TEMPERATURE_TARGET)
+        target = input_data.get(OPT_TEMPERATURE_SETTING)
         default_target_name = target.get(OPT_NAME)
         default_target_uid = target.get(OPT_UID, 0)
         default_target_max = target.get(
-            OPT_TEMPERATURE_TARGET_MAXIMUM, default_target_max
+            OPT_TEMPERATURE_SETTING_MAXIMUM, default_target_max
         )
         default_target_min = target.get(
-            OPT_TEMPERATURE_TARGET_MINIMUM, default_target_min
+            OPT_TEMPERATURE_SETTING_MINIMUM, default_target_min
         )
         default_target_step = target.get(
-            OPT_TEMPERATURE_TARGET_STEP, default_target_step
+            OPT_TEMPERATURE_SETTING_STEP, default_target_step
         )
     return vol.Schema(
         {
@@ -1267,7 +1267,7 @@ def _get_room_schema(
                 ),
                 {"collapsed": False},
             ),
-            vol.Required(OPT_TEMPERATURE_TARGET): section(
+            vol.Required(OPT_TEMPERATURE_SETTING): section(
                 vol.Schema(
                     {
                         vol.Optional(OPT_NAME, default=default_target_name): str,
@@ -1276,10 +1276,10 @@ def _get_room_schema(
                         ): _UID_SELECTOR,
                         vol.Optional(
                             OPT_MINIMUM, default=default_target_min
-                        ): _TARGET_MAX_SELECTOR,
+                        ): _TEMPERATURE_SETTING_SELECTOR,
                         vol.Optional(
                             OPT_MAXIMUM, default=default_target_max
-                        ): _TARGET_MIN_SELECTOR,
+                        ): _TEMPERATURE_SETTING_SELECTOR,
                         vol.Optional(
                             OPT_STEP, default=default_target_step
                         ): _TARGET_STEP_SELECTOR,
