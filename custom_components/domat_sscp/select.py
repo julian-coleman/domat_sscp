@@ -123,6 +123,7 @@ class DomatSSCPSelect(CoordinatorEntity, SelectEntity):
     def select_option(self, option: str) -> None:
         """Set the option using the co-ordinator function."""
 
+        # Convert state to value
         new_value = 0
         for value, state in self.states.items():
             if state == option:
@@ -146,6 +147,7 @@ class DomatSSCPSelect(CoordinatorEntity, SelectEntity):
             _LOGGER.error("No co-ordinator data for %s", self.unique_id)
             return None
 
+        # Convert value to state
         new_value = str(self.coordinator.data[self.unique_id])
         for value, state in self.states.items():
             if value == new_value:
