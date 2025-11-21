@@ -168,8 +168,8 @@ class sscp_variable:
                         old=self.val,
                         new=new,
                     )
-                if new.lower().startswith("0x"):
-                    val = int(new, 16)
+                if isinstance(new, str) and new.lower().startswith("0x"):
+                        val = int(new, 16)
                 else:
                     val = int(new)
                 _LOGGER.debug("New 2-byte: %s", val)
@@ -189,7 +189,7 @@ class sscp_variable:
                         val = 1
                     else:
                         val = 0
-                elif new.lower().startswith("0x"):
+                elif isinstance(new, str) and new.lower().startswith("0x"):
                     val = int(new, 16)
                 else:
                     val = int(new)
@@ -198,7 +198,7 @@ class sscp_variable:
 
             case _:
                 _LOGGER.debug("Change unknown type: %d", self.uid)
-                if new.lower().startswith("0x"):
+                if isinstance(new, str) and new.lower().startswith("0x"):
                     val = int(new, 16)
                 else:
                     val = int(new)
