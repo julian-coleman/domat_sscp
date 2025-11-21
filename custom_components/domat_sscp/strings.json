@@ -40,9 +40,10 @@
       "init": {
         "title": "Add SSCP devices",
         "menu_options": {
-          "room": "Add room Controls",
-          "energy": "Add energy Readings",
-          "air": "Add ventilation",
+          "room": "Add a room control device",
+          "apartment": "Add an apartment control device",
+          "energy": "Add an energy readings device",
+          "air": "Add a ventilation device",
           "poll": "Set connection intervals",
           "info": "Write configuration information to the log"
         }
@@ -111,8 +112,37 @@
           }
         }
       },
+      "apartment": {
+        "title": "Add an apartment control device",
+        "data": {
+          "device": "Název zařízení"
+        },
+        "sections": {
+          "apartment_mode": {
+            "name": "Režím bytu - nastavení:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "holiday_setting": {
+            "name": "Teplota prázdniny - nastavení:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "holiday_target": {
+            "name": "Teplota prázdniny nastavená:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          }
+        }
+      },
       "energy": {
-        "title": "Add energy reading devices",
+        "title": "Add an energy readings device",
         "sections": {
           "meter_electricity": {
             "name": "Electricity Meter:",
@@ -152,7 +182,7 @@
         }
       },
       "air": {
-        "title": "Add ventilation",
+        "title": "Add a ventilation device",
         "data": {
           "device": "Device name"
         },

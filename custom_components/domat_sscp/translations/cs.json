@@ -41,6 +41,7 @@
         "title": "Přidat zařízení SSCP",
         "menu_options": {
           "room": "Přidat ovládání pokoje",
+          "apartment": "Přidat ovládání bytu",
           "energy": "Přidat odečty energií",
           "air": "Přidat vzduchotechniku",
           "poll": "Nastavit intervaly připojení",
@@ -104,6 +105,35 @@
           },
           "valve_cooling": {
             "name": "Ventil chlazení:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          }
+        }
+      },
+      "apartment": {
+        "title": "Přidat ovládání bytu",
+        "data": {
+          "device": "Název zařízení"
+        },
+        "sections": {
+          "apartment_mode": {
+            "name": "Režím bytu - nastavení:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "holiday_setting": {
+            "name": "Set holiday temperature:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "holiday_target": {
+            "name": "Holiday temperature:",
             "data": {
               "name": "Název",
               "uid": "UID"
