@@ -40,8 +40,14 @@ OPT_LOW_SETTING = "low_setting"
 OPT_LOW_TARGET = "low_target"
 OPT_VALVE_HEATING = "valve_heating"
 OPT_VALVE_COOLING = "valve_cooling"
+
+OPT_APARTMENT_MODE = "apartment_mode"
+OPT_APARTMENT_ACTUAL = "apartment_actual"
 OPT_HOLIDAY_SETTING = "holiday_setting"
 OPT_HOLIDAY_TARGET = "holiday_target"
+OPT_APARTMENT_STATE = "apartment_state"
+OPT_APARTMENT_HEATING = "apartment_heating"
+OPT_APARTMENT_COOLING = "apartment_cooling"
 
 OPT_METER_ELECTRICITY = "meter_electricity"
 OPT_METER_WATER_COLD = "meter_water_cold"
@@ -63,12 +69,13 @@ OPT_VENTILATION_FLOW_SETTING = "ventilator_flow_setting"
 OPT_TEMPERATURE_SETTING_MINIMUM = 16
 OPT_TEMPERATURE_SETTING_MAXIMUM = 30
 OPT_TEMPERATURE_SETTING_STEP = 0.5
-OPT_HOLIDAY_SETTING_MINIMUM = 16
-OPT_HOLIDAY_SETTING_MAXIMUM = 30
-OPT_HOLIDAY_SETTING_STEP = 0.5
 OPT_LOW_SETTING_MINIMUM = 0
 OPT_LOW_SETTING_MAXIMUM = 4
 OPT_LOW_SETTING_STEP = 0.1
+
+OPT_HOLIDAY_SETTING_MINIMUM = 12
+OPT_HOLIDAY_SETTING_MAXIMUM = 26
+OPT_HOLIDAY_SETTING_STEP = 0.5
 
 OPT_VENTILATION_FLOW_MINIMUM = 80
 OPT_VENTILATION_FLOW_MAXIMUM = 200
@@ -92,6 +99,38 @@ OPT_LOW_SETTING_NAME_CS = "Útlum - nastavení"
 OPT_LOW_TARGET_NAME_CS = "Útlum nastavený"
 OPT_VALVE_HEATING_NAME_CS = "Ventil topení"
 OPT_VALVE_COOLING_NAME_CS = "Ventil chlazení"
+
+OPT_APARTMENT_CONTROLS_NAME_EN="Apartment Controls"
+OPT_APARTMENT_MODE_NAME_EN = "Set apartment mode"
+OPT_APARTMENT_ACTUAL_NAME_EN = "apartment_actual"
+OPT_HOLIDAY_SETTING_NAME_EN = "Set holiday temperature"
+OPT_HOLIDAY_TARGET_NAME_EN = "Holiday temperature"
+OPT_APARTMENT_STATE_NAME_EN = "apartment_state"
+OPT_APARTMENT_HEATING_NAME_EN = "apartment_heating"
+OPT_APARTMENT_COOLING_NAME_EN = "apartment_cooling"
+OPT_APARTMENT_CONTROLS_NAME_CS="Ovládání bytu"
+OPT_APARTMENT_MODE_NAME_CS = "Režím bytu - nastavení"
+OPT_APARTMENT_ACTUAL_NAME_CS = "apartment_actual"
+OPT_HOLIDAY_SETTING_NAME_CS = "Teplota prázdniny - nastavení"
+OPT_HOLIDAY_TARGET_NAME_CS = "Teplota prázdniny nastavená"
+OPT_APARTMENT_STATE_NAME_CS = "apartment_state"
+OPT_APARTMENT_HEATING_NAME_CS = "apartment_heating"
+OPT_APARTMENT_COOLING_NAME_CS = "apartment_cooling"
+
+OPT_APARTMENT_MODE_STATES_EN = {
+    "2": "Time plan + heating",
+    "4": "Time plan + cooling",
+    "8": "Heating komfort",
+    "16": "Cooling komfort",
+    "32": "Holiday"
+}
+OPT_APARTMENT_MODE_STATES_CS = {
+    "2": "Časový plán + topení",
+    "4": "Časový plán + chlazení",
+    "8": "Topení komfort",
+    "16": "Chlazení komfort",
+    "32": "Prázdniny"
+}
 
 OPT_ENERGY_NAME_EN = "Energy Readings"
 OPT_METER_ELECTRICITY_NAME_EN = "Electricity Meter"

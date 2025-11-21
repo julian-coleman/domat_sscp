@@ -54,6 +54,13 @@ from .const import (
     DEFAULT_SSCP_PORT,
     DEFAULT_WRITE_RETRIES,
     DOMAIN,
+    OPT_APARTMENT_CONTROLS_NAME_CS,
+    OPT_APARTMENT_CONTROLS_NAME_EN,
+    OPT_APARTMENT_MODE,
+    OPT_APARTMENT_MODE_NAME_CS,
+    OPT_APARTMENT_MODE_NAME_EN,
+    OPT_APARTMENT_MODE_STATES_CS,
+    OPT_APARTMENT_MODE_STATES_EN,
     OPT_CALORIMETER_COLD,
     OPT_CALORIMETER_COLD_NAME_CS,
     OPT_CALORIMETER_COLD_NAME_EN,
@@ -71,6 +78,15 @@ from .const import (
     OPT_ENERGY_NAME_EN,
     OPT_FAST_COUNT,
     OPT_FAST_INTERVAL,
+    OPT_HOLIDAY_SETTING,
+    OPT_HOLIDAY_SETTING_MAXIMUM,
+    OPT_HOLIDAY_SETTING_MINIMUM,
+    OPT_HOLIDAY_SETTING_NAME_CS,
+    OPT_HOLIDAY_SETTING_NAME_EN,
+    OPT_HOLIDAY_SETTING_STEP,
+    OPT_HOLIDAY_TARGET,
+    OPT_HOLIDAY_TARGET_NAME_CS,
+    OPT_HOLIDAY_TARGET_NAME_EN,
     OPT_HUMIDITY,
     OPT_HUMIDITY_NAME_CS,
     OPT_HUMIDITY_NAME_EN,
@@ -83,7 +99,6 @@ from .const import (
     OPT_LOW_TARGET,
     OPT_LOW_TARGET_NAME_CS,
     OPT_LOW_TARGET_NAME_EN,
-    OPT_MAXIMUM,
     OPT_METER_ELECTRICITY,
     OPT_METER_ELECTRICITY_NAME_CS,
     OPT_METER_ELECTRICITY_NAME_EN,
@@ -93,13 +108,11 @@ from .const import (
     OPT_METER_WATER_HOT,
     OPT_METER_WATER_HOT_NAME_CS,
     OPT_METER_WATER_HOT_NAME_EN,
-    OPT_MINIMUM,
     OPT_NAME,
     OPT_POLLING,
     OPT_ROOM_CONTROLS_NAME_CS,
     OPT_ROOM_CONTROLS_NAME_EN,
     OPT_SCAN_INTERVAL,
-    OPT_STEP,
     OPT_TEMPERATURE,
     OPT_TEMPERATURE_NAME_CS,
     OPT_TEMPERATURE_NAME_EN,
@@ -206,7 +219,7 @@ _WRITE_RETRIES_SELECTOR = vol.All(
 )
 
 # Options flow menu
-_DEVICE_MENU = ["room", "energy", "air", "poll", "info"]
+_DEVICE_MENU = ["room", "apartment", "energy", "air", "poll", "info"]
 
 
 class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -580,6 +593,163 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "entity": Platform.BINARY_SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
                                     "icon": "mdi:valve",
+                                },
+                            }
+                        )
+                    return self.async_create_entry(data=data)
+
+        # There was some validation problem - previous input as defaults
+        return self.async_show_form(
+            step_id=step,
+            data_schema=schema,
+            errors=errors,
+            description_placeholders=description_placeholders,
+        )
+
+    async def async_step_apartment(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the options for adding an apartment device."""
+
+        data: dict[str, Any] = self.config_entry.options.copy()
+        coordinator = self.config_entry.coordinator
+        errors: dict[str, str] = {}
+        description_placeholders: dict[str, str] = {}
+        variables: list[sscp_variable] = []
+        entity_ids: dict[str, str] = {}
+        step = "apartment"
+        lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
+        schema = _get_apartment_schema(lang, user_input)
+
+        if user_input is None:
+            return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
+
+        # Create variables and entities lists to check from user input
+        # Our entity ID's are uid-length-offset of the variable
+        _LOGGER.debug("User input: %s", user_input)
+        apartment_mode = user_input.get(OPT_APARTMENT_MODE)
+        apartment_mode_uid = apartment_mode.get(OPT_UID)
+        holiday_setting = user_input.get(OPT_HOLIDAY_SETTING)
+        holiday_setting_uid = holiday_setting.get(OPT_UID)
+        holiday_target = user_input.get(OPT_HOLIDAY_TARGET)
+        holiday_target_uid = holiday_target.get(OPT_UID)
+        if apartment_mode_uid != 0:
+            variables.append(
+                sscp_variable(uid=apartment_mode_uid, offset=0, length=2, type=2)
+            )
+            apartment_mode_entity_id = str(apartment_mode_uid) + "-0-2"
+            entity_ids.update({apartment_mode_entity_id: apartment_mode_uid})
+        if holiday_setting_uid != 0:
+            variables.append(
+                sscp_variable(uid=holiday_setting_uid, offset=0, length=4, type=13)
+            )
+            holiday_setting_entity_id = str(holiday_setting_uid) + "-0-4"
+            entity_ids.update({holiday_setting_entity_id: holiday_setting_uid})
+        if holiday_target_uid != 0:
+            variables.append(
+                sscp_variable(uid=holiday_target_uid, offset=0, length=4, type=13)
+            )
+            holiday_target_entity_id = str(holiday_target_uid) + "-0-4"
+            entity_ids.update({holiday_target_entity_id: holiday_target_uid})
+
+        if len(variables) == 0:
+            # No user variables
+            errors["base"] = "variable_error"
+            description_placeholders = {"error": "UID All Zero", "variables": "0"}
+        else:
+            err_info = self._check_exists(device_name=None, entity_ids=entity_ids)
+            if "device" in err_info:
+                errors["base"] = "variable_error"
+                err_str = "Device Already Exists"
+                description_placeholders = {
+                    "error": err_str,
+                    "variables": user_input.get(OPT_DEVICE),
+                }
+            elif len(err_info["variables"]) > 0:
+                errors["base"] = "variable_error"
+                err_str = "UID Already Exists"
+                description_placeholders = {
+                    "error": err_str,
+                    "variables": err_info["variables"],
+                }
+
+        if "base" not in errors:
+            # Validate the user input and create an entry
+            coordinator.set_last_connect()
+            try:
+                info = await _validate_config(
+                    data=self.config_entry.data,
+                    variables=variables,
+                )
+            except TimeoutError:
+                errors["base"] = "timeout_connect"
+            except (ValueError, OSError):
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            else:
+                # No exception, so either generate an error or return
+                if info["error_code"] != 0:
+                    errors["base"] = "variable_error"
+                    err_str = SSCP_ERRORS.get(info["error_code"], "unknown")
+                    description_placeholders = {
+                        "error": err_str,
+                        "variables": info["error_variables"],
+                    }
+                else:
+                    if apartment_mode_uid != 0:
+                        apartment_mode_states = OPT_APARTMENT_MODE_STATES_EN
+                        if lang == "cs":
+                            apartment_mode_states = OPT_APARTMENT_MODE_STATES_CS
+                        data.update(
+                            {
+                                apartment_mode_entity_id: {
+                                    "name": apartment_mode.get(OPT_NAME),
+                                    "uid": apartment_mode_uid,
+                                    "offset": 0,
+                                    "length": 2,
+                                    "type": 2,
+                                    "states": apartment_mode_states,
+                                    "entity": Platform.SELECT,
+                                    "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if holiday_setting_uid != 0:
+                        data.update(
+                            {
+                                holiday_setting_entity_id: {
+                                    "name": holiday_setting.get(OPT_NAME),
+                                    "uid": holiday_setting_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "feature": WaterHeaterEntityFeature.TARGET_TEMPERATURE,
+                                    "unit": UnitOfTemperature.CELSIUS,
+                                    "precision": PRECISION_TENTHS,
+                                    "max": OPT_HOLIDAY_SETTING_MAXIMUM,
+                                    "min": OPT_HOLIDAY_SETTING_MINIMUM,
+                                    "step": OPT_HOLIDAY_SETTING_STEP,
+                                    "entity": Platform.WATER_HEATER,
+                                    "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:thermometer-lines",
+                                },
+                            }
+                        )
+                    if holiday_target_uid != 0:
+                        data.update(
+                            {
+                                holiday_target_entity_id: {
+                                    "name": holiday_target.get(OPT_NAME),
+                                    "uid": holiday_target_uid,
+                                    "offset": 0,
+                                    "length": 4,
+                                    "type": 13,
+                                    "class": SensorDeviceClass.TEMPERATURE,
+                                    "unit": UnitOfTemperature.CELSIUS,
+                                    "precision": 1,
+                                    "entity": Platform.SENSOR,
+                                    "device": user_input.get(OPT_DEVICE),
                                 },
                             }
                         )
@@ -1188,9 +1358,10 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     def _check_exists(
         self, device_name: str | None, entity_ids: dict[str, str]
     ) -> dict[str, str]:
-        """Check if entity already exists."""
+        """Check if device or entity already exists."""
 
         variables: str = ""
+        # Does the device already exist?
         for value in self.config_entry.options.values():
             if (
                 device_name is not None
@@ -1198,6 +1369,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                 and value["device"] == device_name
             ):
                 return {"device": device_name}
+        # Does the entity already exist?
         for entity_id, entity_uid in entity_ids.items():
             if entity_id in self.config_entry.options:
                 variables = variables + str(entity_uid) + " "
@@ -1332,7 +1504,7 @@ def _get_room_schema(
     # Fill in defaults from input or initial defaults
     if lang == "en":
         default_device = OPT_ROOM_CONTROLS_NAME_EN
-        default_temperature_name =OPT_TEMPERATURE_NAME_EN
+        default_temperature_name = OPT_TEMPERATURE_NAME_EN
         default_humidity_name = OPT_HUMIDITY_NAME_EN
         default_temperature_setting_name = OPT_TEMPERATURE_SETTING_NAME_EN
         default_temperature_target_name = OPT_TEMPERATURE_TARGET_NAME_EN
@@ -1342,7 +1514,7 @@ def _get_room_schema(
         default_valve_cooling_name = OPT_VALVE_COOLING_NAME_EN
     if lang == "cs":
         default_device = OPT_ROOM_CONTROLS_NAME_CS
-        default_temperature_name =OPT_TEMPERATURE_NAME_CS
+        default_temperature_name = OPT_TEMPERATURE_NAME_CS
         default_humidity_name = OPT_HUMIDITY_NAME_CS
         default_temperature_setting_name = OPT_TEMPERATURE_SETTING_NAME_CS
         default_temperature_target_name = OPT_TEMPERATURE_TARGET_NAME_CS
@@ -1466,6 +1638,76 @@ def _get_room_schema(
                         vol.Optional(OPT_NAME, default=default_valve_cooling_name): str,
                         vol.Optional(
                             OPT_UID, default=default_valve_cooling_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+        }
+    )
+
+
+def _get_apartment_schema(
+    lang: str,
+    input_data: dict[str, Any] | None = None,
+) -> vol.Schema:
+    """Return an apartment control flow schema with defaults based on the user input."""
+
+    # Fill in defaults from input or initial defaults
+    if lang == "en":
+        default_device = OPT_APARTMENT_CONTROLS_NAME_EN
+        default_apartment_mode_name = OPT_APARTMENT_MODE_NAME_EN
+        default_holiday_setting_name = OPT_HOLIDAY_SETTING_NAME_EN
+        default_holiday_target_name = OPT_HOLIDAY_TARGET_NAME_EN
+    if lang == "cs":
+        default_device = OPT_APARTMENT_CONTROLS_NAME_CS
+        default_apartment_mode_name = OPT_APARTMENT_MODE_NAME_CS
+        default_holiday_setting_name = OPT_HOLIDAY_SETTING_NAME_CS
+        default_holiday_target_name = OPT_HOLIDAY_TARGET_NAME_CS
+    default_apartment_mode_uid = 0
+    default_holiday_setting_uid = default_holiday_target_uid = 0
+    if input_data is not None:
+        default_device = input_data.get(OPT_DEVICE)
+        apartment_mode = input_data.get(OPT_APARTMENT_MODE)
+        default_apartment_mode_name = apartment_mode.get(OPT_NAME)
+        default_apartment_mode_uid = apartment_mode.get(OPT_UID,0)
+        holiday_setting = input_data.get(OPT_HOLIDAY_SETTING)
+        default_holiday_setting_name = holiday_setting.get(OPT_NAME)
+        default_holiday_setting_uid = holiday_setting.get(OPT_UID, 0)
+        holiday_target = input_data.get(OPT_HOLIDAY_TARGET)
+        default_holiday_target_name = holiday_target.get(OPT_NAME)
+        default_holiday_target_uid = holiday_target.get(OPT_UID, 0)
+    return vol.Schema(
+        {
+            vol.Required(OPT_DEVICE, default=default_device): str,
+            vol.Required(OPT_APARTMENT_MODE): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_apartment_mode_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_apartment_mode_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_HOLIDAY_SETTING): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_holiday_setting_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_holiday_setting_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_HOLIDAY_TARGET): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_holiday_target_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_holiday_target_uid
                         ): _UID_SELECTOR,
                     }
                 ),
