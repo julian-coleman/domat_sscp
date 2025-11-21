@@ -3,11 +3,12 @@
 import logging
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DomatSSCPConfigEntry
@@ -75,12 +76,16 @@ class DomatSSCPSensor(CoordinatorEntity, SensorEntity):
             self._attr_icon = entity_data["icon"]
         if "unit" in entity_data:
             self._attr_native_unit_of_measurement = entity_data["unit"]
-        if "class" in entity_data:
-            self._attr_device_class = entity_data["class"]
+        self._attr_device_class = entity_data.get("class")
         if "state" in entity_data:
             self._attr_state_class = entity_data["state"]
         self._attr_suggested_display_precision = entity_data.get("precision", 0)
 
+        # We have to convert enums, so special-case them
+        if self.device_class == SensorDeviceClass.ENUM:
+            self.states = entity_data["states"]
+            self._attr_options = []
+            self._attr_options.extend(option for option in self.states.values())
         self.value = self._update_value()
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entity_data.get("device"))},
@@ -100,7 +105,7 @@ class DomatSSCPSensor(CoordinatorEntity, SensorEntity):
     # TODO: Add a callback for when the entity is disabled/enabled and update runtime
 
     @property
-    def native_value(self) -> float | None:
+    def native_value(self) -> StateType | float | None:
         """Return the current value."""
 
         return self.value
@@ -120,6 +125,17 @@ class DomatSSCPSensor(CoordinatorEntity, SensorEntity):
             _LOGGER.error("No co-ordinator data for %s", self.unique_id)
             return None
 
+        if self.device_class == SensorDeviceClass.ENUM:
+            # Convert value to state
+            new_value = str(self.coordinator.data[self.unique_id])
+            for value, state in self.states.items():
+                if value == new_value:
+                    return state
+
+            _LOGGER.error("Unexpected value: %s = %s", self.unique_id, new_value)
+            return ""
+
+        # Not an enum, return the value directly
         new_value = self.coordinator.data[self.unique_id]
         if self.suggested_display_precision is not None:
             new_value = round(new_value, self.suggested_display_precision)
