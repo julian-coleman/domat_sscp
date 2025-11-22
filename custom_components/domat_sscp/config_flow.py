@@ -54,13 +54,29 @@ from .const import (
     DEFAULT_SSCP_PORT,
     DEFAULT_WRITE_RETRIES,
     DOMAIN,
+    OPT_APARTMENT_ACTUAL,
+    OPT_APARTMENT_ACTUAL_NAME_CS,
+    OPT_APARTMENT_ACTUAL_NAME_EN,
+    OPT_APARTMENT_ACTUAL_STATES_CS,
+    OPT_APARTMENT_ACTUAL_STATES_EN,
     OPT_APARTMENT_CONTROLS_NAME_CS,
     OPT_APARTMENT_CONTROLS_NAME_EN,
+    OPT_APARTMENT_COOLING,
+    OPT_APARTMENT_COOLING_NAME_CS,
+    OPT_APARTMENT_COOLING_NAME_EN,
+    OPT_APARTMENT_HEATING,
+    OPT_APARTMENT_HEATING_NAME_CS,
+    OPT_APARTMENT_HEATING_NAME_EN,
     OPT_APARTMENT_MODE,
     OPT_APARTMENT_MODE_NAME_CS,
     OPT_APARTMENT_MODE_NAME_EN,
     OPT_APARTMENT_MODE_STATES_CS,
     OPT_APARTMENT_MODE_STATES_EN,
+    OPT_APARTMENT_STATE,
+    OPT_APARTMENT_STATE_NAME_CS,
+    OPT_APARTMENT_STATE_NAME_EN,
+    OPT_APARTMENT_STATE_STATES_CS,
+    OPT_APARTMENT_STATE_STATES_EN,
     OPT_CALORIMETER_COLD,
     OPT_CALORIMETER_COLD_NAME_CS,
     OPT_CALORIMETER_COLD_NAME_EN,
@@ -629,16 +645,30 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         _LOGGER.debug("User input: %s", user_input)
         apartment_mode = user_input.get(OPT_APARTMENT_MODE)
         apartment_mode_uid = apartment_mode.get(OPT_UID)
+        apartment_actual = user_input.get(OPT_APARTMENT_ACTUAL)
+        apartment_actual_uid = apartment_actual.get(OPT_UID)
         holiday_setting = user_input.get(OPT_HOLIDAY_SETTING)
         holiday_setting_uid = holiday_setting.get(OPT_UID)
         holiday_target = user_input.get(OPT_HOLIDAY_TARGET)
         holiday_target_uid = holiday_target.get(OPT_UID)
+        apartment_state = user_input.get(OPT_APARTMENT_STATE)
+        apartment_state_uid = apartment_state.get(OPT_UID)
+        apartment_heating = user_input.get(OPT_APARTMENT_HEATING)
+        apartment_heating_uid = apartment_heating.get(OPT_UID)
+        apartment_cooling = user_input.get(OPT_APARTMENT_COOLING)
+        apartment_cooling_uid = apartment_cooling.get(OPT_UID)
         if apartment_mode_uid != 0:
             variables.append(
                 sscp_variable(uid=apartment_mode_uid, offset=0, length=2, type=2)
             )
             apartment_mode_entity_id = str(apartment_mode_uid) + "-0-2"
             entity_ids.update({apartment_mode_entity_id: apartment_mode_uid})
+        if apartment_actual_uid != 0:
+            variables.append(
+                sscp_variable(uid=apartment_actual_uid, offset=0, length=2, type=2)
+            )
+            apartment_actual_entity_id = str(apartment_actual_uid) + "-0-2"
+            entity_ids.update({apartment_actual_entity_id: apartment_actual_uid})
         if holiday_setting_uid != 0:
             variables.append(
                 sscp_variable(uid=holiday_setting_uid, offset=0, length=4, type=13)
@@ -651,6 +681,24 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             )
             holiday_target_entity_id = str(holiday_target_uid) + "-0-4"
             entity_ids.update({holiday_target_entity_id: holiday_target_uid})
+        if apartment_state_uid != 0:
+            variables.append(
+                sscp_variable(uid=apartment_state_uid, offset=0, length=1, type=0)
+            )
+            apartment_state_entity_id = str(apartment_state_uid) + "-0-1"
+            entity_ids.update({apartment_state_entity_id: apartment_state_uid})
+        if apartment_heating_uid != 0:
+            variables.append(
+                sscp_variable(uid=apartment_heating_uid, offset=0, length=1, type=0)
+            )
+            apartment_heating_entity_id = str(apartment_heating_uid) + "-0-1"
+            entity_ids.update({apartment_heating_entity_id: apartment_heating_uid})
+        if apartment_cooling_uid != 0:
+            variables.append(
+                sscp_variable(uid=apartment_cooling_uid, offset=0, length=1, type=0)
+            )
+            apartment_cooling_entity_id = str(apartment_cooling_uid) + "-0-1"
+            entity_ids.update({apartment_cooling_entity_id: apartment_cooling_uid})
 
         if len(variables) == 0:
             # No user variables
@@ -697,10 +745,14 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         "variables": info["error_variables"],
                     }
                 else:
+                    apartment_mode_states = OPT_APARTMENT_MODE_STATES_EN
+                    apartment_actual_states = OPT_APARTMENT_ACTUAL_STATES_EN
+                    apartment_state_states = OPT_APARTMENT_STATE_STATES_EN
+                    if lang == "cs":
+                        apartment_mode_states = OPT_APARTMENT_MODE_STATES_CS
+                        apartment_actual_states = OPT_APARTMENT_ACTUAL_STATES_CS
+                        apartment_state_states = OPT_APARTMENT_STATE_STATES_CS
                     if apartment_mode_uid != 0:
-                        apartment_mode_states = OPT_APARTMENT_MODE_STATES_EN
-                        if lang == "cs":
-                            apartment_mode_states = OPT_APARTMENT_MODE_STATES_CS
                         data.update(
                             {
                                 apartment_mode_entity_id: {
@@ -712,6 +764,23 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "states": apartment_mode_states,
                                     "entity": Platform.SELECT,
                                     "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if apartment_actual_uid != 0:
+                        data.update(
+                            {
+                                apartment_actual_entity_id: {
+                                    "name": apartment_actual.get(OPT_NAME),
+                                    "uid": apartment_actual_uid,
+                                    "offset": 0,
+                                    "length": 2,
+                                    "type": 2,
+                                    "states": apartment_actual_states,
+                                    "class": SensorDeviceClass.ENUM,
+                                    "entity": Platform.SENSOR,
+                                    "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:format-list-bulleted",
                                 },
                             }
                         )
@@ -750,6 +819,59 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "precision": 1,
                                     "entity": Platform.SENSOR,
                                     "device": user_input.get(OPT_DEVICE),
+                                },
+                            }
+                        )
+                    if apartment_state_uid != 0:
+                        data.update(
+                            {
+                                apartment_state_entity_id: {
+                                    "name": apartment_state.get(OPT_NAME),
+                                    "uid": apartment_state_uid,
+                                    "offset": 0,
+                                    "length": 1,
+                                    "type": 0,
+                                    "states": apartment_state_states,
+                                    "class": SensorDeviceClass.ENUM,
+                                    "entity": Platform.SENSOR,
+                                    "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:format-list-bulleted",
+                                },
+                            }
+                        )
+                    if apartment_heating_uid != 0:
+                        data.update(
+                            {
+                                apartment_heating_entity_id: {
+                                    "name": apartment_heating.get(OPT_NAME),
+                                    "uid": apartment_heating_uid,
+                                    "offset": 0,
+                                    "length": 1,
+                                    "type": 0,
+                                    "class": BinarySensorDeviceClass.RUNNING,
+                                    "on": 1,
+                                    "off": 0,
+                                    "entity": Platform.BINARY_SENSOR,
+                                    "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:heat-wave",
+                                },
+                            }
+                        )
+                    if apartment_cooling_uid != 0:
+                        data.update(
+                            {
+                                apartment_cooling_entity_id: {
+                                    "name": apartment_cooling.get(OPT_NAME),
+                                    "uid": apartment_cooling_uid,
+                                    "offset": 0,
+                                    "length": 1,
+                                    "type": 0,
+                                    "class": BinarySensorDeviceClass.RUNNING,
+                                    "on": 1,
+                                    "off": 0,
+                                    "entity": Platform.BINARY_SENSOR,
+                                    "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:snowflake",
                                 },
                             }
                         )
@@ -1279,6 +1401,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                                     "unit": UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR,
                                     "entity": Platform.NUMBER,
                                     "device": user_input.get(OPT_DEVICE),
+                                    "icon": "mdi:speedometer",
                                 },
                             }
                         )
@@ -1657,26 +1780,48 @@ def _get_apartment_schema(
     if lang == "en":
         default_device = OPT_APARTMENT_CONTROLS_NAME_EN
         default_apartment_mode_name = OPT_APARTMENT_MODE_NAME_EN
+        default_apartment_actual_name = OPT_APARTMENT_ACTUAL_NAME_EN
         default_holiday_setting_name = OPT_HOLIDAY_SETTING_NAME_EN
         default_holiday_target_name = OPT_HOLIDAY_TARGET_NAME_EN
+        default_apartment_state_name = OPT_APARTMENT_STATE_NAME_EN
+        default_apartment_heating_name = OPT_APARTMENT_HEATING_NAME_EN
+        default_apartment_cooling_name = OPT_APARTMENT_COOLING_NAME_EN
     if lang == "cs":
         default_device = OPT_APARTMENT_CONTROLS_NAME_CS
         default_apartment_mode_name = OPT_APARTMENT_MODE_NAME_CS
+        default_apartment_actual_name = OPT_APARTMENT_ACTUAL_NAME_CS
         default_holiday_setting_name = OPT_HOLIDAY_SETTING_NAME_CS
         default_holiday_target_name = OPT_HOLIDAY_TARGET_NAME_CS
-    default_apartment_mode_uid = 0
+        default_apartment_state_name = OPT_APARTMENT_STATE_NAME_CS
+        default_apartment_heating_name = OPT_APARTMENT_HEATING_NAME_CS
+        default_apartment_cooling_name = OPT_APARTMENT_COOLING_NAME_CS
+    default_apartment_mode_uid = default_apartment_actual_uid = 0
     default_holiday_setting_uid = default_holiday_target_uid = 0
+    default_apartment_state_uid = 0
+    default_apartment_heating_uid = default_apartment_cooling_uid = 0
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE)
         apartment_mode = input_data.get(OPT_APARTMENT_MODE)
         default_apartment_mode_name = apartment_mode.get(OPT_NAME)
         default_apartment_mode_uid = apartment_mode.get(OPT_UID,0)
+        apartment_actual = input_data.get(OPT_APARTMENT_ACTUAL)
+        default_apartment_actual_name = apartment_actual.get(OPT_NAME)
+        default_apartment_actual_uid = apartment_actual.get(OPT_UID,0)
         holiday_setting = input_data.get(OPT_HOLIDAY_SETTING)
         default_holiday_setting_name = holiday_setting.get(OPT_NAME)
         default_holiday_setting_uid = holiday_setting.get(OPT_UID, 0)
         holiday_target = input_data.get(OPT_HOLIDAY_TARGET)
         default_holiday_target_name = holiday_target.get(OPT_NAME)
         default_holiday_target_uid = holiday_target.get(OPT_UID, 0)
+        apartment_state = input_data.get(OPT_APARTMENT_STATE)
+        default_apartment_state_name = apartment_state.get(OPT_NAME)
+        default_apartment_state_uid = apartment_state.get(OPT_UID,0)
+        apartment_heating = input_data.get(OPT_APARTMENT_HEATING)
+        default_apartment_heating_name = apartment_heating.get(OPT_NAME)
+        default_apartment_heating_uid = apartment_heating.get(OPT_UID,0)
+        apartment_cooling = input_data.get(OPT_APARTMENT_COOLING)
+        default_apartment_cooling_name = apartment_cooling.get(OPT_NAME)
+        default_apartment_cooling_uid = apartment_cooling.get(OPT_UID,0)
     return vol.Schema(
         {
             vol.Required(OPT_DEVICE, default=default_device): str,
@@ -1686,6 +1831,17 @@ def _get_apartment_schema(
                         vol.Optional(OPT_NAME, default=default_apartment_mode_name): str,
                         vol.Optional(
                             OPT_UID, default=default_apartment_mode_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_APARTMENT_ACTUAL): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_apartment_actual_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_apartment_actual_uid
                         ): _UID_SELECTOR,
                     }
                 ),
@@ -1708,6 +1864,39 @@ def _get_apartment_schema(
                         vol.Optional(OPT_NAME, default=default_holiday_target_name): str,
                         vol.Optional(
                             OPT_UID, default=default_holiday_target_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_APARTMENT_STATE): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_apartment_state_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_apartment_state_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_APARTMENT_HEATING): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_apartment_heating_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_apartment_heating_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_APARTMENT_COOLING): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_apartment_cooling_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_apartment_cooling_uid
                         ): _UID_SELECTOR,
                     }
                 ),

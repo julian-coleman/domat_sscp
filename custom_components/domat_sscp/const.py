@@ -100,23 +100,24 @@ OPT_LOW_TARGET_NAME_CS = "Útlum nastavený"
 OPT_VALVE_HEATING_NAME_CS = "Ventil topení"
 OPT_VALVE_COOLING_NAME_CS = "Ventil chlazení"
 
-OPT_APARTMENT_CONTROLS_NAME_EN="Apartment Controls"
+OPT_APARTMENT_CONTROLS_NAME_EN = "Apartment Controls"
 OPT_APARTMENT_MODE_NAME_EN = "Set apartment mode"
-OPT_APARTMENT_ACTUAL_NAME_EN = "apartment_actual"
+OPT_APARTMENT_ACTUAL_NAME_EN = "Apartment mode"
 OPT_HOLIDAY_SETTING_NAME_EN = "Set holiday temperature"
 OPT_HOLIDAY_TARGET_NAME_EN = "Holiday temperature"
-OPT_APARTMENT_STATE_NAME_EN = "apartment_state"
-OPT_APARTMENT_HEATING_NAME_EN = "apartment_heating"
-OPT_APARTMENT_COOLING_NAME_EN = "apartment_cooling"
-OPT_APARTMENT_CONTROLS_NAME_CS="Ovládání bytu"
+OPT_APARTMENT_STATE_NAME_EN = "Apartment state"
+OPT_APARTMENT_HEATING_NAME_EN = "Heating mode"
+OPT_APARTMENT_COOLING_NAME_EN = "Cooling mode"
+OPT_APARTMENT_CONTROLS_NAME_CS = "Ovládání bytu"
 OPT_APARTMENT_MODE_NAME_CS = "Režím bytu - nastavení"
-OPT_APARTMENT_ACTUAL_NAME_CS = "apartment_actual"
+OPT_APARTMENT_ACTUAL_NAME_CS = "Režím bytu nastavený"
 OPT_HOLIDAY_SETTING_NAME_CS = "Teplota prázdniny - nastavení"
 OPT_HOLIDAY_TARGET_NAME_CS = "Teplota prázdniny nastavená"
-OPT_APARTMENT_STATE_NAME_CS = "apartment_state"
-OPT_APARTMENT_HEATING_NAME_CS = "apartment_heating"
-OPT_APARTMENT_COOLING_NAME_CS = "apartment_cooling"
+OPT_APARTMENT_STATE_NAME_CS = "Aktualní stav bytu"
+OPT_APARTMENT_HEATING_NAME_CS = "Režim topení"
+OPT_APARTMENT_COOLING_NAME_CS = "Režim chlazení"
 
+# Select states
 OPT_APARTMENT_MODE_STATES_EN = {
     "2": "Time plan + heating",
     "4": "Time plan + cooling",
@@ -124,12 +125,34 @@ OPT_APARTMENT_MODE_STATES_EN = {
     "16": "Cooling komfort",
     "32": "Holiday"
 }
+OPT_APARTMENT_ACTUAL_STATES_EN = {
+    "1": "Time plan + heating",
+    "2": "Time plan + cooling",
+    "4": "Heating komfort",
+    "8": "Cooling komfort",
+    "16": "Holiday"
+}
+OPT_APARTMENT_STATE_STATES_EN = {
+    "0": "Minimum",
+    "1": "Komfort",
+}
 OPT_APARTMENT_MODE_STATES_CS = {
     "2": "Časový plán + topení",
     "4": "Časový plán + chlazení",
     "8": "Topení komfort",
     "16": "Chlazení komfort",
     "32": "Prázdniny"
+}
+OPT_APARTMENT_ACTUAL_STATES_CS = {
+    "1": "Časový plán + topení",
+    "2": "Časový plán + chlazení",
+    "4": "Topení komfort",
+    "8": "Chlazení komfort",
+    "16": "Prázdniny"
+}
+OPT_APARTMENT_STATE_STATES_CS = {
+    "0": "Útlum",
+    "1": "Komfort",
 }
 
 OPT_ENERGY_NAME_EN = "Energy Readings"

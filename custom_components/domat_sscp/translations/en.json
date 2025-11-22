@@ -125,6 +125,13 @@
               "uid": "UID"
             }
           },
+          "apartment_actual": {
+            "name": "Režím bytu nastavený:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
           "holiday_setting": {
             "name": "Teplota prázdniny - nastavení:",
             "data": {
@@ -134,6 +141,27 @@
           },
           "holiday_target": {
             "name": "Teplota prázdniny nastavená:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "apartment_state": {
+            "name": "Apartment state:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "apartment_heating": {
+            "name": "Heating mode:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "apartment_cooling": {
+            "name": "Cooling mode:",
             "data": {
               "name": "Název",
               "uid": "UID"
