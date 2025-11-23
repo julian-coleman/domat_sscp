@@ -205,7 +205,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
     ) -> None:
         """An entity has changed a setting: update using fast polling."""
 
-        _LOGGER.error("Entity write: %s %s %s %s %s", uid, offset, length, type, value)
+        _LOGGER.debug("Entity write: %s %s %s %s %s", uid, offset, length, type, value)
         since = datetime.now(tz=None) - self.last_connect
         if since.seconds < self.fast_interval:
             await sleep(self.fast_interval)

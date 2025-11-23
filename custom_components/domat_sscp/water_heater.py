@@ -110,8 +110,6 @@ class DomatSSCPWaterHeater(CoordinatorEntity, WaterHeaterEntity):
         self._attr_target_temperature = self._update_target()
         self.async_write_ha_state()
 
-    # TODO: Add a callback for when the entity is disabled/enabled and update runtime
-
     @property
     def target_temperature(self) -> float | None:
         """Return the target temperature value."""
@@ -128,8 +126,6 @@ class DomatSSCPWaterHeater(CoordinatorEntity, WaterHeaterEntity):
 
     def set_temperature(self, **kwargs: Any) -> None:
         """Set the target temperature using the co-ordinator function."""
-
-        _LOGGER.error("New target temperature: %s %s", self._attr_unique_id, kwargs)
 
         if (temperature := kwargs.get(ATTR_TEMPERATURE)) is None:
             return

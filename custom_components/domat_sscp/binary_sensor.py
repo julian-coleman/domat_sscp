@@ -92,8 +92,6 @@ class DomatSSCPBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_is_on = self._update_value()
         self.async_write_ha_state()
 
-    # TODO: Add a callback for when the entity is disabled/enabled and update runtime
-
     @property
     def is_on(self) -> bool:
         """Return the current state."""

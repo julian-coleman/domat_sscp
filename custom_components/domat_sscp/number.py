@@ -104,8 +104,6 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
         self._attr_native_value = self._update_value()
         self.async_write_ha_state()
 
-    # TODO: Add a callback for when the entity is disabled/enabled and update runtime
-
     @property
     def native_max_value(self) -> float:
         """Return the maximum value."""
