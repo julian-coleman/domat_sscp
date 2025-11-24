@@ -98,8 +98,6 @@ class DomatSSCPSelect(CoordinatorEntity, SelectEntity):
         self._attr_current_option = self._update_option()
         self.async_write_ha_state()
 
-    # TODO: Add a callback for when the entity is disabled/enabled and update runtime
-
     @property
     def options(self) -> list[str]:
         """Return the selectable options."""
