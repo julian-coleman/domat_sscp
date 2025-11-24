@@ -26,6 +26,7 @@ class sscp_variable:
 
     Handles known types and their properties.
     Converts type 13 4-byte floats to and from IEEE754 format.
+    Converts states to values and vice versa.
     """
 
     def __init__(
@@ -83,13 +84,45 @@ class sscp_variable:
         self.val = 0
         self.state = "unknown"
 
-    # TODO: Initialisation from yaml
-    #    @classmethod
-    #    def from_yaml(cls, yaml) -> None:
-    #        "Configure the SSCP variable with paramaters via YAML."
-    #
-    #        cls(
-    #        )
+    @classmethod
+    def from_yaml(cls, yaml):
+        "Configure the SSCP variable with paramaters via YAML."
+
+        try:
+            uid = yaml["uid"]
+            length = yaml["length"]
+            offset = yaml["offset"]
+            type = yaml["type"]
+        except KeyError as e:
+            e_str = "Missing parameter" + str(e)
+            raise ValueError(e_str) from e
+        name = yaml.get("name")
+        description = yaml.get("description")
+        page = yaml.get("page")
+        increment = yaml.get("step_incr")
+        maximum = yaml.get("max")
+        decrement = yaml.get("step_decr")
+        minimum = yaml.get("min")
+        states = yaml.get("states")
+        format = yaml.get("format")
+        perm = yaml.get("perm")
+
+        return cls(
+            uid=uid,
+            length=length,
+            offset=offset,
+            type=type,
+            name=name,
+            description=description,
+            page=page,
+            increment=increment,
+            maximum=maximum,
+            decrement=decrement,
+            minimum=minimum,
+            states=states,
+            format=format,
+            perm=perm
+        )
 
     def to_string(self):
         """Return a string representation of the variable."""
@@ -131,7 +164,7 @@ class sscp_variable:
                         if state["state"] == self.val:
                             self.state = state["text"]
             case _:  # unknown type
-                _LOGGER.error("Set unknown type for %d", self.uid)
+                _LOGGER.warning("Set unknown type for %d", self.uid)
                 self.val = int.from_bytes(raw, SSCP_DATA_ORDER)
 
     def change_value(self, new: Any) -> bytearray:
