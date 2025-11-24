@@ -97,11 +97,11 @@ class sscp_connection:
             if self.password is None:
                 raise (ValueError("Missing password or MD5"))
             self.md5_hash = md5(self.password.encode()).hexdigest()
-            self.md5_bytes = bytearray()
-            for i in range(0, 31, 2):
-                self.md5_bytes += int(self.md5_hash[i : i + 2], 16).to_bytes(
-                    1, SSCP_DATA_ORDER
-                )
+        self.md5_bytes = bytearray()
+        for i in range(0, 31, 2):
+            self.md5_bytes += int(self.md5_hash[i : i + 2], 16).to_bytes(
+                1, SSCP_DATA_ORDER
+            )
         self.md5_len = len(self.md5_bytes).to_bytes(1, SSCP_DATA_ORDER)
         self.addr_byte = self.sscp_address.to_bytes(1, SSCP_DATA_ORDER)
 
@@ -112,20 +112,20 @@ class sscp_connection:
         self.platform = None
 
     @classmethod
-    def from_yaml(cls, yaml) -> None:
+    def from_yaml(cls, yaml):
         "Configure the SSCP connection with paramaters via YAML."
 
         try:
             name = yaml["name"]
-            ip_address = yaml["ipAddress"]
+            ip_address = yaml["ip"]
             port = yaml["port"]
-            sscp_address = yaml["sscpAddress"]
-            user_name = yaml["userName"]
+            sscp_address = yaml["sscp_addr"]
+            user_name = yaml["user"]
         except KeyError as e:
             e_str = "Missing parameter" + str(e)
             raise ValueError(e_str) from e
         if "password" in yaml:
-            password = yaml["password"]
+            password = yaml["pass"]
         else:
             password = None
         if "md5" in yaml:
@@ -133,7 +133,7 @@ class sscp_connection:
         else:
             md5_hash = None
 
-        cls(
+        return cls(
             name=name,
             ip_address=ip_address,
             port=port,
@@ -143,7 +143,7 @@ class sscp_connection:
             md5_hash=md5_hash,
         )
 
-    async def login(self) -> bool:
+    async def login(self) -> bool:  # TODO: Exceptions and None
         """Log in to the SSCP server/PLC.
 
         Create a socket connection to the server.
@@ -211,7 +211,7 @@ class sscp_connection:
             if self.socket is not None:
                 self.socket.close()
                 self.socket = None
-            # TODO: Raise an exception here for easier handling in callers
+            # TODO: Raise TimeoutError here for easier handling in callers
             return False
 
         self.send_max = int.from_bytes(reply[SSCP_MAXDATA_START:SSCP_MAXDATA_END])
@@ -241,7 +241,7 @@ class sscp_connection:
 
         await self._sscp_sendrecv(request, "Logout", close_after_send=True)
 
-    async def get_info(self):
+    async def get_info(self):  # TODO: Exceptions and None
         """Get basic info about the SSCP server/PLC.
 
         Can raise exceptions from sendrecv().
