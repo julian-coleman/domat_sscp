@@ -11,6 +11,7 @@ from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.components.water_heater import WaterHeaterEntityFeature
 from homeassistant.config_entries import (
+    SOURCE_REAUTH,
     SOURCE_RECONFIGURE,
     ConfigEntry,
     ConfigFlow,
@@ -258,6 +259,10 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
             coordinator: DomatSSCPCoordinator = entry.coordinator
             input_data = entry.data
             step = "reconfigure"
+        elif self.source == SOURCE_REAUTH:
+            entry = self._get_reauth_entry()
+            input_data = entry.data
+            step = "reauth"
         else:  # user
             input_data = None
             step = "user"
@@ -287,6 +292,7 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(info["unique_id"])
             if self.source == SOURCE_RECONFIGURE:
                 coordinator.set_last_connect()
+            if self.source in (SOURCE_RECONFIGURE, SOURCE_REAUTH):
                 # Don't abort on unique ID mismatch, in case the PLC has a new serial number
                 # self._abort_if_unique_id_mismatch(reason="wrong_plc")
                 return self.async_update_reload_and_abort(
@@ -310,7 +316,11 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle reconfiguration."""
         return await self.async_step_user(user_input)
 
-    # TODO: reauth
+    async def async_step_reauth(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle reauth."""
+        return await self.async_step_user(user_input)
 
     @staticmethod
     @callback
