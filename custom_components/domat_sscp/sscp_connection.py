@@ -115,6 +115,7 @@ class sscp_connection:
     def from_yaml(cls, yaml):
         "Configure the SSCP connection with paramaters via YAML."
 
+        # Required
         try:
             name = yaml["name"]
             ip_address = yaml["ip"]
@@ -124,14 +125,9 @@ class sscp_connection:
         except KeyError as e:
             e_str = "Missing parameter" + str(e)
             raise ValueError(e_str) from e
-        if "password" in yaml:
-            password = yaml["pass"]
-        else:
-            password = None
-        if "md5" in yaml:
-            md5_hash = yaml["md5"]
-        else:
-            md5_hash = None
+        # Can be None
+        password = yaml.get("pass")
+        md5_hash = yaml.get("md5")
 
         return cls(
             name=name,

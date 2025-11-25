@@ -88,6 +88,7 @@ class sscp_variable:
     def from_yaml(cls, yaml):
         "Configure the SSCP variable with paramaters via YAML."
 
+        # Required
         try:
             uid = yaml["uid"]
             length = yaml["length"]
@@ -96,6 +97,7 @@ class sscp_variable:
         except KeyError as e:
             e_str = "Missing parameter" + str(e)
             raise ValueError(e_str) from e
+        # Can be None
         name = yaml.get("name")
         description = yaml.get("description")
         page = yaml.get("page")
@@ -299,12 +301,12 @@ def change_state(
 
     if new == "+":
         for state in states:
-            if (state["state"] == old) and state.get("nextstate", None) is not None:
+            if (state["state"] == old) and state.get("nextstate") is not None:
                 _LOGGER.debug("new state +: %s %s", uid, state["nextstate"])
                 return state["nextstate"].to_bytes(length, SSCP_DATA_ORDER)
     elif new == "-":
         for state in states:
-            if state.get("nextstate", None) is not None and state["nextstate"] == old:
+            if state.get("nextstate") is not None and state["nextstate"] == old:
                 _LOGGER.debug("new state -: %s %s", uid, state["state"])
                 return state["state"].to_bytes(length, SSCP_DATA_ORDER)
     else:
