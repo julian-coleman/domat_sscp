@@ -54,7 +54,7 @@ class sscp_variable:
         self.type = type
         # We support a subset of types
         if self.type not in {64, 18, 13, 2, 0}:
-            raise ValueError("Unsupported type")
+            _LOGGER.warning("Unknown type for %d", self.uid)
         self.name = name
         self.description = description
         self.page = page
@@ -134,6 +134,11 @@ class sscp_variable:
             if self.format is not None:
                 return self.format % (self.val)
             return str(self.val)
+        if self.length >= 16:
+            string = ""
+            for i in range(0, self.length, 4):
+                string += self.raw[i:i+4].hex() + " "
+            return string
         return self.raw.hex()
 
     def set_value(self, raw: bytearray) -> None:
