@@ -437,8 +437,10 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             errors["base"] = "variable_error"
             description_placeholders = {"error": "UID All Zero", "variables": "0"}
         else:
-            err_info = self._check_exists(
-                device_name=user_input.get(OPT_DEVICE), entity_ids=entity_ids
+            err_info = check_exists(
+                device_name=user_input.get(OPT_DEVICE),
+                entity_ids=entity_ids,
+                options=self.config_entry.options
             )
             if "device" in err_info:
                 errors["base"] = "variable_error"
@@ -722,7 +724,11 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             errors["base"] = "variable_error"
             description_placeholders = {"error": "UID All Zero", "variables": "0"}
         else:
-            err_info = self._check_exists(device_name=None, entity_ids=entity_ids)
+            err_info = check_exists(
+                device_name=None,
+                entity_ids=entity_ids,
+                options=self.config_entry.options
+            )
             if "device" in err_info:
                 errors["base"] = "variable_error"
                 err_str = "Device Already Exists"
@@ -970,7 +976,11 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             errors["base"] = "variable_error"
             description_placeholders = {"error": "UID All Zero", "variables": "0"}
         else:
-            err_info = self._check_exists(device_name=None, entity_ids=entity_ids)
+            err_info = check_exists(
+                device_name=None,
+                entity_ids=entity_ids,
+                options=self.config_entry.options
+            )
             if "device" in err_info:
                 errors["base"] = "variable_error"
                 err_str = "Device Already Exists"
@@ -1221,9 +1231,10 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             errors["base"] = "variable_error"
             description_placeholders = {"error": "UID All Zero", "variables": "0"}
         else:
-            err_info = self._check_exists(
+            err_info = check_exists(
                 device_name=user_input.get(OPT_DEVICE),
                 entity_ids=entity_ids,
+                options=self.config_entry.options
             )
             if "device" in err_info:
                 errors["base"] = "variable_error"
@@ -1501,32 +1512,34 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         _LOGGER.setLevel(level)
         return self.async_abort(reason="info_written")
 
-    def _check_exists(
-        self, device_name: str | None, entity_ids: dict[str, str]
-    ) -> dict[str, str]:
-        """Check if device or entity already exists."""
-
-        variables: str = ""
-        # Does the device already exist?
-        for value in self.config_entry.options.values():
-            if (
-                device_name is not None
-                and "device" in value
-                and value["device"] == device_name
-            ):
-                return {"device": device_name}
-        # Does the entity already exist?
-        for entity_id, entity_uid in entity_ids.items():
-            if entity_id in self.config_entry.options:
-                variables = variables + str(entity_uid) + " "
-        return {"variables": variables}
-
-
 class InvalidAuth(HomeAssistantError):
     """Error to indicate that the authentication is invalid."""
 
 
 # Helpers
+def check_exists(
+    device_name: str | None,
+    entity_ids: dict[str, str],
+    options: dict[str, Any]
+) -> dict[str, str]:
+    """Check if device or entity already exists."""
+
+    variables: str = ""
+    # Does the device already exist?
+    for value in options.values():
+        if (
+            device_name is not None
+            and "device" in value
+            and value["device"] == device_name
+        ):
+            return {"device": device_name}
+    # Does the entity already exist?
+    for entity_id, entity_uid in entity_ids.items():
+        if entity_id in options:
+            variables = variables + str(entity_uid) + " "
+    return {"variables": variables}
+
+
 async def _validate_config(
     data: dict[str, Any],
     variables: list[sscp_variable] | None,
