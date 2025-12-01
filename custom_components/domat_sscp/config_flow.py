@@ -222,101 +222,19 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for adding a room controls device."""
 
-        data: dict[str, Any] = self.config_entry.options.copy()
-        coordinator: DomatSSCPCoordinator = self.config_entry.coordinator
-        errors: dict[str, str] = {}
-        description_placeholders: dict[str, str] = {}
-        variables: list[sscp_variable] = []
-        entity_ids: dict[str, str] = {}
         step = "room"
         lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
         schema = get_room_schema(lang, user_input)
 
         if user_input is None:
-            return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
+            return self.async_show_form(step_id=step, data_schema=schema)
 
-        # Create variables list from user input
-        # Our entity ID's are uid-length-offset of the variable
-        _LOGGER.debug("User input: %s", user_input)
         configs = get_room_configs()
-        for section_name, config in configs.items():
-            sect = user_input.get(section_name)
-            uid = sect.get(OPT_UID)
-            if uid != 0:
-                variables.append(
-                    sscp_variable(uid=uid, offset=config["offset"], length=config["length"], type=config["type"])
-                )
-                entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["offset"])
-                entity_ids.update({entity_id: uid})
-                _LOGGER.debug("Added: %s", entity_id)
-
-        if len(variables) == 0:
-            # No user variables
-            errors["base"] = "variable_error"
-            description_placeholders = {"error": "UID All Zero", "variables": "0"}
-        else:
-            err_info = check_exists(
-                device_name=user_input.get(OPT_DEVICE),
-                entity_ids=entity_ids,
-                options=self.config_entry.options
-            )
-            if "device" in err_info:
-                errors["base"] = "variable_error"
-                err_str = "Device Already Exists"
-                description_placeholders = {
-                    "error": err_str,
-                    "variables": user_input.get(OPT_DEVICE),
-                }
-            elif len(err_info["variables"]) > 0:
-                errors["base"] = "variable_error"
-                err_str = "UID Already Exists"
-                description_placeholders = {
-                    "error": err_str,
-                    "variables": err_info["variables"],
-                }
-
-        if "base" not in errors:
-            # Validate the user input and create an entry
-            coordinator.set_last_connect()
-            try:
-                info = await _validate_config(
-                    data=self.config_entry.data,
-                    variables=variables,
-                )
-            except TimeoutError:
-                errors["base"] = "timeout_connect"
-            except (ValueError, OSError):
-                errors["base"] = "cannot_connect"
-            except InvalidAuth:
-                errors["base"] = "invalid_auth"
-            else:
-                # No exception, so either generate an error or return
-                if info["error_code"] != 0:
-                    errors["base"] = "variable_error"
-                    err_str = SSCP_ERRORS.get(info["error_code"], "unknown")
-                    description_placeholders = {
-                        "error": err_str,
-                        "variables": info["error_variables"],
-                    }
-                else:
-                    for section_name, config in configs.items():
-                        sect = user_input.get(section_name)
-                        uid = sect.get(OPT_UID)
-                        if uid != 0:
-                            entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["length"])
-                            config["uid"] = uid
-                            config["name"] = sect.get("name")
-                            config["device"] = user_input.get("device")
-                            data.update({entity_id: config})
-
-                    return self.async_create_entry(data=data)
-
-        # There was some validation problem - previous input as defaults
-        return self.async_show_form(
-            step_id=step,
-            data_schema=schema,
-            errors=errors,
-            description_placeholders=description_placeholders,
+        return await self._insady_step_common(
+            step=step,
+            user_input=user_input,
+            configs=configs,
+            schema=schema
         )
 
     async def async_step_apartment(
@@ -324,101 +242,19 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for adding an apartment device."""
 
-        data: dict[str, Any] = self.config_entry.options.copy()
-        coordinator = self.config_entry.coordinator
-        errors: dict[str, str] = {}
-        description_placeholders: dict[str, str] = {}
-        variables: list[sscp_variable] = []
-        entity_ids: dict[str, str] = {}
         step = "apartment"
         lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
         schema = get_apartment_schema(lang, user_input)
 
         if user_input is None:
-            return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
+            return self.async_show_form(step_id=step, data_schema=schema)
 
-        # Create variables and entities lists to check from user input
-        # Our entity ID's are uid-length-offset of the variable
-        _LOGGER.debug("User input: %s", user_input)
         configs = get_apartment_configs(lang=lang)
-        for section_name, config in configs.items():
-            sect = user_input.get(section_name)
-            uid = sect.get(OPT_UID)
-            if uid != 0:
-                variables.append(
-                    sscp_variable(uid=uid, offset=config["offset"], length=config["length"], type=config["type"])
-                )
-                entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["offset"])
-                entity_ids.update({entity_id: uid})
-                _LOGGER.debug("Added: %s", entity_id)
-
-        if len(variables) == 0:
-            # No user variables
-            errors["base"] = "variable_error"
-            description_placeholders = {"error": "UID All Zero", "variables": "0"}
-        else:
-            err_info = check_exists(
-                device_name=None,
-                entity_ids=entity_ids,
-                options=self.config_entry.options
-            )
-            if "device" in err_info:
-                errors["base"] = "variable_error"
-                err_str = "Device Already Exists"
-                description_placeholders = {
-                    "error": err_str,
-                    "variables": user_input.get(OPT_DEVICE),
-                }
-            elif len(err_info["variables"]) > 0:
-                errors["base"] = "variable_error"
-                err_str = "UID Already Exists"
-                description_placeholders = {
-                    "error": err_str,
-                    "variables": err_info["variables"],
-                }
-
-        if "base" not in errors:
-            # Validate the user input and create an entry
-            coordinator.set_last_connect()
-            try:
-                info = await _validate_config(
-                    data=self.config_entry.data,
-                    variables=variables,
-                )
-            except TimeoutError:
-                errors["base"] = "timeout_connect"
-            except (ValueError, OSError):
-                errors["base"] = "cannot_connect"
-            except InvalidAuth:
-                errors["base"] = "invalid_auth"
-            else:
-                # No exception, so either generate an error or return
-                if info["error_code"] != 0:
-                    errors["base"] = "variable_error"
-                    err_str = SSCP_ERRORS.get(info["error_code"], "unknown")
-                    description_placeholders = {
-                        "error": err_str,
-                        "variables": info["error_variables"],
-                    }
-                else:
-                    for section_name, config in configs.items():
-                        sect = user_input.get(section_name)
-                        uid = sect.get(OPT_UID)
-                        if uid != 0:
-                            entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["length"])
-                            config["uid"] = uid
-                            config["name"] = sect.get("name")
-                            config["device"] = user_input.get("device")
-                            data.update({entity_id: config})
-
-                    return self.async_create_entry(data=data)
-
-        # There was some validation problem - previous input as defaults
-        return self.async_show_form(
-            step_id=step,
-            data_schema=schema,
-            errors=errors,
-            description_placeholders=description_placeholders,
+        return await self._insady_step_common(
+            step=step,
+            user_input=user_input,
+            configs=configs,
+            schema=schema
         )
 
     async def async_step_energy(
@@ -426,101 +262,19 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for adding an energy usage device."""
 
-        data: dict[str, Any] = self.config_entry.options.copy()
-        coordinator = self.config_entry.coordinator
-        errors: dict[str, str] = {}
-        description_placeholders: dict[str, str] = {}
-        variables: list[sscp_variable] = []
-        entity_ids: dict[str, str] = {}
         step = "energy"
         lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
         schema = get_energy_schema(lang, user_input)
 
         if user_input is None:
-            return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
+            return self.async_show_form(step_id=step, data_schema=schema)
 
-        # Create variables and entities lists to check from user input
-        # Our entity ID's are uid-length-offset of the variable
-        _LOGGER.debug("User input: %s", user_input)
         configs = get_energy_configs()
-        for section_name, config in configs.items():
-            sect = user_input.get(section_name)
-            uid = sect.get(OPT_UID)
-            if uid != 0:
-                variables.append(
-                    sscp_variable(uid=uid, offset=config["offset"], length=config["length"], type=config["type"])
-                )
-                entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["offset"])
-                entity_ids.update({entity_id: uid})
-                _LOGGER.debug("Added: %s", entity_id)
-
-        if len(variables) == 0:
-            # No user variables
-            errors["base"] = "variable_error"
-            description_placeholders = {"error": "UID All Zero", "variables": "0"}
-        else:
-            err_info = check_exists(
-                device_name=None,
-                entity_ids=entity_ids,
-                options=self.config_entry.options
-            )
-            if "device" in err_info:
-                errors["base"] = "variable_error"
-                err_str = "Device Already Exists"
-                description_placeholders = {
-                    "error": err_str,
-                    "variables": user_input.get(OPT_DEVICE),
-                }
-            elif len(err_info["variables"]) > 0:
-                errors["base"] = "variable_error"
-                err_str = "UID Already Exists"
-                description_placeholders = {
-                    "error": err_str,
-                    "variables": err_info["variables"],
-                }
-
-        if "base" not in errors:
-            # Validate the user input and create an entry
-            coordinator.set_last_connect()
-            try:
-                info = await _validate_config(
-                    data=self.config_entry.data,
-                    variables=variables,
-                )
-            except TimeoutError:
-                errors["base"] = "timeout_connect"
-            except (ValueError, OSError):
-                errors["base"] = "cannot_connect"
-            except InvalidAuth:
-                errors["base"] = "invalid_auth"
-            else:
-                # No exception, so either generate an error or return
-                if info["error_code"] != 0:
-                    errors["base"] = "variable_error"
-                    err_str = SSCP_ERRORS.get(info["error_code"], "unknown")
-                    description_placeholders = {
-                        "error": err_str,
-                        "variables": info["error_variables"],
-                    }
-                else:
-                    for section_name, config in configs.items():
-                        sect = user_input.get(section_name)
-                        uid = sect.get(OPT_UID)
-                        if uid != 0:
-                            entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["length"])
-                            config["uid"] = uid
-                            config["name"] = sect.get("name")
-                            config["device"] = user_input.get("device")
-                            data.update({entity_id: config})
-
-                    return self.async_create_entry(data=data)
-
-        # There was some validation problem - previous input as defaults
-        return self.async_show_form(
-            step_id=step,
-            data_schema=schema,
-            errors=errors,
-            description_placeholders=description_placeholders,
+        return await self._insady_step_common(
+            step=step,
+            user_input=user_input,
+            configs=configs,
+            schema=schema
         )
 
     async def async_step_air(
@@ -528,23 +282,40 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for adding an air recuperation device."""
 
-        data: dict[str, Any] = self.config_entry.options.copy()
-        coordinator = self.config_entry.coordinator
-        errors: dict[str, str] = {}
-        description_placeholders: dict[str, str] = {}
-        variables: list[sscp_variable] = []
-        entity_ids: dict[str, str] = {}
         step = "air"
         lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
         schema = get_air_schema(lang, user_input)
 
         if user_input is None:
-            return self.async_show_form(step_id=step, data_schema=schema, errors=errors)
+            return self.async_show_form(step_id=step, data_schema=schema)
 
+        configs = get_air_configs()
+        return await self._insady_step_common(
+            step=step,
+            user_input=user_input,
+            configs=configs,
+            schema=schema
+        )
+
+    async def _insady_step_common(
+        self,
+        step: str,
+        user_input: dict[str, Any],
+        configs: dict[str, Any],
+        schema: vol.Schema
+    ) -> ConfigFlowResult:
+        """Common options flow for InSady flows."""
+
+        coordinator: DomatSSCPCoordinator = self.config_entry.coordinator
+        data: dict[str, Any] = self.config_entry.options.copy()
+        errors: dict[str, str] = {}
+        description_placeholders: dict[str, str] = {}
+        variables: list[sscp_variable] = []
+        entity_ids: dict[str, str] = {}
+
+        _LOGGER.debug("User input: %s", user_input)
         # Create variables list from user input
         # Our entity ID's are uid-length-offset of the variable
-        _LOGGER.debug("User input: %s", user_input)
-        configs = get_air_configs()
         for section_name, config in configs.items():
             sect = user_input.get(section_name)
             uid = sect.get(OPT_UID)
@@ -553,14 +324,24 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                     sscp_variable(uid=uid, offset=config["offset"], length=config["length"], type=config["type"])
                 )
                 entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["offset"])
+                if entity_ids.get(entity_id) is not None:
+                    errors["base"] = "variable_error"
+                    err_str = "UID Appears Twice"
+                    description_placeholders = {
+                        "error": err_str,
+                        "variables": uid,
+                    }
+                    break
                 entity_ids.update({entity_id: uid})
                 _LOGGER.debug("Added: %s", entity_id)
 
-        if len(variables) == 0:
+        if "base" not in errors and len(variables) == 0:
             # No user variables
             errors["base"] = "variable_error"
             description_placeholders = {"error": "UID All Zero", "variables": "0"}
-        else:
+
+        if "base" not in errors:
+            # Check for existing device/entities
             err_info = check_exists(
                 device_name=user_input.get(OPT_DEVICE),
                 entity_ids=entity_ids,
@@ -688,6 +469,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         _LOGGER.setLevel(level)
         return self.async_abort(reason="info_written")
 
+
 class InvalidAuth(HomeAssistantError):
     """Error to indicate that the authentication is invalid."""
 
@@ -713,8 +495,7 @@ def check_exists(
     for entity_id, entity_uid in entity_ids.items():
         if entity_id in options:
             variables = variables + str(entity_uid) + " "
-    # Did we add the same entity multiple times?
-    # TODO
+
     return {"variables": variables}
 
 
