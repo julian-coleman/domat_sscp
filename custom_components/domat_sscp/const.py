@@ -31,6 +31,3 @@ OPT_LENGTH = "length"
 OPT_MINIMUM = "minimum"
 OPT_MAXIMUM = "maximum"
 OPT_STEP = "step"
-
-OPT_TEMPERATURE = "temperature"
-OPT_HUMIDITY = "humidity"
