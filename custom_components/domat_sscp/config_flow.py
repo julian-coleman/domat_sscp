@@ -124,13 +124,14 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
     MINOR_VERSION = 3
 
-    # TODO: Add a checkbox for InSady
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the initial step."""
 
         errors: dict[str, str] = {}
+        lang = self.hass.config.language # System language, not user language
+
         if self.source == SOURCE_RECONFIGURE:
             entry = self._get_reconfigure_entry()
             coordinator: DomatSSCPCoordinator = entry.coordinator
@@ -146,9 +147,10 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Ask for input - initial defaults
         if user_input is None:
+            lang = self.hass.config.language
             return self.async_show_form(
                 step_id=step,
-                data_schema=_get_user_schema(input_data),
+                data_schema=_get_user_schema(input_data=input_data, lang=lang),
                 errors=errors,
             )
 
@@ -183,7 +185,7 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
         # There was some validation problem - previous input as defaults
         return self.async_show_form(
             step_id=step,
-            data_schema=_get_user_schema(user_input),
+            data_schema=_get_user_schema(user_input=user_input, lang=lang),
             errors=errors,
         )
 
@@ -586,6 +588,7 @@ async def _validate_config(
 
 def _get_user_schema(
     input_data: dict[str, Any] | None = None,
+    lang: str | None = "en"
 ) -> vol.Schema:
     """Return a config flow schema with defaults based on the step and user input."""
 
@@ -596,7 +599,7 @@ def _get_user_schema(
     default_username = ""
     default_password = ""
     default_sscp_address = DEFAULT_SSCP_ADDRESS
-    default_language = "en"  # TODO: Choose system language
+    default_language = lang
     default_insady = True
     if input_data is not None:
         default_connection_name = input_data.get(
