@@ -9,6 +9,7 @@
           "username": "Uživatelské jméno",
           "password": "Heslo",
           "sscp_address": "Adresa SSCP",
+          "insady": "Zařízení Insady?",
           "language": "Jazyk"
         }
       },
@@ -19,6 +20,7 @@
           "port": "Port",
           "username": "Uživatelské jméno",
           "password": "Heslo",
+          "insady": "Zařízení Insady?",
           "sscp_address": "Adresa SSCP"
         }
       }
@@ -40,16 +42,16 @@
       "init": {
         "title": "Přidat zařízení SSCP",
         "menu_options": {
-          "room": "Přidat ovládání pokoje",
-          "apartment": "Přidat ovládání bytu",
-          "energy": "Přidat odečty energií",
-          "air": "Přidat vzduchotechniku",
+          "insady_room": "InSady: Přidat ovládání pokoje",
+          "insady_apartment": "InSady: Přidat ovládání bytu",
+          "insady_energy": "InSady: Přidat odečty energií",
+          "insady_air": "InSady: Přidat vzduchotechniku",
           "poll": "Nastavit intervaly připojení",
           "info": "Zapsat informace o konfiguraci do logu"
         }
       },
-      "room": {
-        "title": "Přidat ovládání pokoje",
+      "insady_room": {
+        "title": "InSady: Přidat ovládání pokoje",
         "data": {
           "device": "Název zařízení"
         },
@@ -112,8 +114,8 @@
           }
         }
       },
-      "apartment": {
-        "title": "Přidat ovládání bytu",
+      "insady_apartment": {
+        "title": "InSady: Přidat ovládání bytu",
         "data": {
           "device": "Název zařízení"
         },
@@ -169,8 +171,8 @@
           }
         }
       },
-      "energy": {
-        "title": "Přidat odečty energií",
+      "insady_energy": {
+        "title": "InSady: Přidat odečty energií",
         "sections": {
           "meter_electricity": {
             "name": "Elektroměr:",
@@ -209,8 +211,8 @@
           }
         }
       },
-      "air": {
-        "title": "Přidat vzduchotechniku",
+      "insady_air": {
+        "title": "InSady: Přidat vzduchotechniku",
         "data": {
           "device": "Název zařízení"
         },

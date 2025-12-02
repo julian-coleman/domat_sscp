@@ -7,6 +7,7 @@ DOMAIN = "domat_sscp"
 CONF_CONNECTION_NAME = "connection_name"
 CONF_SSCP_ADDRESS = "sscp_address"
 CONF_LANGUAGE = "language"
+CONF_INSADY = "insady"
 
 # Configuration defaults
 DEFAULT_SCAN_INTERVAL = 300

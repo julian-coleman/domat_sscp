@@ -20,6 +20,8 @@ from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD, CONF_PORT, CONF_
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.selector import (
+    BooleanSelector,
+    BooleanSelectorConfig,
     LanguageSelector,
     LanguageSelectorConfig,
     NumberSelector,
@@ -29,6 +31,7 @@ from homeassistant.helpers.selector import (
 
 from .const import (
     CONF_CONNECTION_NAME,
+    CONF_INSADY,
     CONF_LANGUAGE,
     CONF_SSCP_ADDRESS,
     DEFAULT_FAST_COUNT,
@@ -109,9 +112,10 @@ _WRITE_RETRIES_SELECTOR = vol.All(
     vol.Coerce(int),
 )
 
-# Options flow menu
-_DEVICE_MENU = ["room", "apartment", "energy", "air", "poll", "info"]
-
+# Options flow menus
+_DEVICE_MENU = []
+_INSADY_MENU = ["insady_room", "insady_apartment", "insady_energy", "insady_air",]
+_CONFIG_MENU = ["poll", "info"]
 
 class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Domat SSCP."""
@@ -213,16 +217,21 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
     ) -> ConfigFlowResult:
         """Manage the options for Domat SSCP."""
 
-        # TODO: Use a different menu for InSady
-        # Display a menu with step id's
-        return self.async_show_menu(step_id="init", menu_options=_DEVICE_MENU)
+        # Use a additional menu entries for InSady
+        if self.config_entry.data[CONF_INSADY] is True:
+            menu = _INSADY_MENU + _DEVICE_MENU + _CONFIG_MENU
+        else:
+            menu = _DEVICE_MENU + _CONFIG_MENU
 
-    async def async_step_room(
+        # Display a menu with step id's
+        return self.async_show_menu(step_id="init", menu_options=menu)
+
+    async def async_step_insady_room(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options for adding a room controls device."""
 
-        step = "room"
+        step = "insady_room"
         lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
         schema = get_room_schema(lang, user_input)
 
@@ -230,19 +239,19 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             return self.async_show_form(step_id=step, data_schema=schema)
 
         configs = get_room_configs()
-        return await self._insady_step_common(
+        return await self._step_insady_common(
             step=step,
             user_input=user_input,
             configs=configs,
             schema=schema
         )
 
-    async def async_step_apartment(
+    async def async_step_insady_apartment(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options for adding an apartment device."""
 
-        step = "apartment"
+        step = "insady_apartment"
         lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
         schema = get_apartment_schema(lang, user_input)
 
@@ -250,19 +259,19 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             return self.async_show_form(step_id=step, data_schema=schema)
 
         configs = get_apartment_configs(lang=lang)
-        return await self._insady_step_common(
+        return await self._step_insady_common(
             step=step,
             user_input=user_input,
             configs=configs,
             schema=schema
         )
 
-    async def async_step_energy(
+    async def async_step_insady_energy(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options for adding an energy usage device."""
 
-        step = "energy"
+        step = "insady_energy"
         lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
         schema = get_energy_schema(lang, user_input)
 
@@ -270,19 +279,19 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             return self.async_show_form(step_id=step, data_schema=schema)
 
         configs = get_energy_configs()
-        return await self._insady_step_common(
+        return await self._step_insady_common(
             step=step,
             user_input=user_input,
             configs=configs,
             schema=schema
         )
 
-    async def async_step_air(
+    async def async_step_insady_air(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options for adding an air recuperation device."""
 
-        step = "air"
+        step = "insady_air"
         lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
         schema = get_air_schema(lang, user_input)
 
@@ -290,14 +299,14 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             return self.async_show_form(step_id=step, data_schema=schema)
 
         configs = get_air_configs()
-        return await self._insady_step_common(
+        return await self._step_insady_common(
             step=step,
             user_input=user_input,
             configs=configs,
             schema=schema
         )
 
-    async def _insady_step_common(
+    async def _step_insady_common(
         self,
         step: str,
         user_input: dict[str, Any],
@@ -588,6 +597,7 @@ def _get_user_schema(
     default_password = ""
     default_sscp_address = DEFAULT_SSCP_ADDRESS
     default_language = "en"  # TODO: Choose system language
+    default_insady = True
     if input_data is not None:
         default_connection_name = input_data.get(
             CONF_CONNECTION_NAME, default_connection_name
@@ -598,6 +608,7 @@ def _get_user_schema(
         default_password = input_data.get(CONF_PASSWORD, default_password)
         default_sscp_address = input_data.get(CONF_SSCP_ADDRESS, default_sscp_address)
         default_language = input_data.get(CONF_LANGUAGE, default_language)
+        default_insady = input_data.get(CONF_INSADY, default_insady)
     return vol.Schema(
         {
             vol.Required(CONF_CONNECTION_NAME, default=default_connection_name): str,
@@ -609,5 +620,6 @@ def _get_user_schema(
                 CONF_SSCP_ADDRESS, default=default_sscp_address
             ): _ADDR_SELECTOR,
             vol.Required(CONF_LANGUAGE, default=default_language): _LANG_SELECTOR,
+            vol.Required(CONF_INSADY, default=default_insady): BooleanSelector(BooleanSelectorConfig()),
         }
     )
