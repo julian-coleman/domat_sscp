@@ -7,6 +7,7 @@ from typing import Any
 
 import voluptuous as vol
 
+from homeassistant.components.frontend import storage as frontend_store
 from homeassistant.config_entries import (
     SOURCE_REAUTH,
     SOURCE_RECONFIGURE,
@@ -69,8 +70,9 @@ _LOGGER = logging.getLogger(__name__)
 # Config flow schemas
 
 # Languages matching our translations
+_LANGS = ["en", "cs"]
 _LANG_SELECTOR = vol.All(
-    LanguageSelector(LanguageSelectorConfig(languages=["en", "cs"]))
+    LanguageSelector(LanguageSelectorConfig(languages=_LANGS))
 )
 
 # Config flow
@@ -130,7 +132,32 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle the initial step."""
 
         errors: dict[str, str] = {}
-        lang = self.hass.config.language # System language, not user language
+        lang = None
+
+        # Get user language
+        try:
+            owner = await self.hass.auth.async_get_owner()
+            if owner is not None:
+                owner_store = await frontend_store.async_user_store(
+                    self.hass, owner.id
+                )
+
+                if (
+                    "language" in owner_store.data
+                    and "language" in owner_store.data["language"]
+                ):
+                        lang = owner_store.data["language"]["language"]
+        except Exception:
+            pass
+
+        # System language
+        if lang is None:
+            lang = self.hass.config.language
+
+        # Our translations
+        if lang not in _LANGS:
+            _LOGGER.error("Unsupported language: %s", lang)
+            lang = "en"
 
         if self.source == SOURCE_RECONFIGURE:
             entry = self._get_reconfigure_entry()
@@ -147,7 +174,6 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Ask for input - initial defaults
         if user_input is None:
-            lang = self.hass.config.language
             return self.async_show_form(
                 step_id=step,
                 data_schema=_get_user_schema(input_data=input_data, lang=lang),
