@@ -139,12 +139,13 @@ class sscp_connection:
             md5_hash=md5_hash,
         )
 
-    async def login(self) -> bool:  # TODO: Exceptions and None
+    async def login(self) -> None:
         """Log in to the SSCP server/PLC.
 
         Create a socket connection to the server.
         Use the connection parameters to log in.
         Can raise ConnectionError, OSError, or exceptions from sendrecv().
+        Can raise TimeoutError if the credentials are incorrect.
         """
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -207,8 +208,7 @@ class sscp_connection:
             if self.socket is not None:
                 self.socket.close()
                 self.socket = None
-            # TODO: Raise TimeoutError here for easier handling in callers
-            return False
+            raise TimeoutError("Login timed out")
 
         self.send_max = int.from_bytes(reply[SSCP_MAXDATA_START:SSCP_MAXDATA_END])
         _LOGGER.debug(
@@ -224,9 +224,6 @@ class sscp_connection:
         if len(reply) > SSCP_GUID_END:
             _LOGGER.debug("optional data: %s", reply[SSCP_GUID_END:].hex())
 
-        # TODO: Return None (after TODO for False is done)
-        return True
-
     async def logout(self):
         """Log out from the SSCP server/PLC."""
 
@@ -237,7 +234,7 @@ class sscp_connection:
 
         await self._sscp_sendrecv(request, "Logout", close_after_send=True)
 
-    async def get_info(self):  # TODO: Exceptions and None
+    async def get_info(self) -> None:
         """Get basic info about the SSCP server/PLC.
 
         Can raise exceptions from sendrecv().
@@ -263,7 +260,10 @@ class sscp_connection:
         # Pass exceptions back to our caller
         reply = await self._sscp_sendrecv(request, "Info ")
         if len(reply) == 0:
-            return False
+            if self.socket is not None:
+                self.socket.close()
+                self.socket = None
+            raise TimeoutError("Info timed out")
 
         start = SSCP_INFO_SERIAL_START
         end = SSCP_INFO_SERIAL_END
@@ -287,8 +287,6 @@ class sscp_connection:
         _LOGGER.debug("runtime vers.: %s", reply[start:end].hex())
         if len(reply) > end:
             _LOGGER.debug("information: %s", reply[end:].hex())
-
-        return True
 
     async def sscp_read_variables(self, vars: list[sscp_variable]):
         """Read variable(s) via the connection.
