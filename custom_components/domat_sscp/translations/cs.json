@@ -9,7 +9,7 @@
           "username": "Uživatelské jméno",
           "password": "Heslo",
           "sscp_address": "Adresa SSCP",
-          "insady": "Zařízení Insady?",
+          "insady": "Zařízení InSady?",
           "language": "Jazyk"
         }
       },
@@ -20,7 +20,7 @@
           "port": "Port",
           "username": "Uživatelské jméno",
           "password": "Heslo",
-          "insady": "Zařízení Insady?",
+          "insady": "Zařízení InSady?",
           "sscp_address": "Adresa SSCP"
         }
       }
