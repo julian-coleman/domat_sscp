@@ -352,7 +352,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
 
         _LOGGER.debug("User input: %s", user_input)
         # Create variables list from user input
-        # Our entity ID's are uid-length-offset of the variable
+        # Our entity ID's are uid-offset-length of the variable
         for section_name, config in configs.items():
             sect = user_input.get(section_name)
             uid = sect.get(OPT_UID)
@@ -360,9 +360,10 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                 variables.append(
                     sscp_variable(uid=uid, offset=config["offset"], length=config["length"], type=config["type"])
                 )
-                entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["offset"])
+                entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["length"])
                 if entity_ids.get(entity_id) is not None:
                     errors["base"] = "variable_error"
+                    errors[section_name] = "variable_error"
                     err_str = "UID Appears Twice"
                     description_placeholders = {
                         "error": err_str,
@@ -372,20 +373,20 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                 entity_ids.update({entity_id: uid})
                 _LOGGER.debug("Added: %s", entity_id)
 
-        if "base" not in errors and len(variables) == 0:
+        if len(errors) == 0 and len(variables) == 0:
             # No user variables
             errors["base"] = "variable_error"
             description_placeholders = {"error": "UID All Zero", "variables": "0"}
 
-        if "base" not in errors:
+        if len(errors) == 0:
             # Check for existing device/entities
-            err_info = check_exists(
+            err_info = _check_exists(
                 device_name=user_input.get(OPT_DEVICE),
                 entity_ids=entity_ids,
                 options=self.config_entry.options
             )
             if "device" in err_info:
-                errors["base"] = "variable_error"
+                errors[OPT_DEVICE] = "variable_error"
                 err_str = "Device Already Exists"
                 description_placeholders = {
                     "error": err_str,
@@ -393,13 +394,19 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                 }
             elif len(err_info["variables"]) > 0:
                 errors["base"] = "variable_error"
+                var_str = ""
                 err_str = "UID Already Exists"
+                for section_name in configs:
+                    sect = user_input.get(section_name)
+                    if sect.get(OPT_UID) in err_info["variables"]:
+                        errors[section_name] = "variable_error"
+                        var_str += str(sect.get(OPT_UID)) + " "
                 description_placeholders = {
                     "error": err_str,
-                    "variables": err_info["variables"],
+                    "variables": var_str,
                 }
 
-        if "base" not in errors:
+        if len(errors) == 0:
             # Validate the user input and create an entry
             coordinator.set_last_connect()
             try:
@@ -416,11 +423,17 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             else:
                 # No exception, so either generate an error or return
                 if info["error_code"] != 0:
-                    errors["base"] = "variable_error"
                     err_str = SSCP_ERRORS.get(info["error_code"], "unknown")
+                    var_str = ""
+                    for section_name in configs:
+                        sect = user_input.get(section_name)
+                        if sect.get(OPT_UID) in info["error_variables"]:
+                            errors["base"] = "variable_error"
+                            errors[section_name] = "variable_error"
+                            var_str += str(sect.get(OPT_UID)) + " "
                     description_placeholders = {
                         "error": err_str,
-                        "variables": info["error_variables"],
+                        "variables": var_str,
                     }
                 else:
                     for section_name, config in configs.items():
@@ -512,14 +525,14 @@ class InvalidAuth(HomeAssistantError):
 
 
 # Helpers
-def check_exists(
+def _check_exists(
     device_name: str | None,
     entity_ids: dict[str, str],
     options: dict[str, Any]
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """Check if device or entity already exists."""
 
-    variables: str = ""
+    variables: list = []
     # Does the device already exist?
     for value in options.values():
         if (
@@ -531,7 +544,7 @@ def check_exists(
     # Does the entity already exist?
     for entity_id, entity_uid in entity_ids.items():
         if entity_id in options:
-            variables = variables + str(entity_uid) + " "
+            variables.append(entity_uid)
 
     return {"variables": variables}
 
@@ -550,7 +563,6 @@ async def _validate_config(
     unique_id = ""
     # Options flow info
     error_code = 0
-    error_vars_str = ""
 
     conn = sscp_connection(
         name=data[CONF_CONNECTION_NAME],
@@ -598,8 +610,6 @@ async def _validate_config(
         error_vars, error_codes = await conn.sscp_read_variables(variables)
         if len(error_vars) > 0:
             error_code = error_codes[0]  # We only display the first error
-            for var in error_vars:
-                error_vars_str = error_vars_str + str(var) + " "
 
     await conn.logout()
 
@@ -608,7 +618,7 @@ async def _validate_config(
         "title": data[CONF_CONNECTION_NAME],
         "unique_id": unique_id,
         "error_code": error_code,
-        "error_variables": error_vars_str,
+        "error_variables": error_vars,
     }
 
 
