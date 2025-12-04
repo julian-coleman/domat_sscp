@@ -589,7 +589,7 @@ async def _validate_config(
         # Use user name, SSCP address and PLC serial for unique ID
         await conn.get_info()
         if conn.serial is None:
-            _LOGGER.error("No serial number for %s", data[CONF_CONNECTION_NAME])
+            _LOGGER.warning("No serial number for %s", data[CONF_CONNECTION_NAME])
             unique_id = (
                 data[CONF_USERNAME]
                 + "-"
