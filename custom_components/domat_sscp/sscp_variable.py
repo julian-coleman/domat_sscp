@@ -81,7 +81,7 @@ class sscp_variable:
         self.length_bytes = self.length.to_bytes(4, SSCP_DATA_ORDER)
         self.offset_bytes = self.offset.to_bytes(4, SSCP_DATA_ORDER)
         self.raw = bytearray("\x00", encoding="iso-8859-1")
-        self.val = 0
+        self.val = None
         self.state = "unknown"
 
     @classmethod
@@ -128,6 +128,11 @@ class sscp_variable:
 
     def to_string(self):
         """Return a string representation of the variable."""
+
+        # We haven't read the value yet
+        if self.val is None:
+            return None
+
         if self.type in {13, 2, 0}:
             if self.states is not None:
                 return self.state
@@ -181,9 +186,18 @@ class sscp_variable:
         """
 
         _LOGGER.debug("Change %d to %s", self.uid, new)
+
         if self.perm != "rw":
             msg = f"Variable is read-only: {self.uid}"
             raise ValueError(msg)
+        # We haven't read the value yet
+        if self.val is None and new in ("+", "-"):
+            msg = f"Variable has no current value: {self.uid}"
+            raise ValueError(msg)
+        if new is None:
+            msg = f"Variable has no new value: {self.uid}"
+            raise ValueError(msg)
+
         match self.type:
             case 13:  # 4-byte float
                 if new == "+" and self.increment != 0:
@@ -279,7 +293,7 @@ def float_to_ieee754(val) -> bytes:
     if val == 0:
         return (0).to_bytes(4, SSCP_DATA_ORDER)
     if val < 0:
-        sign = 1
+        sign = IEEE754_SIGN
         val = 0 - val
     else:
         sign = 0
