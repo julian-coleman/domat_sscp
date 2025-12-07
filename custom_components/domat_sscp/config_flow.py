@@ -563,6 +563,7 @@ async def _validate_config(
     unique_id = ""
     # Options flow info
     error_code = 0
+    error_vars = []
 
     conn = sscp_connection(
         name=data[CONF_CONNECTION_NAME],
