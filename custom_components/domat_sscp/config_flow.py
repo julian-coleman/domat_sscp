@@ -211,7 +211,7 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
         # There was some validation problem - previous input as defaults
         return self.async_show_form(
             step_id=step,
-            data_schema=_get_user_schema(user_input=user_input, lang=lang),
+            data_schema=_get_user_schema(input_data=user_input, lang=lang),
             errors=errors,
         )
 
