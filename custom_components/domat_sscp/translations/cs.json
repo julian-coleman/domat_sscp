@@ -47,7 +47,7 @@
           "insady_energy": "InSady: Přidat odečty energií",
           "insady_air": "InSady: Přidat vzduchotechniku",
           "poll": "Nastavit intervaly připojení",
-          "info": "Zapsat informace o konfiguraci do logu"
+          "info": "Zapsat informaci o konfiguraci do logu"
         }
       },
       "insady_room": {
