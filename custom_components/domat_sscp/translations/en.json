@@ -98,17 +98,38 @@
               "uid": "UID"
             }
           },
-          "valve_heating": {
+          "heating_valve": {
             "name": "Heating valve:",
             "data": {
               "name": "Name",
               "uid": "UID"
             }
           },
-          "valve_cooling": {
+          "cooling_valve": {
             "name": "Cooling valve:",
             "data": {
               "name": "Name",
+              "uid": "UID"
+            }
+          },
+          "cooling_speed": {
+            "name": "Air conditioning speed:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "cooling_control": {
+            "name": "Set air conditioning control:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "cooling_speed_setting": {
+            "name": "Set air conditioning speed:",
+            "data": {
+              "name": "Název",
               "uid": "UID"
             }
           }

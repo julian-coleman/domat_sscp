@@ -98,15 +98,36 @@
               "uid": "UID"
             }
           },
-          "valve_heating": {
+          "heating_valve": {
             "name": "Ventil topení:",
             "data": {
               "name": "Název",
               "uid": "UID"
             }
           },
-          "valve_cooling": {
+          "cooling_valve": {
             "name": "Ventil chlazení:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "cooling_speed": {
+            "name": "Výkon klimatizace nastavený:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "cooling_control": {
+            "name": "Ovládání klimatizace - nastavení:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "cooling_speed_setting": {
+            "name": "Výkon klimatizace - nastavení:",
             "data": {
               "name": "Název",
               "uid": "UID"

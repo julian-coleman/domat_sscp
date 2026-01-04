@@ -14,8 +14,12 @@ OPT_TEMPERATURE_SETTING = "temperature_setting"
 OPT_TEMPERATURE_TARGET = "temperature_target"
 OPT_LOW_SETTING = "low_setting"
 OPT_LOW_TARGET = "low_target"
-OPT_VALVE_HEATING = "valve_heating"
-OPT_VALVE_COOLING = "valve_cooling"
+OPT_HEATING_VALVE = "heating_valve"
+OPT_HEATING_CONTROL = "heating_control"
+OPT_COOLING_VALVE = "cooling_valve"
+OPT_COOLING_SPEED = "cooling_speed"
+OPT_COOLING_CONTROL = "cooling_control"
+OPT_COOLING_SPEED_SETTING = "cooling_speed_setting"
 
 OPT_METER_ELECTRICITY = "meter_electricity"
 OPT_METER_WATER_COLD = "meter_water_cold"
@@ -49,6 +53,11 @@ OPT_VENTILATION_FLOW_MINIMUM = 80
 OPT_VENTILATION_FLOW_MAXIMUM = 200
 OPT_VENTILATION_FLOW_STEP = 10
 
+OPT_FAN_MINIMUM = 0
+OPT_FAN_MAXIMUM = 100
+OPT_FAN_SPEEDS = 6
+OPT_FAN_STEP = OPT_FAN_MAXIMUM / OPT_FAN_SPEEDS
+
 # Name defaults
 OPT_ROOM_CONTROLS_NAME_EN="Room Controls"
 OPT_TEMPERATURE_NAME_EN="Actual temperature"
@@ -57,8 +66,11 @@ OPT_TEMPERATURE_SETTING_NAME_EN="Set target temperature"
 OPT_TEMPERATURE_TARGET_NAME_EN="Target temperature"
 OPT_LOW_SETTING_NAME_EN = "Set minimum temperature"
 OPT_LOW_TARGET_NAME_EN = "Minimum temperature"
-OPT_VALVE_HEATING_NAME_EN = "Heating valve"
-OPT_VALVE_COOLING_NAME_EN = "Cooling valve"
+OPT_HEATING_VALVE_NAME_EN = "Heating valve"
+OPT_COOLING_VALVE_NAME_EN = "Cooling valve"
+OPT_COOLING_SPEED_NAME_EN = "Air conditioning speed"
+OPT_COOLING_CONTROL_NAME_EN = "Air conditioning control"
+OPT_COOLING_SPEED_SETTING_NAME_EN = "Set air conditioning speed"
 OPT_ROOM_CONTROLS_NAME_CS="Ovládání pokoje"
 OPT_TEMPERATURE_NAME_CS="Teplota aktuální"
 OPT_HUMIDITY_NAME_CS="Vlhkost aktuální"
@@ -66,8 +78,11 @@ OPT_TEMPERATURE_SETTING_NAME_CS="Teplota žádaná - nastavení"
 OPT_TEMPERATURE_TARGET_NAME_CS="Teplota žádaná nastavená"
 OPT_LOW_SETTING_NAME_CS = "Útlum - nastavení"
 OPT_LOW_TARGET_NAME_CS = "Útlum nastavený"
-OPT_VALVE_HEATING_NAME_CS = "Ventil topení"
-OPT_VALVE_COOLING_NAME_CS = "Ventil chlazení"
+OPT_HEATING_VALVE_NAME_CS = "Ventil topení"
+OPT_COOLING_VALVE_NAME_CS = "Ventil chlazení"
+OPT_COOLING_SPEED_NAME_CS = "Výkon klimatizace nastavený"
+OPT_COOLING_CONTROL_NAME_CS = "Ovládání klimatizace"
+OPT_COOLING_SPEED_SETTING_NAME_CS = "Výkon klimatizace - nastavení"
 
 OPT_APARTMENT_CONTROLS_NAME_EN = "Apartment Controls"
 OPT_APARTMENT_MODE_NAME_EN = "Set apartment mode"
@@ -87,6 +102,10 @@ OPT_APARTMENT_HEATING_NAME_CS = "Režim topení"
 OPT_APARTMENT_COOLING_NAME_CS = "Režim chlazení"
 
 # Select states
+OPT_COOLING_CONTROL_STATES_EN = {
+    "1": "Local",
+    "2": "On",
+}
 OPT_APARTMENT_MODE_STATES_EN = {
     "2": "Time plan + heating",
     "4": "Time plan + cooling",
@@ -104,6 +123,10 @@ OPT_APARTMENT_ACTUAL_STATES_EN = {
 OPT_APARTMENT_STATE_STATES_EN = {
     "0": "Minimum",
     "1": "Comfort",
+}
+OPT_COOLING_CONTROL_STATES_CS = {
+    "1": "Lokální",
+    "2": "Zapnuté",
 }
 OPT_APARTMENT_MODE_STATES_CS = {
     "2": "Časový plán + topení",

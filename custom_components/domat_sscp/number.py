@@ -74,13 +74,15 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
         # Entity-specific values
         self.coordinator = coordinator
         self._attr_unique_id = entity_id
-        self._attr_native_unit_of_measurement = entity_data["unit"]
         if "name" in entity_data:
             self._attr_name = entity_data["name"]
         if "icon" in entity_data:
             self._attr_icon = entity_data["icon"]
         if "class" in entity_data:
             self._attr_device_class = entity_data["class"]
+        if "unit" in entity_data:
+            self._attr_native_unit_of_measurement = entity_data["unit"]
+        self.precision = entity_data.get("precision")
         self._attr_max_value = entity_data.get("max", DEFAULT_MAX_VALUE)
         self._attr_min_value = entity_data.get("min", DEFAULT_MIN_VALUE)
         self._attr_step = entity_data.get("step", DEFAULT_STEP)
@@ -139,13 +141,17 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
     def set_native_value(self, value: float) -> None:
         """Set the value using the co-ordinator function."""
 
+        if self.precision is not None:
+            new_value = round(value, self.precision)
+        else:
+            new_value = value
         self.hass.loop.create_task(
             self.coordinator.entity_update(
                 uid=self.sscp_uid,
                 offset=self.sscp_offset,
                 length=self.sscp_length,
                 type=self.sscp_type,
-                value=value,
+                value=new_value,
                 increment=self._attr_step,
                 maximum=self._attr_max_value,
                 decrement=self._attr_step,

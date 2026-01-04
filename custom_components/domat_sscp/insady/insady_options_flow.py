@@ -64,8 +64,28 @@ from .insady_const import (
     OPT_CO2_TARGET,
     OPT_CO2_TARGET_NAME_CS,
     OPT_CO2_TARGET_NAME_EN,
+    OPT_COOLING_CONTROL,
+    OPT_COOLING_CONTROL_NAME_CS,
+    OPT_COOLING_CONTROL_NAME_EN,
+    OPT_COOLING_CONTROL_STATES_CS,
+    OPT_COOLING_CONTROL_STATES_EN,
+    OPT_COOLING_SPEED,
+    OPT_COOLING_SPEED_NAME_CS,
+    OPT_COOLING_SPEED_NAME_EN,
+    OPT_COOLING_SPEED_SETTING,
+    OPT_COOLING_SPEED_SETTING_NAME_CS,
+    OPT_COOLING_SPEED_SETTING_NAME_EN,
+    OPT_COOLING_VALVE,
+    OPT_COOLING_VALVE_NAME_CS,
+    OPT_COOLING_VALVE_NAME_EN,
     OPT_ENERGY_NAME_CS,
     OPT_ENERGY_NAME_EN,
+    OPT_FAN_MAXIMUM,
+    OPT_FAN_MINIMUM,
+    OPT_FAN_STEP,
+    OPT_HEATING_VALVE,
+    OPT_HEATING_VALVE_NAME_CS,
+    OPT_HEATING_VALVE_NAME_EN,
     OPT_HOLIDAY_SETTING,
     OPT_HOLIDAY_SETTING_MAXIMUM,
     OPT_HOLIDAY_SETTING_MINIMUM,
@@ -110,12 +130,6 @@ from .insady_const import (
     OPT_TEMPERATURE_TARGET,
     OPT_TEMPERATURE_TARGET_NAME_CS,
     OPT_TEMPERATURE_TARGET_NAME_EN,
-    OPT_VALVE_COOLING,
-    OPT_VALVE_COOLING_NAME_CS,
-    OPT_VALVE_COOLING_NAME_EN,
-    OPT_VALVE_HEATING,
-    OPT_VALVE_HEATING_NAME_CS,
-    OPT_VALVE_HEATING_NAME_EN,
     OPT_VENTILATION_ERROR,
     OPT_VENTILATION_ERROR_NAME_CS,
     OPT_VENTILATION_ERROR_NAME_EN,
@@ -154,8 +168,12 @@ _UID_SELECTOR = vol.All(
     vol.Coerce(int),
 )
 
-def get_room_configs() -> dict[str, dict]:
+def get_room_configs(lang: str | None = None) -> dict[str, dict]:
     """Return a dictionary of entities for a room controls device."""
+
+    cooling_control_states = OPT_COOLING_CONTROL_STATES_EN
+    if lang == "cs":
+        cooling_control_states = OPT_COOLING_CONTROL_STATES_CS
 
     return {
         OPT_TEMPERATURE: {
@@ -242,7 +260,7 @@ def get_room_configs() -> dict[str, dict]:
             "entity": Platform.SENSOR,
             "device": OPT_DEVICE
         },
-        OPT_VALVE_HEATING: {
+        OPT_HEATING_VALVE: {
             "name": None,
             "uid": None,
             "offset": 0,
@@ -255,7 +273,7 @@ def get_room_configs() -> dict[str, dict]:
             "device": None,
             "icon": "mdi:valve",
         },
-        OPT_VALVE_COOLING: {
+        OPT_COOLING_VALVE: {
             "name": None,
             "uid": None,
             "offset": 0,
@@ -267,6 +285,46 @@ def get_room_configs() -> dict[str, dict]:
             "entity": Platform.BINARY_SENSOR,
             "device": None,
             "icon": "mdi:valve",
+        },
+        OPT_COOLING_SPEED: {
+            "name": None,
+            "uid": None,
+            "offset": 0,
+            "length": 4,
+            "type": 13,
+            "unit": PERCENTAGE,
+            "state": SensorStateClass.MEASUREMENT,
+            "precision": 0,
+            "entity": Platform.SENSOR,
+            "device": None,
+            "icon": "mdi:air-conditioner",
+        },
+        OPT_COOLING_CONTROL: {
+            "name": None,
+            "uid": None,
+            "offset": 0,
+            "length": 2,
+            "type": 2,
+            "states": cooling_control_states,
+            "entity": Platform.SELECT,
+            "device": None,
+            "icon": "mdi:toggle-switch-off-outline",
+        },
+        OPT_COOLING_SPEED_SETTING: {
+            "name": None,
+            "uid": None,
+            "offset": 0,
+            "length": 4,
+            "type": 13,
+            "max": OPT_FAN_MAXIMUM,
+            "min": OPT_FAN_MINIMUM,
+            "step": OPT_FAN_STEP,
+            "class": SensorDeviceClass.POWER_FACTOR,
+            "unit": PERCENTAGE,
+            "precision": 0,
+            "entity": Platform.NUMBER,
+            "device": None,
+            "icon": "mdi:air-conditioner",
         }
     }
 
@@ -286,8 +344,11 @@ def get_room_schema(
         default_temperature_target_name = OPT_TEMPERATURE_TARGET_NAME_EN
         default_low_setting_name = OPT_LOW_SETTING_NAME_EN
         default_low_target_name = OPT_LOW_TARGET_NAME_EN
-        default_valve_heating_name = OPT_VALVE_HEATING_NAME_EN
-        default_valve_cooling_name = OPT_VALVE_COOLING_NAME_EN
+        default_heating_valve_name = OPT_HEATING_VALVE_NAME_EN
+        default_cooling_valve_name = OPT_COOLING_VALVE_NAME_EN
+        default_cooling_speed_name = OPT_COOLING_SPEED_NAME_EN
+        default_cooling_control_name = OPT_COOLING_CONTROL_NAME_EN
+        default_cooling_speed_setting_name = OPT_COOLING_SPEED_SETTING_NAME_EN
     if lang == "cs":
         default_device = OPT_ROOM_CONTROLS_NAME_CS
         default_temperature_name = OPT_TEMPERATURE_NAME_CS
@@ -296,12 +357,16 @@ def get_room_schema(
         default_temperature_target_name = OPT_TEMPERATURE_TARGET_NAME_CS
         default_low_setting_name = OPT_LOW_SETTING_NAME_CS
         default_low_target_name = OPT_LOW_TARGET_NAME_CS
-        default_valve_heating_name = OPT_VALVE_HEATING_NAME_CS
-        default_valve_cooling_name = OPT_VALVE_COOLING_NAME_CS
+        default_heating_valve_name = OPT_HEATING_VALVE_NAME_CS
+        default_cooling_valve_name = OPT_COOLING_VALVE_NAME_CS
+        default_cooling_speed_name = OPT_COOLING_SPEED_NAME_CS
+        default_cooling_control_name = OPT_COOLING_CONTROL_NAME_CS
+        default_cooling_speed_setting_name = OPT_COOLING_SPEED_SETTING_NAME_CS
     default_temperature_uid = default_humidity_uid = 0
     default_temperature_setting_uid = default_temperature_target_uid = 0
     default_low_setting_uid = default_low_target_uid = 0
-    default_valve_heating_uid = default_valve_cooling_uid = 0
+    default_heating_valve_uid = 0
+    default_cooling_valve_uid = default_cooling_speed_uid = default_cooling_control_uid = default_cooling_speed_setting_uid = 0
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE)
         temperature = input_data.get(OPT_TEMPERATURE)
@@ -322,12 +387,21 @@ def get_room_schema(
         low_target = input_data.get(OPT_LOW_TARGET)
         default_low_target_name = low_target.get(OPT_NAME)
         default_low_target_uid = low_target.get(OPT_UID, 0)
-        valve_heating = input_data.get(OPT_VALVE_HEATING)
-        default_valve_heating_name = valve_heating.get(OPT_NAME)
-        default_valve_heating_uid = valve_heating.get(OPT_UID, 0)
-        valve_cooling = input_data.get(OPT_VALVE_COOLING)
-        default_valve_cooling_name = valve_cooling.get(OPT_NAME)
-        default_valve_cooling_uid = valve_cooling.get(OPT_UID, 0)
+        heating_valve = input_data.get(OPT_HEATING_VALVE)
+        default_heating_valve_name = heating_valve.get(OPT_NAME)
+        default_heating_valve_uid = heating_valve.get(OPT_UID, 0)
+        cooling_valve = input_data.get(OPT_COOLING_VALVE)
+        default_cooling_valve_name = cooling_valve.get(OPT_NAME)
+        default_cooling_valve_uid = cooling_valve.get(OPT_UID, 0)
+        cooling_speed = input_data.get(OPT_COOLING_SPEED)
+        default_cooling_speed_name = cooling_speed.get(OPT_NAME)
+        default_cooling_speed_uid = cooling_speed.get(OPT_UID, 0)
+        cooling_control = input_data.get(OPT_COOLING_CONTROL)
+        default_cooling_control_name = cooling_control.get(OPT_NAME)
+        default_cooling_control_uid = cooling_control.get(OPT_UID, 0)
+        cooling_speed_setting = input_data.get(OPT_COOLING_SPEED_SETTING)
+        default_cooling_speed_setting_name = cooling_speed_setting.get(OPT_NAME)
+        default_cooling_speed_setting_uid = cooling_speed_setting.get(OPT_UID, 0)
     return vol.Schema(
         {
             vol.Required(OPT_DEVICE, default=default_device): str,
@@ -397,27 +471,60 @@ def get_room_schema(
                 ),
                 {"collapsed": False},
             ),
-            vol.Required(OPT_VALVE_HEATING): section(
+            vol.Required(OPT_HEATING_VALVE): section(
                 vol.Schema(
                     {
-                        vol.Optional(OPT_NAME, default=default_valve_heating_name): str,
+                        vol.Optional(OPT_NAME, default=default_heating_valve_name): str,
                         vol.Optional(
-                            OPT_UID, default=default_valve_heating_uid
+                            OPT_UID, default=default_heating_valve_uid
                         ): _UID_SELECTOR,
                     }
                 ),
                 {"collapsed": False},
             ),
-            vol.Required(OPT_VALVE_COOLING): section(
+            vol.Required(OPT_COOLING_VALVE): section(
                 vol.Schema(
                     {
-                        vol.Optional(OPT_NAME, default=default_valve_cooling_name): str,
+                        vol.Optional(OPT_NAME, default=default_cooling_valve_name): str,
                         vol.Optional(
-                            OPT_UID, default=default_valve_cooling_uid
+                            OPT_UID, default=default_cooling_valve_uid
                         ): _UID_SELECTOR,
                     }
                 ),
                 {"collapsed": False},
+            ),
+            vol.Required(OPT_COOLING_SPEED): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_cooling_speed_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_cooling_speed_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_COOLING_CONTROL): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_cooling_control_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_cooling_control_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": True},
+            ),
+            vol.Required(OPT_COOLING_SPEED_SETTING): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_cooling_speed_setting_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_cooling_speed_setting_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": True},
             ),
         }
     )
