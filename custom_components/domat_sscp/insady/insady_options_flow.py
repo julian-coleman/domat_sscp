@@ -82,6 +82,9 @@ from .insady_const import (
     OPT_FAN_MAXIMUM,
     OPT_FAN_MINIMUM,
     OPT_FAN_STEP,
+    OPT_HEATING_SETTING,
+    OPT_HEATING_SETTING_NAME_CS,
+    OPT_HEATING_SETTING_NAME_EN,
     OPT_HEATING_VALVE,
     OPT_HEATING_VALVE_NAME_CS,
     OPT_HEATING_VALVE_NAME_EN,
@@ -268,6 +271,17 @@ def get_room_configs() -> dict[str, dict]:
             "device": None,
             "icon": "mdi:valve",
         },
+        OPT_HEATING_SETTING: {
+            "name": None,
+            "uid": None,
+            "offset": 0,
+            "length": 2,
+            "type": 2,
+            "on": 2,
+            "off": 1,
+            "entity": Platform.SWITCH,
+            "device": None,
+        },
         OPT_COOLING_VALVE: {
             "name": None,
             "uid": None,
@@ -340,6 +354,7 @@ def get_room_schema(
         default_low_setting_name = OPT_LOW_SETTING_NAME_EN
         default_low_target_name = OPT_LOW_TARGET_NAME_EN
         default_heating_valve_name = OPT_HEATING_VALVE_NAME_EN
+        default_heating_setting_name = OPT_HEATING_SETTING_NAME_EN
         default_cooling_valve_name = OPT_COOLING_VALVE_NAME_EN
         default_cooling_speed_name = OPT_COOLING_SPEED_NAME_EN
         default_cooling_setting_name = OPT_COOLING_SETTING_NAME_EN
@@ -353,6 +368,7 @@ def get_room_schema(
         default_low_setting_name = OPT_LOW_SETTING_NAME_CS
         default_low_target_name = OPT_LOW_TARGET_NAME_CS
         default_heating_valve_name = OPT_HEATING_VALVE_NAME_CS
+        default_heating_setting_name = OPT_HEATING_SETTING_NAME_CS
         default_cooling_valve_name = OPT_COOLING_VALVE_NAME_CS
         default_cooling_speed_name = OPT_COOLING_SPEED_NAME_CS
         default_cooling_setting_name = OPT_COOLING_SETTING_NAME_CS
@@ -360,7 +376,7 @@ def get_room_schema(
     default_temperature_uid = default_humidity_uid = 0
     default_temperature_setting_uid = default_temperature_target_uid = 0
     default_low_setting_uid = default_low_target_uid = 0
-    default_heating_valve_uid = 0
+    default_heating_valve_uid = default_heating_setting_uid = 0
     default_cooling_valve_uid = default_cooling_speed_uid = default_cooling_setting_uid = default_cooling_speed_setting_uid = 0
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE)
@@ -385,6 +401,9 @@ def get_room_schema(
         heating_valve = input_data.get(OPT_HEATING_VALVE)
         default_heating_valve_name = heating_valve.get(OPT_NAME)
         default_heating_valve_uid = heating_valve.get(OPT_UID, 0)
+        heating_setting = input_data.get(OPT_HEATING_SETTING)
+        default_heating_setting_name = heating_setting.get(OPT_NAME)
+        default_heating_setting_uid = heating_setting.get(OPT_UID, 0)
         cooling_valve = input_data.get(OPT_COOLING_VALVE)
         default_cooling_valve_name = cooling_valve.get(OPT_NAME)
         default_cooling_valve_uid = cooling_valve.get(OPT_UID, 0)
@@ -476,6 +495,17 @@ def get_room_schema(
                     }
                 ),
                 {"collapsed": False},
+            ),
+            vol.Required(OPT_HEATING_SETTING): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_NAME, default=default_heating_setting_name): str,
+                        vol.Optional(
+                            OPT_UID, default=default_heating_setting_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": True},
             ),
             vol.Required(OPT_COOLING_VALVE): section(
                 vol.Schema(

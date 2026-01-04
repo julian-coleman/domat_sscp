@@ -105,6 +105,13 @@
               "uid": "UID"
             }
           },
+          "heating_setting": {
+            "name": "Set heating valve:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
           "cooling_valve": {
             "name": "Cooling valve:",
             "data": {

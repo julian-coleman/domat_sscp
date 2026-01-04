@@ -105,6 +105,13 @@
               "uid": "UID"
             }
           },
+          "heating_setting": {
+            "name": "Ventil topení - nastavení:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
           "cooling_valve": {
             "name": "Ventil chlazení:",
             "data": {
