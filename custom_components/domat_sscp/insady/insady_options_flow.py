@@ -8,6 +8,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
+from homeassistant.components.number import NumberDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.components.water_heater import WaterHeaterEntityFeature
 from homeassistant.const import (
@@ -67,8 +68,6 @@ from .insady_const import (
     OPT_COOLING_CONTROL,
     OPT_COOLING_CONTROL_NAME_CS,
     OPT_COOLING_CONTROL_NAME_EN,
-    OPT_COOLING_CONTROL_STATES_CS,
-    OPT_COOLING_CONTROL_STATES_EN,
     OPT_COOLING_SPEED,
     OPT_COOLING_SPEED_NAME_CS,
     OPT_COOLING_SPEED_NAME_EN,
@@ -168,12 +167,8 @@ _UID_SELECTOR = vol.All(
     vol.Coerce(int),
 )
 
-def get_room_configs(lang: str | None = None) -> dict[str, dict]:
+def get_room_configs() -> dict[str, dict]:
     """Return a dictionary of entities for a room controls device."""
-
-    cooling_control_states = OPT_COOLING_CONTROL_STATES_EN
-    if lang == "cs":
-        cooling_control_states = OPT_COOLING_CONTROL_STATES_CS
 
     return {
         OPT_TEMPERATURE: {
@@ -305,10 +300,10 @@ def get_room_configs(lang: str | None = None) -> dict[str, dict]:
             "offset": 0,
             "length": 2,
             "type": 2,
-            "states": cooling_control_states,
-            "entity": Platform.SELECT,
+            "on": 2,
+            "off": 1,
+            "entity": Platform.SWITCH,
             "device": None,
-            "icon": "mdi:toggle-switch-off-outline",
         },
         OPT_COOLING_SPEED_SETTING: {
             "name": None,
@@ -319,7 +314,7 @@ def get_room_configs(lang: str | None = None) -> dict[str, dict]:
             "max": OPT_FAN_MAXIMUM,
             "min": OPT_FAN_MINIMUM,
             "step": OPT_FAN_STEP,
-            "class": SensorDeviceClass.POWER_FACTOR,
+            "class": NumberDeviceClass.POWER_FACTOR,
             "unit": PERCENTAGE,
             "precision": 0,
             "entity": Platform.NUMBER,
@@ -1094,7 +1089,7 @@ def get_air_configs() -> dict[str, dict]:
             "max": OPT_VENTILATION_FLOW_MAXIMUM,
             "min": OPT_VENTILATION_FLOW_MINIMUM,
             "step": OPT_VENTILATION_FLOW_STEP,
-            "class": SensorDeviceClass.VOLUME_FLOW_RATE,
+            "class": NumberDeviceClass.VOLUME_FLOW_RATE,
             "unit": UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR,
             "entity": Platform.NUMBER,
             "device": None,

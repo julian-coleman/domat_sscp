@@ -69,7 +69,7 @@ OPT_LOW_TARGET_NAME_EN = "Minimum temperature"
 OPT_HEATING_VALVE_NAME_EN = "Heating valve"
 OPT_COOLING_VALVE_NAME_EN = "Cooling valve"
 OPT_COOLING_SPEED_NAME_EN = "Air conditioning speed"
-OPT_COOLING_CONTROL_NAME_EN = "Air conditioning control"
+OPT_COOLING_CONTROL_NAME_EN = "Set air conditioning control"
 OPT_COOLING_SPEED_SETTING_NAME_EN = "Set air conditioning speed"
 OPT_ROOM_CONTROLS_NAME_CS="Ovládání pokoje"
 OPT_TEMPERATURE_NAME_CS="Teplota aktuální"
@@ -81,7 +81,7 @@ OPT_LOW_TARGET_NAME_CS = "Útlum nastavený"
 OPT_HEATING_VALVE_NAME_CS = "Ventil topení"
 OPT_COOLING_VALVE_NAME_CS = "Ventil chlazení"
 OPT_COOLING_SPEED_NAME_CS = "Výkon klimatizace nastavený"
-OPT_COOLING_CONTROL_NAME_CS = "Ovládání klimatizace"
+OPT_COOLING_CONTROL_NAME_CS = "Ovládání klimatizace - nastavení"
 OPT_COOLING_SPEED_SETTING_NAME_CS = "Výkon klimatizace - nastavení"
 
 OPT_APARTMENT_CONTROLS_NAME_EN = "Apartment Controls"
@@ -102,10 +102,6 @@ OPT_APARTMENT_HEATING_NAME_CS = "Režim topení"
 OPT_APARTMENT_COOLING_NAME_CS = "Režim chlazení"
 
 # Select states
-OPT_COOLING_CONTROL_STATES_EN = {
-    "1": "Local",
-    "2": "On",
-}
 OPT_APARTMENT_MODE_STATES_EN = {
     "2": "Time plan + heating",
     "4": "Time plan + cooling",
@@ -123,10 +119,6 @@ OPT_APARTMENT_ACTUAL_STATES_EN = {
 OPT_APARTMENT_STATE_STATES_EN = {
     "0": "Minimum",
     "1": "Comfort",
-}
-OPT_COOLING_CONTROL_STATES_CS = {
-    "1": "Lokální",
-    "2": "Zapnuté",
 }
 OPT_APARTMENT_MODE_STATES_CS = {
     "2": "Časový plán + topení",
