@@ -119,7 +119,7 @@
               "uid": "UID"
             }
           },
-          "cooling_control": {
+          "cooling_setting": {
             "name": "Ovládání klimatizace - nastavení:",
             "data": {
               "name": "Název",

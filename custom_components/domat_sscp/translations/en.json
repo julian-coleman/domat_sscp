@@ -119,7 +119,7 @@
               "uid": "UID"
             }
           },
-          "cooling_control": {
+          "cooling_setting": {
             "name": "Set air conditioning control:",
             "data": {
               "name": "Název",

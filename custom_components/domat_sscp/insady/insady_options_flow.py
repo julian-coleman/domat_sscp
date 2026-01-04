@@ -65,9 +65,9 @@ from .insady_const import (
     OPT_CO2_TARGET,
     OPT_CO2_TARGET_NAME_CS,
     OPT_CO2_TARGET_NAME_EN,
-    OPT_COOLING_CONTROL,
-    OPT_COOLING_CONTROL_NAME_CS,
-    OPT_COOLING_CONTROL_NAME_EN,
+    OPT_COOLING_SETTING,
+    OPT_COOLING_SETTING_NAME_CS,
+    OPT_COOLING_SETTING_NAME_EN,
     OPT_COOLING_SPEED,
     OPT_COOLING_SPEED_NAME_CS,
     OPT_COOLING_SPEED_NAME_EN,
@@ -294,7 +294,7 @@ def get_room_configs() -> dict[str, dict]:
             "device": None,
             "icon": "mdi:air-conditioner",
         },
-        OPT_COOLING_CONTROL: {
+        OPT_COOLING_SETTING: {
             "name": None,
             "uid": None,
             "offset": 0,
@@ -342,7 +342,7 @@ def get_room_schema(
         default_heating_valve_name = OPT_HEATING_VALVE_NAME_EN
         default_cooling_valve_name = OPT_COOLING_VALVE_NAME_EN
         default_cooling_speed_name = OPT_COOLING_SPEED_NAME_EN
-        default_cooling_control_name = OPT_COOLING_CONTROL_NAME_EN
+        default_cooling_setting_name = OPT_COOLING_SETTING_NAME_EN
         default_cooling_speed_setting_name = OPT_COOLING_SPEED_SETTING_NAME_EN
     if lang == "cs":
         default_device = OPT_ROOM_CONTROLS_NAME_CS
@@ -355,13 +355,13 @@ def get_room_schema(
         default_heating_valve_name = OPT_HEATING_VALVE_NAME_CS
         default_cooling_valve_name = OPT_COOLING_VALVE_NAME_CS
         default_cooling_speed_name = OPT_COOLING_SPEED_NAME_CS
-        default_cooling_control_name = OPT_COOLING_CONTROL_NAME_CS
+        default_cooling_setting_name = OPT_COOLING_SETTING_NAME_CS
         default_cooling_speed_setting_name = OPT_COOLING_SPEED_SETTING_NAME_CS
     default_temperature_uid = default_humidity_uid = 0
     default_temperature_setting_uid = default_temperature_target_uid = 0
     default_low_setting_uid = default_low_target_uid = 0
     default_heating_valve_uid = 0
-    default_cooling_valve_uid = default_cooling_speed_uid = default_cooling_control_uid = default_cooling_speed_setting_uid = 0
+    default_cooling_valve_uid = default_cooling_speed_uid = default_cooling_setting_uid = default_cooling_speed_setting_uid = 0
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE)
         temperature = input_data.get(OPT_TEMPERATURE)
@@ -391,9 +391,9 @@ def get_room_schema(
         cooling_speed = input_data.get(OPT_COOLING_SPEED)
         default_cooling_speed_name = cooling_speed.get(OPT_NAME)
         default_cooling_speed_uid = cooling_speed.get(OPT_UID, 0)
-        cooling_control = input_data.get(OPT_COOLING_CONTROL)
-        default_cooling_control_name = cooling_control.get(OPT_NAME)
-        default_cooling_control_uid = cooling_control.get(OPT_UID, 0)
+        cooling_setting = input_data.get(OPT_COOLING_SETTING)
+        default_cooling_setting_name = cooling_setting.get(OPT_NAME)
+        default_cooling_setting_uid = cooling_setting.get(OPT_UID, 0)
         cooling_speed_setting = input_data.get(OPT_COOLING_SPEED_SETTING)
         default_cooling_speed_setting_name = cooling_speed_setting.get(OPT_NAME)
         default_cooling_speed_setting_uid = cooling_speed_setting.get(OPT_UID, 0)
@@ -499,12 +499,12 @@ def get_room_schema(
                 ),
                 {"collapsed": False},
             ),
-            vol.Required(OPT_COOLING_CONTROL): section(
+            vol.Required(OPT_COOLING_SETTING): section(
                 vol.Schema(
                     {
-                        vol.Optional(OPT_NAME, default=default_cooling_control_name): str,
+                        vol.Optional(OPT_NAME, default=default_cooling_setting_name): str,
                         vol.Optional(
-                            OPT_UID, default=default_cooling_control_uid
+                            OPT_UID, default=default_cooling_setting_uid
                         ): _UID_SELECTOR,
                     }
                 ),
