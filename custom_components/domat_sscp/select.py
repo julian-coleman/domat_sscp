@@ -127,7 +127,7 @@ class DomatSSCPSelect(CoordinatorEntity, SelectEntity):
             if state == option:
                 new_value = int(value)
                 break
-        _LOGGER.error("Updated %s: %d %s", self.unique_id, new_value, option)
+        _LOGGER.debug("Updated %s: %d %s", self.unique_id, new_value, option)
         self.hass.loop.create_task(
             self.coordinator.entity_update(
                 uid=self.sscp_uid,
