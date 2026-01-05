@@ -139,6 +139,12 @@
               "name": "Název",
               "uid": "UID"
             }
+          },
+          "existing_device": {
+            "name": "Přidat do stávajícího zařízení:",
+            "data": {
+              "existing_device": "Přidat do stávajícího zařízení"
+            }
           }
         }
       },
@@ -196,6 +202,12 @@
               "name": "Název",
               "uid": "UID"
             }
+          },
+          "existing_device": {
+            "name": "Přidat do stávajícího zařízení:",
+            "data": {
+              "existing_device": "Přidat do stávajícího zařízení"
+            }
           }
         }
       },
@@ -235,6 +247,12 @@
             "data": {
               "device": "Název zařízení",
               "uid": "UID"
+            }
+          },
+          "existing_device": {
+            "name": "Přidat do stávajícího zařízení:",
+            "data": {
+              "existing_device": "Přidat do stávajícího zařízení"
             }
           }
         }
@@ -306,6 +324,12 @@
             "data": {
               "name": "Název",
               "uid": "UID"
+            }
+          },
+          "existing_device": {
+            "name": "Přidat do stávajícího zařízení:",
+            "data": {
+              "existing_device": "Přidat do stávajícího zařízení"
             }
           }
         }

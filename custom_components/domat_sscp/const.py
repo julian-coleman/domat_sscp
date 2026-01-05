@@ -25,6 +25,7 @@ OPT_FAST_COUNT = "fast_count"
 OPT_WRITE_RETRIES = "write_retries"
 
 OPT_DEVICE = "device"
+OPT_EXISTING_DEVICE = "existing_device"
 OPT_NAME = "name"
 OPT_UID = "uid"
 OPT_OFFSET = "offset"

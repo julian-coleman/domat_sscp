@@ -23,12 +23,13 @@ from homeassistant.const import (
 )
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
 )
 
-from ..const import OPT_DEVICE, OPT_NAME, OPT_UID
+from ..const import OPT_DEVICE, OPT_EXISTING_DEVICE, OPT_NAME, OPT_UID
 from .insady_const import (
     OPT_APARTMENT_ACTUAL,
     OPT_APARTMENT_ACTUAL_NAME_CS,
@@ -378,6 +379,7 @@ def get_room_schema(
     default_low_setting_uid = default_low_target_uid = 0
     default_heating_valve_uid = default_heating_setting_uid = 0
     default_cooling_valve_uid = default_cooling_speed_uid = default_cooling_setting_uid = default_cooling_speed_setting_uid = 0
+    default_existing_device = False
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE)
         temperature = input_data.get(OPT_TEMPERATURE)
@@ -416,6 +418,8 @@ def get_room_schema(
         cooling_speed_setting = input_data.get(OPT_COOLING_SPEED_SETTING)
         default_cooling_speed_setting_name = cooling_speed_setting.get(OPT_NAME)
         default_cooling_speed_setting_uid = cooling_speed_setting.get(OPT_UID, 0)
+        existing_device = input_data.get(OPT_EXISTING_DEVICE)
+        default_existing_device = existing_device.get(OPT_EXISTING_DEVICE, False)
     return vol.Schema(
         {
             vol.Required(OPT_DEVICE, default=default_device): str,
@@ -547,6 +551,14 @@ def get_room_schema(
                         vol.Optional(
                             OPT_UID, default=default_cooling_speed_setting_uid
                         ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": True},
+            ),
+            vol.Required(OPT_EXISTING_DEVICE): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_EXISTING_DEVICE, default=default_existing_device): BooleanSelector(),
                     }
                 ),
                 {"collapsed": True},
@@ -688,6 +700,7 @@ def get_apartment_schema(
     default_holiday_setting_uid = default_holiday_target_uid = 0
     default_apartment_state_uid = 0
     default_apartment_heating_uid = default_apartment_cooling_uid = 0
+    default_existing_device = False
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE)
         apartment_mode = input_data.get(OPT_APARTMENT_MODE)
@@ -711,6 +724,8 @@ def get_apartment_schema(
         apartment_cooling = input_data.get(OPT_APARTMENT_COOLING)
         default_apartment_cooling_name = apartment_cooling.get(OPT_NAME)
         default_apartment_cooling_uid = apartment_cooling.get(OPT_UID,0)
+        existing_device = input_data.get(OPT_EXISTING_DEVICE)
+        default_existing_device = existing_device.get(OPT_EXISTING_DEVICE, False)
     return vol.Schema(
         {
             vol.Required(OPT_DEVICE, default=default_device): str,
@@ -790,6 +805,14 @@ def get_apartment_schema(
                     }
                 ),
                 {"collapsed": False},
+            ),
+            vol.Required(OPT_EXISTING_DEVICE): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_EXISTING_DEVICE, default=default_existing_device): BooleanSelector(),
+                    }
+                ),
+                {"collapsed": True},
             ),
         }
     )
@@ -892,6 +915,7 @@ def get_energy_schema(
     default_meter_electricity_uid = 0
     default_meter_water_cold_uid = default_meter_water_hot_uid = 0
     default_calorimeter_hot_uid = default_calorimeter_cold_uid = 0
+    default_existing_device = False
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE, default_device)
         meter_electricity = input_data.get(OPT_METER_ELECTRICITY)
@@ -929,7 +953,8 @@ def get_energy_schema(
         default_calorimeter_cold_name = calorimeter_cold.get(
             OPT_NAME, default_calorimeter_cold_name
         )
-
+        existing_device = input_data.get(OPT_EXISTING_DEVICE)
+        default_existing_device = existing_device.get(OPT_EXISTING_DEVICE, False)
     return vol.Schema(
         {
             vol.Required(OPT_DEVICE, default=default_device): str,
@@ -997,6 +1022,14 @@ def get_energy_schema(
                     }
                 ),
                 {"collapsed": False},
+            ),
+            vol.Required(OPT_EXISTING_DEVICE): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_EXISTING_DEVICE, default=default_existing_device): BooleanSelector(),
+                    }
+                ),
+                {"collapsed": True},
             ),
         }
     )
@@ -1164,6 +1197,7 @@ def get_air_schema(
     default_ventilation_flow_target_uid = 0
     default_ventilation_in_uid = default_ventilation_out_uid = 0
     default_ventilation_flow_setting_uid = 0
+    default_existing_device = False
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE, default_device)
         default_ventilation_error = input_data.get(OPT_VENTILATION_ERROR)
@@ -1198,7 +1232,8 @@ def get_air_schema(
         default_ventilation_flow_setting_uid = default_ventilation_flow_setting.get(
             OPT_UID, default_ventilation_flow_setting_uid
         )
-
+        existing_device = input_data.get(OPT_EXISTING_DEVICE)
+        default_existing_device = existing_device.get(OPT_EXISTING_DEVICE, False)
     return vol.Schema(
         {
             vol.Required(OPT_DEVICE, default=default_device): str,
@@ -1311,6 +1346,14 @@ def get_air_schema(
                         vol.Optional(
                             OPT_UID, default=default_ventilation_flow_setting_uid
                         ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": True},
+            ),
+            vol.Required(OPT_EXISTING_DEVICE): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_EXISTING_DEVICE, default=default_existing_device): BooleanSelector(),
                     }
                 ),
                 {"collapsed": True},

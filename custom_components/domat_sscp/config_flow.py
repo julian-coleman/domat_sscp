@@ -43,6 +43,7 @@ from .const import (
     DEFAULT_WRITE_RETRIES,
     DOMAIN,
     OPT_DEVICE,
+    OPT_EXISTING_DEVICE,
     OPT_FAST_COUNT,
     OPT_FAST_INTERVAL,
     OPT_POLLING,
@@ -380,8 +381,10 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
 
         if len(errors) == 0:
             # Check for existing device/entities
+            existing_device_section=user_input.get(OPT_EXISTING_DEVICE)
             err_info = _check_exists(
                 device_name=user_input.get(OPT_DEVICE),
+                existing_device=existing_device_section.get(OPT_EXISTING_DEVICE, False),
                 entity_ids=entity_ids,
                 options=self.config_entry.options
             )
@@ -528,20 +531,19 @@ class InvalidAuth(HomeAssistantError):
 def _check_exists(
     device_name: str | None,
     entity_ids: dict[str, str],
-    options: dict[str, Any]
+    options: dict[str, Any],
+    existing_device: bool = False
 ) -> dict[str, Any]:
     """Check if device or entity already exists."""
 
-    variables: list = []
     # Does the device already exist?
-    for value in options.values():
-        if (
-            device_name is not None
-            and "device" in value
-            and value["device"] == device_name
-        ):
-            return {"device": device_name}
+    if device_name is not None and not existing_device:
+        for value in options.values():
+            if ("device" in value and value["device"] == device_name):
+                return {"device": device_name}
+
     # Does the entity already exist?
+    variables: list = []
     for entity_id, entity_uid in entity_ids.items():
         if entity_id in options:
             variables.append(entity_uid)

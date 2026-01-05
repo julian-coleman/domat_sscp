@@ -139,6 +139,12 @@
               "name": "Název",
               "uid": "UID"
             }
+          },
+          "existing_device": {
+            "name": "Add to existing device:",
+            "data": {
+              "existing_device": "Add to existing device"
+            }
           }
         }
       },
@@ -196,6 +202,12 @@
               "name": "Název",
               "uid": "UID"
             }
+          },
+          "existing_device": {
+            "name": "Add to existing device:",
+            "data": {
+              "existing_device": "Add to existing device"
+            }
           }
         }
       },
@@ -235,6 +247,12 @@
             "data": {
               "device": "Device name",
               "uid": "UID"
+            }
+          },
+          "existing_device": {
+            "name": "Add to existing device:",
+            "data": {
+              "existing_device": "Add to existing device"
             }
           }
         }
@@ -306,6 +324,12 @@
             "data": {
               "name": "Name",
               "uid": "UID"
+            }
+          },
+          "existing_device": {
+            "name": "Add to existing device:",
+            "data": {
+              "existing_device": "Add to existing device"
             }
           }
         }
