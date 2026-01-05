@@ -20,9 +20,13 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_IP_ADDRESS, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.selector import (
     BooleanSelector,
     BooleanSelectorConfig,
+    EntityFilterSelectorConfig,
+    EntitySelector,
+    EntitySelectorConfig,
     LanguageSelector,
     LanguageSelectorConfig,
     NumberSelector,
@@ -43,6 +47,7 @@ from .const import (
     DEFAULT_WRITE_RETRIES,
     DOMAIN,
     OPT_DEVICE,
+    OPT_ENTITY,
     OPT_EXISTING_DEVICE,
     OPT_FAST_COUNT,
     OPT_FAST_INTERVAL,
@@ -114,10 +119,18 @@ _WRITE_RETRIES_SELECTOR = vol.All(
     ),
     vol.Coerce(int),
 )
+_ENTITY_SELECTOR = vol.All(
+    EntitySelector(
+        EntitySelectorConfig(
+            EntityFilterSelectorConfig(integration=DOMAIN),
+            multiple=False
+        )
+    ),
+)
 
 # Options flow menus
-_DEVICE_MENU = []
 _INSADY_MENU = ["insady_room", "insady_apartment", "insady_energy", "insady_air",]
+_DEVICE_MENU = ["entity_rm"]
 _CONFIG_MENU = ["poll", "info"]
 
 class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -125,7 +138,7 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
 
     # Config flow version
     VERSION = 1
-    MINOR_VERSION = 3
+    MINOR_VERSION = 4
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -458,6 +471,46 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             errors=errors,
             description_placeholders=description_placeholders,
         )
+
+    async def async_step_entity_rm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Remove a single entity."""
+
+        data: dict[str, Any] = self.config_entry.options.copy()
+        step = "entity_rm"
+        errors: dict[str, str] = {}
+        description_placeholders: dict[str, str] = {}
+
+        schema = vol.Schema(
+            {
+                vol.Required(OPT_ENTITY, default=None): _ENTITY_SELECTOR,
+            }
+        )
+        if user_input is None:
+            return self.async_show_form(step_id=step, data_schema=schema)
+
+        entity = user_input.get(OPT_ENTITY)
+        entity_registry = er.async_get(self.hass)
+        entity_entry: er.RegistryEntry = entity_registry.async_get(entity)
+        if entity_entry is None:
+            errors["base"] = "entity_error"
+            description_placeholders = {"entity": entity_entry.unique_id}
+            return self.async_show_form(
+                step_id=step,
+                data_schema=schema,
+                errors=errors,
+                description_placeholders=description_placeholders,
+            )
+
+        # handle parallel delete
+        try:
+            del(data[entity_entry.unique_id])
+        except KeyError:
+            _LOGGER.warning("Not found in entities: %s (%s)", entity, entity_entry.unique_id)
+
+        entity_registry.async_remove(entity)
+        return self.async_create_entry(data=data)
 
     async def async_step_poll(
         self, user_input: dict[str, Any] | None = None

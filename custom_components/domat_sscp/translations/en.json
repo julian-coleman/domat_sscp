@@ -46,6 +46,7 @@
           "insady_apartment": "InSady: Add an apartment control device",
           "insady_energy": "InSady: Add an energy readings device",
           "insady_air": "InSady: Add a ventilation device",
+          "entity_rm": "Delete entity",
           "poll": "Set connection intervals",
           "info": "Write configuration information to the log"
         }
@@ -342,13 +343,20 @@
           "fast_count": "Number of fast requests",
           "write_retries": "Number of retries for writes"
         }
+      },
+      "entity_rm": {
+        "title": "Delete entity",
+        "data": {
+          "entity": "Entity"
+        }
       }
     },
     "error": {
       "cannot_connect": "Cannot connect to the server",
       "invalid_auth": "Invalid authentication",
       "timeout_connect": "Connection timed out",
-      "variable_error": "Error ({error}) with variable(s): {variables}"
+      "variable_error": "Error ({error}) with variable(s): {variables}",
+      "entity_error": "Entity is not in the registry: {entity}"
     },
     "abort": {
       "info_written": "Configuration information was written to the log"
