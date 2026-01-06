@@ -109,7 +109,7 @@
           "heating_setting": {
             "name": "Set heating valve:",
             "data": {
-              "name": "Název",
+              "name": "Name",
               "uid": "UID"
             }
           },
@@ -123,21 +123,21 @@
           "cooling_speed": {
             "name": "Air conditioning speed:",
             "data": {
-              "name": "Název",
+              "name": "Name",
               "uid": "UID"
             }
           },
           "cooling_setting": {
             "name": "Set air conditioning control:",
             "data": {
-              "name": "Název",
+              "name": "Name",
               "uid": "UID"
             }
           },
           "cooling_speed_setting": {
             "name": "Set air conditioning speed:",
             "data": {
-              "name": "Název",
+              "name": "Name",
               "uid": "UID"
             }
           },
@@ -152,55 +152,55 @@
       "insady_apartment": {
         "title": "InSady: Add an apartment control device",
         "data": {
-          "device": "Název zařízení"
+          "device": "Device name"
         },
         "sections": {
           "apartment_mode": {
-            "name": "Režím bytu - nastavení:",
+            "name": "Set apartment mode:",
             "data": {
-              "name": "Název",
+              "name": "Name",
               "uid": "UID"
             }
           },
           "apartment_actual": {
-            "name": "Režím bytu nastavený:",
+            "name": "Apartment mode:",
             "data": {
-              "name": "Název",
+              "name": "Name",
               "uid": "UID"
             }
           },
           "holiday_setting": {
-            "name": "Teplota prázdniny - nastavení:",
+            "name": "Set holiday temperature:",
             "data": {
-              "name": "Název",
+              "name": "Name",
               "uid": "UID"
             }
           },
           "holiday_target": {
-            "name": "Teplota prázdniny nastavená:",
+            "name": "Holiday temperature:",
             "data": {
-              "name": "Název",
+              "name": "Name",
               "uid": "UID"
             }
           },
           "apartment_state": {
             "name": "Apartment state:",
             "data": {
-              "name": "Název",
+              "name": "Name",
               "uid": "UID"
             }
           },
           "apartment_heating": {
             "name": "Heating mode:",
             "data": {
-              "name": "Název",
+              "name": "Name",
               "uid": "UID"
             }
           },
           "apartment_cooling": {
             "name": "Cooling mode:",
             "data": {
-              "name": "Název",
+              "name": "Name",
               "uid": "UID"
             }
           },
