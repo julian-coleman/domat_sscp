@@ -28,8 +28,8 @@ from .const import (
     OPT_SCAN_INTERVAL,
     OPT_WRITE_RETRIES,
 )
-from .sscp_connection import sscp_connection
-from .sscp_variable import sscp_variable
+from .sscp.sscp_connection import sscp_connection
+from .sscp.sscp_variable import sscp_variable
 
 _LOGGER = logging.getLogger(__name__)
 

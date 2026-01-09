@@ -67,9 +67,9 @@ from .insady.insady_options_flow import (
     get_room_configs,
     get_room_schema,
 )
-from .sscp_connection import sscp_connection
-from .sscp_const import SSCP_ERRORS
-from .sscp_variable import sscp_variable
+from .sscp.sscp_connection import sscp_connection
+from .sscp.sscp_const import SSCP_ERRORS
+from .sscp.sscp_variable import sscp_variable
 
 _LOGGER = logging.getLogger(__name__)
 
