@@ -152,10 +152,9 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
                 length=self.sscp_length,
                 type=self.sscp_type,
                 value=new_value,
-                increment=self._attr_step,
                 maximum=self._attr_max_value,
-                decrement=self._attr_step,
                 minimum=self._attr_min_value,
+                step=self.step
             )
         )
 

@@ -197,10 +197,9 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         length: int,
         type: int,
         value: Any,
-        increment: float | None = None,
         maximum: float | None = None,
-        decrement: float | None = None,
         minimum: float | None = None,
+        step: float | None = None,
         states: dict[str, Any] | None = None,
     ) -> None:
         """An entity has changed a setting: update using fast polling."""
@@ -215,13 +214,13 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             offset=offset,
             length=length,
             type=type,
-            increment=increment,
             maximum=maximum,
-            decrement=decrement,
             minimum=minimum,
+            step=step,
             states=states,
             perm="rw",
         )
+        sscp_var.change_value(new=value)
 
         # Try the write a few times, in case we clash with another connection
         retry = 0

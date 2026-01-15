@@ -138,10 +138,9 @@ class DomatSSCPWaterHeater(CoordinatorEntity, WaterHeaterEntity):
                 length=self.sscp_length,
                 type=self.sscp_type,
                 value=value,
-                increment=self._attr_target_temperature_step,
                 maximum=self._attr_max_temp,
-                decrement=self._attr_target_temperature_step,
                 minimum=self._attr_min_temp,
+                step=self._attr_target_temperature_step
             )
         )
 
