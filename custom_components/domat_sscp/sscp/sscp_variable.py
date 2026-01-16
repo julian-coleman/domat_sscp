@@ -173,6 +173,8 @@ class sscp_variable:
                     for state in self.states:
                         if state["state"] == self.val:
                             self.state = state["text"]
+            case 64:  # scehdule (converted in schedule classes)
+                self.val = raw
             case _:  # unknown type
                 _LOGGER.warning("Set unknown type for %d", self.uid)
                 self.val = int.from_bytes(raw, SSCP_DATA_ORDER)
