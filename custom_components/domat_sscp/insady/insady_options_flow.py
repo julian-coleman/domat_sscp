@@ -29,7 +29,15 @@ from homeassistant.helpers.selector import (
     NumberSelectorMode,
 )
 
-from ..const import OPT_DEVICE, OPT_EXISTING_DEVICE, OPT_NAME, OPT_UID
+from ..const import (
+    OPT_CALENDAR_BASE,
+    OPT_CALENDAR_EXCEPTIONS,
+    OPT_DEVICE,
+    OPT_EXISTING_DEVICE,
+    OPT_NAME,
+    OPT_UID,
+)
+from ..sscp.sscp_const import OFF_NAME_CS, OFF_NAME_EN, ON_NAME_CS, ON_NAME_EN
 from .insady_const import (
     OPT_APARTMENT_ACTUAL,
     OPT_APARTMENT_ACTUAL_NAME_CS,
@@ -54,6 +62,12 @@ from .insady_const import (
     OPT_APARTMENT_STATE_NAME_EN,
     OPT_APARTMENT_STATE_STATES_CS,
     OPT_APARTMENT_STATE_STATES_EN,
+    OPT_CALENDAR_BASE_NAME_CS,
+    OPT_CALENDAR_BASE_NAME_EN,
+    OPT_CALENDAR_EXCEPTIONS_NAME_CS,
+    OPT_CALENDAR_EXCEPTIONS_NAME_EN,
+    OPT_CALENDAR_NAME_CS,
+    OPT_CALENDAR_NAME_EN,
     OPT_CALORIMETER_COLD,
     OPT_CALORIMETER_COLD_NAME_CS,
     OPT_CALORIMETER_COLD_NAME_EN,
@@ -1349,6 +1363,113 @@ def get_air_schema(
                     }
                 ),
                 {"collapsed": True},
+            ),
+            vol.Required(OPT_EXISTING_DEVICE): section(
+                vol.Schema(
+                    {
+                        vol.Optional(OPT_EXISTING_DEVICE, default=default_existing_device): BooleanSelector(),
+                    }
+                ),
+                {"collapsed": True},
+            ),
+        }
+    )
+
+
+def get_calendar_configs(lang: str) -> dict[str, dict]:
+    """Return a dictionary of entities for a calendar device."""
+
+    if lang == "en":
+        on = ON_NAME_EN
+        off = OFF_NAME_EN
+    if lang == "cs":
+        on = ON_NAME_CS
+        off = OFF_NAME_CS
+
+    return {
+        OPT_CALENDAR_BASE: {
+            "name": None,
+            "uid": None,
+            "offset": 12,
+            "length": 336,
+            "type": 64,
+            "entity": Platform.CALENDAR,
+            "calendar": OPT_CALENDAR_BASE,
+            "on": on,
+            "off": off,
+            "device": None,
+        },
+        OPT_CALENDAR_EXCEPTIONS: {
+            "name": None,
+            "uid": None,
+            "offset": 392,
+            "length": 120,
+            "type": 64,
+            "entity": Platform.CALENDAR,
+            "calendar": OPT_CALENDAR_EXCEPTIONS,
+            "on": on,
+            "off": off,
+            "device": None,
+        },
+    }
+
+
+def get_calendar_schema(
+    lang: str,
+    input_data: dict[str, Any] | None = None,
+) -> vol.Schema:
+    """Return a calendar schema with defaults based on the user input."""
+
+    # Fill in defaults from input or initial defaults
+    # Order is the same as in the app
+    if lang == "en":
+        default_device = OPT_CALENDAR_NAME_EN
+        default_calendar_base_name = OPT_CALENDAR_BASE_NAME_EN
+        default_calendar_exceptions_name = OPT_CALENDAR_EXCEPTIONS_NAME_EN
+    if lang == "cs":
+        default_device = OPT_CALENDAR_NAME_CS
+        default_calendar_base_name = OPT_CALENDAR_BASE_NAME_CS
+        default_calendar_exceptions_name = OPT_CALENDAR_EXCEPTIONS_NAME_CS
+    default_existing_device = False
+    default_calendar_uid = 0
+    if input_data is not None:
+        default_device = input_data.get(OPT_DEVICE, default_device)
+        default_calendar_uid = input_data.get(
+            OPT_UID, default_calendar_uid
+        )
+        calendar_base = input_data.get(OPT_CALENDAR_BASE)
+        default_calendar_base_name = calendar_base.get(
+            OPT_NAME, default_calendar_base_name
+        )
+        calendar_exceptions = input_data.get(OPT_CALENDAR_EXCEPTIONS)
+        default_calendar_exceptions_name = calendar_exceptions.get(
+            OPT_NAME, default_calendar_exceptions_name
+        )
+        existing_device = input_data.get(OPT_EXISTING_DEVICE)
+        default_existing_device = existing_device.get(OPT_EXISTING_DEVICE, False)
+    return vol.Schema(
+        {
+            vol.Required(OPT_DEVICE, default=default_device): str,
+            vol.Required(OPT_UID, default=default_calendar_uid): _UID_SELECTOR,
+            vol.Required(OPT_CALENDAR_BASE): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_calendar_base_name
+                        ): str,
+                    }
+                ),
+                {"collapsed": False},
+            ),
+            vol.Required(OPT_CALENDAR_EXCEPTIONS): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_calendar_exceptions_name
+                        ): str,
+                    }
+                ),
+                {"collapsed": False},
             ),
             vol.Required(OPT_EXISTING_DEVICE): section(
                 vol.Schema(

@@ -62,6 +62,8 @@ from .insady.insady_options_flow import (
     get_air_schema,
     get_apartment_configs,
     get_apartment_schema,
+    get_calendar_configs,
+    get_calendar_schema,
     get_energy_configs,
     get_energy_schema,
     get_room_configs,
@@ -129,7 +131,7 @@ _ENTITY_SELECTOR = vol.All(
 )
 
 # Options flow menus
-_INSADY_MENU = ["insady_room", "insady_apartment", "insady_energy", "insady_air",]
+_INSADY_MENU = ["insady_room", "insady_apartment", "insady_energy", "insady_air", "insady_calendar"]
 _DEVICE_MENU = ["entity_rm"]
 _CONFIG_MENU = ["poll", "info"]
 
@@ -348,6 +350,26 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             schema=schema
         )
 
+    async def async_step_insady_calendar(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the options for adding a calendar device."""
+
+        step = "insady_calendar"
+        lang=self.config_entry.data.get(CONF_LANGUAGE, "en")
+        schema = get_calendar_schema(lang, user_input)
+
+        if user_input is None:
+            return self.async_show_form(step_id=step, data_schema=schema)
+
+        configs = get_calendar_configs(lang=lang)
+        return await self._step_insady_common(
+            step=step,
+            user_input=user_input,
+            configs=configs,
+            schema=schema
+        )
+
     async def _step_insady_common(
         self,
         step: str,
@@ -367,9 +389,11 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         _LOGGER.debug("User input: %s", user_input)
         # Create variables list from user input
         # Our entity ID's are uid-offset-length of the variable
+        uid = user_input.get(OPT_UID)  # One UID for all variables?
         for section_name, config in configs.items():
             sect = user_input.get(section_name)
-            uid = sect.get(OPT_UID)
+            if uid is None:
+                uid = sect.get(OPT_UID)
             if uid != 0:
                 variables.append(
                     sscp_variable(uid=uid, offset=config["offset"], length=config["length"], type=config["type"])
@@ -452,9 +476,11 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         "variables": var_str,
                     }
                 else:
+                    uid = user_input.get(OPT_UID)  # One UID for all variables?
                     for section_name, config in configs.items():
                         sect = user_input.get(section_name)
-                        uid = sect.get(OPT_UID)
+                        if uid is None:
+                            uid = sect.get(OPT_UID)
                         if uid != 0:
                             entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["length"])
                             config["uid"] = uid
