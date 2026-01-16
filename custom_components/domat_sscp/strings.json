@@ -46,6 +46,7 @@
           "insady_apartment": "InSady: Add an apartment control device",
           "insady_energy": "InSady: Add an energy readings device",
           "insady_air": "InSady: Add a ventilation device",
+          "insady_calendar": "InSady: Add a calendar device",
           "entity_rm": "Delete entity",
           "poll": "Set connection intervals",
           "info": "Write configuration information to the log"
@@ -331,6 +332,31 @@
             "name": "Add to existing device:",
             "data": {
               "existing_device": "Add to existing device"
+            }
+          }
+        }
+      },
+      "insady_calendar": {
+        "title": "InSady: Add a calendar device",
+        "sections": {
+          "calendar_base": {
+            "name": "Base times:",
+            "data": {
+              "device": "Name",
+              "uid": "UID"
+            }
+          },
+          "calendar_exceptions": {
+            "name": "Exceptions:",
+            "data": {
+              "device": "Name",
+              "uid": "UID"
+            }
+          },
+          "existing_device": {
+            "name": "Přidat do stávajícího zařízení:",
+            "data": {
+              "existing_device": "Přidat do stávajícího zařízení"
             }
           }
         }

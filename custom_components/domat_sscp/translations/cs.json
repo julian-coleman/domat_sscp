@@ -46,6 +46,7 @@
           "insady_apartment": "InSady: Přidat ovládání bytu",
           "insady_energy": "InSady: Přidat odečty energií",
           "insady_air": "InSady: Přidat vzduchotechniku",
+          "insady_calendar": "InSady: Přidat kalendář",
           "entity_rm": "Smazat entitu",
           "poll": "Nastavit intervaly připojení",
           "info": "Zapsat informaci o konfiguraci do logu"
@@ -324,6 +325,31 @@
             "name": "Průtok ventilátorů - nastavení:",
             "data": {
               "name": "Název",
+              "uid": "UID"
+            }
+          },
+          "existing_device": {
+            "name": "Přidat do stávajícího zařízení:",
+            "data": {
+              "existing_device": "Přidat do stávajícího zařízení"
+            }
+          }
+        }
+      },
+      "insady_calendar": {
+        "title": "InSady: Přidat kalendář",
+        "sections": {
+          "calendar_base": {
+            "name": "Základní časy:",
+            "data": {
+              "device": "Název zařízení",
+              "uid": "UID"
+            }
+          },
+          "calendar_exceptions": {
+            "name": "Výjimky:",
+            "data": {
+              "device": "Název zařízení",
               "uid": "UID"
             }
           },
