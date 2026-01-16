@@ -16,6 +16,7 @@ from .coordinator import DomatSSCPConfigEntry, DomatSSCPCoordinator
 _LOGGER = logging.getLogger(__name__)
 _PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
+    Platform.CALENDAR,
     Platform.NUMBER,
     Platform.SELECT,
     Platform.SENSOR,

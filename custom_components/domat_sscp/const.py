@@ -34,3 +34,7 @@ OPT_MINIMUM = "minimum"
 OPT_MAXIMUM = "maximum"
 OPT_STEP = "step"
 OPT_ENTITY = "entity"
+
+# Calendar constants
+OPT_CALENDAR_BASE = "calendar_base"
+OPT_CALENDAR_EXCEPTIONS = "calendar_exceptions"
