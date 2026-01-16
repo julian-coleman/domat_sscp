@@ -116,14 +116,15 @@ class DomatSSCPSwitch(CoordinatorEntity, SwitchEntity):
 
         new_value = self.on_value
         _LOGGER.debug("Updated %s: on", self.unique_id)
+        var: dict[str:Any] = {
+            "uid": self.sscp_uid,
+            "offset": self.sscp_offset,
+            "length": self.sscp_length,
+            "type": self.sscp_type,
+            "value": new_value
+        }
         self.hass.loop.create_task(
-            self.coordinator.entity_update(
-                uid=self.sscp_uid,
-                offset=self.sscp_offset,
-                length=self.sscp_length,
-                type=self.sscp_type,
-                value=new_value
-            )
+            self.coordinator.entity_update([var])
         )
 
     def turn_off(self, **kwargs) -> None:
@@ -131,14 +132,15 @@ class DomatSSCPSwitch(CoordinatorEntity, SwitchEntity):
 
         new_value = self.off_value
         _LOGGER.debug("Updated %s: off", self.unique_id)
+        var: dict[str:Any] = {
+            "uid": self.sscp_uid,
+            "offset": self.sscp_offset,
+            "length": self.sscp_length,
+            "type": self.sscp_type,
+            "value": new_value
+        }
         self.hass.loop.create_task(
-            self.coordinator.entity_update(
-                uid=self.sscp_uid,
-                offset=self.sscp_offset,
-                length=self.sscp_length,
-                type=self.sscp_type,
-                value=new_value
-            )
+            self.coordinator.entity_update([var])
         )
 
     def _update_state(self) -> bool:

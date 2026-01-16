@@ -145,17 +145,19 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
             new_value = round(value, self.precision)
         else:
             new_value = value
+        _LOGGER.debug("Updated %s: %d", self.unique_id, new_value)
+        var: dict[str:Any] = {
+            "uid": self.sscp_uid,
+            "offset": self.sscp_offset,
+            "length": self.sscp_length,
+            "type": self.sscp_type,
+            "value": new_value,
+            "maximum": self._attr_max_value,
+            "minimum": self._attr_min_value,
+            "step": self.step
+        }
         self.hass.loop.create_task(
-            self.coordinator.entity_update(
-                uid=self.sscp_uid,
-                offset=self.sscp_offset,
-                length=self.sscp_length,
-                type=self.sscp_type,
-                value=new_value,
-                maximum=self._attr_max_value,
-                minimum=self._attr_min_value,
-                step=self.step
-            )
+            self.coordinator.entity_update([var])
         )
 
     def _update_value(self) -> float | None:

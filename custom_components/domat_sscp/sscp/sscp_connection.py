@@ -52,7 +52,6 @@ from .sscp_const import (
     SSCP_TIMEOUT_DATA,
     SSCP_VERSION_END,
     SSCP_VERSION_START,
-    SSCP_WRITE_DATA_1VARIABLE,
     SSCP_WRITE_DATA_FLAGS,
     SSCP_WRITE_DATA_REQUEST,
     SSCP_WRITE_DATA_SUCCESS,
@@ -393,20 +392,38 @@ class sscp_connection:
 
         return err_vars, err_codes
 
-    async def sscp_write_variable(self, var: sscp_variable, new) -> None:
-        """Write variable via the connection.
+    async def sscp_write_variables(self, vars: list[sscp_variable]) -> None:
+        """Write variables via the connection.
 
-        Can raise exceptions from sendrecv().
+        Can raise exceptions from sendrecv() or if variables have errors.
         """
+
+        if len(vars) == 0:
+            return
+
+        _LOGGER.debug(
+            "Write limits: %d, %d", self.send_max, SSCP_DATA_MAX_VAR
+        )
+        # Unclear if *_max include the data header or not, so reduce them in case
+        send_max = self.send_max - SSCP_DATALEN_END
+        if len(vars) > SSCP_DATA_MAX_VAR:
+            msg = f"Too many write UID's: {len(vars)}"
+            raise ValueError(msg)
 
         data = bytearray()
         data += SSCP_WRITE_DATA_FLAGS
-        data += SSCP_WRITE_DATA_1VARIABLE
-        data += var.uid_bytes
-        data += var.offset_bytes
-        data += var.length_bytes
-        data += var.change_value(new)
+        data += len(vars).to_bytes(1)
+        for var in vars:
+            data += var.uid_bytes
+            data += var.offset_bytes
+            data += var.length_bytes
+        for var in vars:
+            data += var.raw
         data_len = len(data)
+        if data_len > send_max:
+            # Don't split the request here like we do for read, because we don't know which vars must be written together
+            msg = f"Data write too long: {data_len}"
+            raise ValueError(msg)
 
         request = bytearray()
         request += self.addr_byte

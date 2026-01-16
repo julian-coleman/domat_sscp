@@ -130,18 +130,20 @@ class DomatSSCPWaterHeater(CoordinatorEntity, WaterHeaterEntity):
         if (temperature := kwargs.get(ATTR_TEMPERATURE)) is None:
             return
 
-        value = float(temperature)
+        new_value = float(temperature)
+        _LOGGER.debug("Updated %s: %f", self.unique_id, new_value)
+        var: dict[str:Any] = {
+            "uid": self.sscp_uid,
+            "offset": self.sscp_offset,
+            "length": self.sscp_length,
+            "type": self.sscp_type,
+            "value": new_value,
+            "maximum": self._attr_max_temp,
+            "minimum": self._attr_min_temp,
+            "step": self._attr_target_temperature_step
+        }
         self.hass.loop.create_task(
-            self.coordinator.entity_update(
-                uid=self.sscp_uid,
-                offset=self.sscp_offset,
-                length=self.sscp_length,
-                type=self.sscp_type,
-                value=value,
-                maximum=self._attr_max_temp,
-                minimum=self._attr_min_temp,
-                step=self._attr_target_temperature_step
-            )
+            self.coordinator.entity_update([var])
         )
 
     def _update_target(self) -> float | None:

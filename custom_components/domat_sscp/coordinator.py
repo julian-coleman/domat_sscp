@@ -190,38 +190,35 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         self.data = data
         return self.data
 
-    async def entity_update(
-        self,
-        uid: int,
-        offset: int,
-        length: int,
-        type: int,
-        value: Any,
-        maximum: float | None = None,
-        minimum: float | None = None,
-        step: float | None = None,
-        states: dict[str, Any] | None = None,
-    ) -> None:
-        """An entity has changed a setting: update using fast polling."""
+    async def entity_update(self, vars: list[dict[str:Any]]) -> None:
+        """An entity has changed a setting: write and update using fast polling."""
 
-        _LOGGER.debug("Entity write: %s %s %s %s %s", uid, offset, length, type, value)
+        sscp_vars: list[sscp_variable] = []
+        for var in vars:
+            uid = var.get("uid")
+            offset = var.get("offset")
+            length = var.get("length")
+            type = var.get("type")
+            value = var.get("value")
+            _LOGGER.debug("Entity write: %s %s %s %s = %s", uid, offset, length, type, value)
+
+            sscp_var = sscp_variable(
+                uid=uid,
+                offset=offset,
+                length=length,
+                type=type,
+                maximum=var.get("maximum"),
+                minimum=var.get("minimum"),
+                step=var.get("step"),
+                states=var.get("states"),
+                perm="rw",
+            )
+            sscp_var.change_value(new=value)
+            sscp_vars.append(sscp_var)
+
         since = datetime.now(tz=None) - self.last_connect
         if since.seconds < self.fast_interval:
             await sleep(self.fast_interval)
-
-        sscp_var = sscp_variable(
-            uid=uid,
-            offset=offset,
-            length=length,
-            type=type,
-            maximum=maximum,
-            minimum=minimum,
-            step=step,
-            states=states,
-            perm="rw",
-        )
-        sscp_var.change_value(new=value)
-
         # Try the write a few times, in case we clash with another connection
         retry = 0
         success = False
@@ -259,7 +256,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                 continue
 
             try:
-                await conn.sscp_write_variable(var=sscp_var, new=value)
+                await conn.sscp_write_variables(vars=sscp_vars)
             except TimeoutError:
                 _LOGGER.error("Entity write: write variable timeout for %s", self.name)
                 continue

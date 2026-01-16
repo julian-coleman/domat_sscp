@@ -67,8 +67,6 @@ SSCP_READ_DATA_SUCCESS = bytes("\x85\x00", encoding="iso-8859-1")
 SSCP_WRITE_DATA_REQUEST = bytes("\x05\x10", encoding="iso-8859-1")
 # Flags for offset + length (as per read)
 SSCP_WRITE_DATA_FLAGS = SSCP_READ_DATA_FLAGS
-# Write len for 1 variable
-SSCP_WRITE_DATA_1VARIABLE = bytes("\x01", encoding="iso-8859-1")
 # Write succesfull for all variables
 SSCP_WRITE_DATA_SUCCESS = bytes("\x85\x10", encoding="iso-8859-1")
 # Start and end bytes of received error code
@@ -134,8 +132,8 @@ OFF_NAME_EN = "off"
 WEEKDAYS_NAME_EN = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
 SCHEDULE_NAME_CS = "Plán"
 EXCEPTIONS_NAME_CS = "Výjimky"
-ON_NAME_CS = "zapnutý"
-OFF_NAME_CS = "vypnutý"
+ON_NAME_CS = "zapnuté"
+OFF_NAME_CS = "vypnuté"
 WEEKDAYS_NAME_CS = ["po", "út", "st", "čt", "pá", "so", "ne"]
 
 
