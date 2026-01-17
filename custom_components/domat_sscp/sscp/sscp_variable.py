@@ -80,7 +80,7 @@ class sscp_variable:
         self.state = "unknown"
 
     @classmethod
-    def from_yaml(cls, yaml):
+    def from_yaml(cls, yaml) -> None:
         "Configure the SSCP variable with paramaters via YAML."
 
         # Required
@@ -124,7 +124,7 @@ class sscp_variable:
             perm=perm
         )
 
-    def to_string(self):
+    def to_string(self) -> str:
         """Return a string representation of the variable."""
 
         # We haven't read the value yet
