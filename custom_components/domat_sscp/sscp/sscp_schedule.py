@@ -16,9 +16,11 @@ from .sscp_const import (
     OFF_NAME_EN,
     ON_NAME_CS,
     ON_NAME_EN,
+    SCHEDULE_BASETPG_END,
     SCHEDULE_BASETPG_LEN,
     SCHEDULE_BASETPG_MINS_END,
     SCHEDULE_BASETPG_MINS_START,
+    SCHEDULE_BASETPG_START,
     SCHEDULE_BASETPG_STATE_END,
     SCHEDULE_BASETPG_STATE_START,
     SCHEDULE_EXCEPTIONS_1_END,
@@ -101,7 +103,7 @@ class sscp_schedule(sscp_variable):
         self.on_state = SCHEDULE_ON
 
     @classmethod
-    def from_yaml(cls, yaml):
+    def from_yaml(cls, yaml) -> None:
         "Configure the SSCP schedule with paramaters via YAML."
 
         _LOGGER.debug("yaml: %s", yaml)
@@ -144,7 +146,7 @@ class sscp_schedule(sscp_variable):
             out=out
         )
 
-    def to_string(self):
+    def to_string(self) -> str:
         """Return a string representation of the schedule."""
         string = "Schedule:\n"
         string += self.base.to_string()
@@ -159,7 +161,7 @@ class sscp_schedule(sscp_variable):
             string += "\n"
         return string
 
-    def set_value(self, raw):
+    def set_value(self, raw) -> None:
         """Set the variable to the new raw value from the PLC.
 
         Directly updates the base and exceptions raw values.
@@ -193,7 +195,7 @@ class sscp_schedule_event:
 
         self.start = None
         self.end = None
-        self.name = None
+        self.on = None
         self.id = None
 
 
@@ -214,12 +216,13 @@ class sscp_schedule_basetpg(sscp_variable):
         self.item_count = int(self.length / SCHEDULE_BASETPG_LEN)
         if (self.length != self.item_count * SCHEDULE_BASETPG_LEN):
             raise ValueError("Schedule length mismatch:", self.length)
+        self.raw = None
         self.times_raw=[]
         self.states_raw=[]
         for _i in range(self.item_count):
             self.times_raw.append(None)
             self.states_raw.append(None)
- 
+
     def set_value(self, raw: bytearray) -> None:
         """Set the variable to the new raw value from the PLC.
 
@@ -227,7 +230,11 @@ class sscp_schedule_basetpg(sscp_variable):
         Parses the raw value and calculates the base schedule.
         """
 
-        _LOGGER.debug("base raw value: %s", raw.hex())
+        string = ""
+        if _LOGGER.getEffectiveLevel() == logging.DEBUG:
+            string = _scheduler_raw_to_string(raw)
+        _LOGGER.debug("var %d raw value: %s", self.uid, string)
+
         self.raw = raw
         self.val = raw
         for i in range(self.item_count):
@@ -276,18 +283,142 @@ class sscp_schedule_basetpg(sscp_variable):
         for i in range(self.item_count):
             if self.times_raw[i] is not None:
                 mins = int.from_bytes(self.times_raw[i], SSCP_DATA_ORDER)
-                if self.states_raw[i] != SCHEDULE_OFF:
+                if event is None and self.states_raw[i] != SCHEDULE_OFF:
                     event = sscp_schedule_event()
-                    event.name = "1"
+                    event.on = True
                     events.append(event)
                     event.start = mon00 + timedelta(minutes=mins)
                     event.id = f"{i:02d}"
-                elif event is not None:
+                elif event is not None and self.states_raw[i] == SCHEDULE_OFF:
                     event.end = mon00 + timedelta(minutes=mins)
-                    _LOGGER.debug("event %s - %s : %s", event.start, event.end, event.name)
+                    _LOGGER.debug("event %s - %s : %s", event.start, event.end, event.on)
                     event = None
 
         return events
+
+    def add_event(self, start: datetime, end: datetime, on: bool) -> bytearray:
+        """Add an event, converting start and end times."""
+
+        if self.raw is None:
+            raise ValueError("No existing events")
+
+        _LOGGER.debug("Adding %s %s", start, end)
+        start_raw, end_raw = _scheduler_base_event_to_time(start=start, end=end)
+
+        # Insert start/end times into the list (the last 1 or 2 times are lost)
+        i = 0
+        new_times_raw = []
+        new_states_raw = []
+        count = self.item_count - 2
+
+        # If new_start is 00:00, replace off at 00:00
+        if start_raw == SCHEDULE_BASETPG_START and self.times_raw[0] == SCHEDULE_BASETPG_START and self.states_raw[0] == SCHEDULE_OFF:
+            i = 1
+            count = self.item_count - 1
+            _LOGGER.debug("Replacing 0 at: 0000")
+
+        for i in range(i, count):
+            if start_raw >= self.times_raw[i]:
+                new_times_raw.append(self.times_raw[i])
+                new_states_raw.append(self.states_raw[i])
+            else:
+                break
+        new_times_raw.append(start_raw)
+        new_states_raw.append(SCHEDULE_ON)
+        _LOGGER.debug("Added start at: %d", i)
+
+        for i in range(i, count):
+            if end_raw > self.times_raw[i]:
+                new_times_raw.append(self.times_raw[i])
+                new_states_raw.append(self.states_raw[i])
+            else:
+                break
+        new_times_raw.append(end_raw)
+        new_states_raw.append(SCHEDULE_OFF)
+        _LOGGER.debug("Added end at: %d", i)
+
+        for i in range(i, count):
+            new_times_raw.append(self.times_raw[i])
+            new_states_raw.append(self.states_raw[i])
+
+        raw = _scheduler_base_times_states_to_raw(
+            times_raw=new_times_raw,
+            states_raw=new_states_raw
+        )
+        self.set_value(raw)
+        return self.raw
+
+    def remove_event(self, start: datetime, end: datetime, on: bool) -> bytearray:
+        """Remove an event, both start and end times."""
+
+        if self.raw is None:
+            raise ValueError("No existing events")
+
+        _LOGGER.debug("Removing %s %s", start, end)
+        start_raw, end_raw = _scheduler_base_event_to_time(start=start, end=end)
+
+        # Remove start/end times from the list and append empty times
+        i = 0
+        a = 2
+        new_times_raw = []
+        new_states_raw = []
+
+        # Make sure that we have an entry at 00:00
+        if start_raw == SCHEDULE_BASETPG_START and self.times_raw[0] == SCHEDULE_BASETPG_START and self.states_raw[0] != SCHEDULE_OFF:
+            new_times_raw.append(SCHEDULE_BASETPG_START)
+            new_states_raw.append(SCHEDULE_OFF)
+            a = 1
+            _LOGGER.debug("Added 0 at: 0000")
+
+        for i in range(self.item_count):
+            if self.states_raw[i] == SCHEDULE_OFF or start_raw != self.times_raw[i]:
+                new_times_raw.append(self.times_raw[i])
+                new_states_raw.append(self.states_raw[i])
+            else:
+                break
+        _LOGGER.debug("Removed start at: %d", i)
+
+        i += 1
+        for i in range(i, self.item_count):
+            if self.states_raw[i] != SCHEDULE_OFF or end_raw != self.times_raw[i]:
+                new_times_raw.append(self.times_raw[i])
+                new_states_raw.append(self.states_raw[i])
+            else:
+                break
+        _LOGGER.debug("Removed end at: %d", i)
+
+        i += 1
+        for i in range(i, self.item_count):
+            new_times_raw.append(self.times_raw[i])
+            new_states_raw.append(self.states_raw[i])
+
+        for _ in range(a):
+            new_times_raw.append(SCHEDULE_BASETPG_END)
+            new_states_raw.append(SCHEDULE_OFF)
+
+        if len(new_times_raw) != self.item_count:
+            raise ValueError("Event remove failed")
+
+        raw = _scheduler_base_times_states_to_raw(
+            times_raw=new_times_raw,
+            states_raw=new_states_raw
+        )
+        self.set_value(raw)
+        return self.raw
+
+    def change_event(
+        self,
+        start: datetime,
+        end: datetime,
+        on: bool,
+        new_start: datetime,
+        new_end: datetime,
+        new_on:bool
+    ):
+        """Change an event, moving both start and end times."""
+
+        self.remove_event(start=start, end=end, on=on)
+        return self.add_event(start=new_start, end=new_end, on=new_on)
 
 
 class sscp_schedule_exceptions(sscp_variable):
@@ -307,6 +438,7 @@ class sscp_schedule_exceptions(sscp_variable):
         self.item_count = int(self.length / SCHEDULE_EXCEPTIONS_LEN)
         if (self.length != self.item_count * SCHEDULE_EXCEPTIONS_LEN):
             raise ValueError("Schedule length mismatch:", self.length)
+        self.raw = None
         self.times1_raw=[]
         self.times2_raw=[]
         self.states_raw=[]
@@ -322,7 +454,11 @@ class sscp_schedule_exceptions(sscp_variable):
         Parses the raw value and calculates the schedule exceptions.
         """
 
-        _LOGGER.debug("var %d raw value: %s", self.uid, raw.hex())
+        string = ""
+        if _LOGGER.getEffectiveLevel() == logging.DEBUG:
+            string = _scheduler_raw_to_string(raw)
+        _LOGGER.debug("var %d raw value: %s", self.uid, string)
+
         self.raw = raw
         self.val = raw
         for i in range(self.item_count):
@@ -373,16 +509,31 @@ class sscp_schedule_exceptions(sscp_variable):
             if times1 is not None and times2 is not None:
                 event = sscp_schedule_event()
                 if self.states_raw[i] == SCHEDULE_ON:
-                    event.name = "1"
+                    event.on = True
                 else:
-                    event.name = "0"
+                    event.on = False
                 events.append(event)
                 event.start = times1
                 event.end = times2
                 event.id = f"{i:02d}"
-                _LOGGER.debug("event %s - %s : %s", event.start, event.end, event.name)
+                _LOGGER.debug("event %s - %s : %s", event.start, event.end, event.on)
 
         return events
+
+    def add_event(self, start: datetime, end: datetime, on: bool):
+        """Add an event."""
+
+        return
+
+    def remove_event(self, start: datetime, end: datetime):
+        """Remove an event."""
+
+        return
+
+    def change_event(self, start: datetime, end: datetime, on: bool):
+        """Change an event, moving both start and end times."""
+
+        return
 
 
 def _scheduler_base_hex_to_time(byte2) -> list[int]:
@@ -402,6 +553,46 @@ def _scheduler_base_hex_to_time(byte2) -> list[int]:
     mins = mins - hours * 60
     return [day, hours, mins]
 
+def _scheduler_base_event_to_time(start: datetime, end: datetime) -> tuple[bytes, bytes]:
+    """Convert events to base hex."""
+
+    now = datetime.now()
+    mon = now - timedelta(days=now.weekday())
+    mon00 = datetime(year=mon.year, month=mon.month, day=mon.day)
+    sun = now + timedelta(days=6 - now.weekday())
+    sun24 = datetime(year=sun.year, month=sun.month, day=sun.day)
+    _LOGGER.debug("Base time range: %s - %s", mon00, sun24)
+
+    # Move the event to this week and check the end
+    week_delta = timedelta(days=7)
+    while start < mon00:
+        start = start + week_delta
+        end = end + week_delta
+    while start > sun24:
+        start = start - week_delta
+        end = end - week_delta
+    if end > sun24:
+        raise ValueError("Event crosses Sunday midnight")
+
+    # Convert to hex
+    start_diff = int((start - mon00).total_seconds() // 60)
+    end_diff = int((end - mon00).total_seconds() // 60)
+    start_raw = start_diff.to_bytes(2, SSCP_DATA_ORDER)
+    end_raw = end_diff.to_bytes(2, SSCP_DATA_ORDER)
+
+    return start_raw, end_raw
+
+def _scheduler_base_times_states_to_raw(
+    times_raw: list[bytes], states_raw: list[bytes]
+) -> bytearray:
+    """Convert base times and states to bytearray."""
+
+    raw: bytearray = b""
+    byte2_0 = bytes("\x00\x00", encoding="iso-8859-1")
+    for i in range(len(times_raw)):
+        raw += times_raw[i] + byte2_0 + states_raw[i] + byte2_0
+
+    return raw
 
 def _scheduler_exceptions_hex_to_time(byte4) -> datetime | None:
     """Convert scheduler exceptions hex to time."""
@@ -429,3 +620,12 @@ def _scheduler_exceptions_hex_to_time(byte4) -> datetime | None:
         month=SCHEDULE_EXCEPTIONS_BASE_MONTH,
         day=SCHEDULE_EXCEPTIONS_BASE_DAY
     ) + timedelta(minutes=mins)
+
+def _scheduler_raw_to_string(raw: bytearray) -> str:
+    """Print raw in blocks."""
+
+    string = ""
+    for i in range(0, len(raw), 4):
+        string += raw[i:i+4].hex()
+        string += " "
+    return string

@@ -123,6 +123,8 @@ SCHEDULE_EXCEPTIONS_BASE_DAY = 1
 
 # Time constants
 MINS_PER_DAY = 1440
+SCHEDULE_BASETPG_START = bytes("\x00\x00", encoding="iso-8859-1")
+SCHEDULE_BASETPG_END = int(MINS_PER_DAY * 7).to_bytes(2, SSCP_DATA_ORDER)
 
 # Schedule strings
 SCHEDULE_NAME_EN = "Schedule"
