@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.components.calendar import (
     EVENT_END,
     EVENT_START,
+    EVENT_SUMMARY,
     EVENT_UID,
     CalendarEntity,
     CalendarEntityFeature,
@@ -20,7 +21,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import DomatSSCPConfigEntry
-from .const import DOMAIN, OPT_CALENDAR_BASE, OPT_CALENDAR_EXCEPTIONS
+from .const import DOMAIN, OPT_CALENDAR_BASE, OPT_CALENDAR_EXCEPTIONS, OPT_SCHEDULES
 from .coordinator import DomatSSCPCoordinator
 from .sscp.sscp_schedule import sscp_schedule_basetpg, sscp_schedule_exceptions
 
@@ -44,19 +45,21 @@ async def async_setup_entry(
 
     # Add calendars (class) with their initialisation data
     calendars: list[CalendarEntity] = []
-    for opt in config_entry.options:
-        if (
-            "entity" in config_entry.options[opt]
-            and config_entry.options[opt]["entity"] == Platform.CALENDAR
-        ):
-            _LOGGER.debug("Adding calendar %s: %s", opt, config_entry.options[opt])
-            calendars.append(
-                DomatSSCPCalendar(
-                    coordinator=coordinator,
-                    entity_id=opt,
-                    entity_data=config_entry.options[opt],
+
+    if OPT_SCHEDULES in config_entry.options:
+        for opt in config_entry.options[OPT_SCHEDULES]:
+            if (
+                "entity" in config_entry.options[OPT_SCHEDULES][opt]
+                and config_entry.options[OPT_SCHEDULES][opt]["entity"] == Platform.CALENDAR
+            ):
+                _LOGGER.debug("Adding calendar %s: %s", opt, config_entry.options[OPT_SCHEDULES][opt])
+                calendars.append(
+                    DomatSSCPCalendar(
+                        coordinator=coordinator,
+                        entity_id=opt,
+                        entity_data=config_entry.options[OPT_SCHEDULES][opt],
+                    )
                 )
-            )
     async_add_entities(calendars)
 
 
@@ -86,6 +89,10 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
         self.calendar = entity_data["calendar"]
         if self.calendar not in {OPT_CALENDAR_BASE, OPT_CALENDAR_EXCEPTIONS}:
             raise ValueError("Unknown calendar type")
+        if self.calendar == OPT_CALENDAR_BASE:
+            self.sscp_class = sscp_schedule_basetpg
+        if self.calendar == OPT_CALENDAR_EXCEPTIONS:
+            self.sscp_class = sscp_schedule_exceptions
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entity_data.get("device"))},
             name=entity_data.get("device"),
@@ -100,13 +107,14 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
         self.off = entity_data["off"]
         self._event: CalendarEvent = None
         self._events: list[CalendarEvent] = []
+        self.updating: bool = False
         self._update_events()
         self._attr_supported_features = (
             CalendarEntityFeature.CREATE_EVENT | \
             CalendarEntityFeature.DELETE_EVENT | \
             CalendarEntityFeature.UPDATE_EVENT
             )
-        _LOGGER.error("Initialised new %s with: %s", entity_id, entity_data)
+        _LOGGER.debug("Initialised new %s with: %s", entity_id, entity_data)
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -142,9 +150,42 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
     async def async_create_event(self, **kwargs: Any) -> None:
         """Add a new event to calendar."""
 
-#        create_start = kwargs[EVENT_START]
-#        create_end = kwargs[EVENT_START]
         _LOGGER.error("create event: %s", kwargs)
+
+        start = kwargs[EVENT_START]
+        end = kwargs[EVENT_END]
+        # If all day, subtract 1 minute from the end time
+        if type(kwargs[EVENT_START]) is datetime.date:
+            start = datetime.datetime(
+                year=start.year,
+                month=start.month,
+                day=start.day
+            )
+            end = datetime.datetime(
+                year=end.year,
+                month=end.month,
+                day=end.day
+            ) - datetime.timedelta(minutes=1)
+        if kwargs[EVENT_SUMMARY] == "0":
+            on = False
+        else:
+            on = True
+
+        # Update using the co-ordinator function
+        schedule = self.sscp_class(
+            uid=self.sscp_uid,
+            offset=self.sscp_offset,
+            length=self.sscp_length,
+            type=self.sscp_type
+        )
+        schedule.set_value(self.coordinator.data[self.unique_id])
+        raw = schedule.add_event(start=start, end=end, on=on)
+        self.hass.loop.create_task(
+            self.coordinator.schedule_update(
+                schedule_id=self._attr_unique_id,
+                raw=raw
+            )
+        )
 
     async def async_delete_event(
         self,
@@ -155,6 +196,34 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
         """Delete an event on the calendar."""
 
         _LOGGER.error("delete event: %s", uid)
+
+        for calendar_event in self._events:
+            if calendar_event.uid == uid:
+                # Update using the co-ordinator function
+                schedule = self.sscp_class(
+                    uid=self.sscp_uid,
+                    offset=self.sscp_offset,
+                    length=self.sscp_length,
+                    type=self.sscp_type
+                )
+                if calendar_event.summary == "0":
+                    on = False
+                else:
+                    on = True
+                schedule.set_value(self.coordinator.data[self.unique_id])
+                raw = schedule.remove_event(
+                    start=calendar_event.start_datetime_local,
+                    end=calendar_event.end_datetime_local,
+                    on=on
+                )
+                self.hass.loop.create_task(
+                    self.coordinator.schedule_update(
+                        schedule_id=self._attr_unique_id,
+                        raw=raw
+                    )
+                )
+                return
+        _LOGGER.error("No event found for %s", uid)
 
     async def async_update_event(
         self,
@@ -167,19 +236,54 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
 
         _LOGGER.error("update event: %s %s", uid, event)
 
-    def set_native_value(self, value: float) -> None:
-        """Set the value using the co-ordinator function."""
-
-# TODO:
-        self.hass.loop.create_task(
-            self.coordinator.schedule_update(entity=self._attr_unique_id)
-        )
-
-    def async_get_all_events(
-        self,
-    ) -> list[CalendarEvent]:
-        """Return calendar events."""
-        return self.events
+        new_start = event[EVENT_START]
+        new_end = event[EVENT_END]
+        # If all day, subtract 1 minute from the end time
+        if type(event[EVENT_START]) is datetime.date:
+            new_start = datetime.datetime(
+                year=new_start.year,
+                month=new_start.month,
+                day=new_start.day
+            )
+            new_end = datetime.datetime(
+                year=new_end.year,
+                month=new_end.month,
+                day=new_end.day
+            ) - datetime.timedelta(minutes=1)
+        for calendar_event in self._events:
+            if calendar_event.uid == uid:
+                # Update using the co-ordinator function
+                schedule = self.sscp_class(
+                    uid=self.sscp_uid,
+                    offset=self.sscp_offset,
+                    length=self.sscp_length,
+                    type=self.sscp_type
+                )
+                if calendar_event.summary == "0":
+                    on = False
+                else:
+                    on = True
+                if event["summary"] == "0":
+                    new_on = False
+                else:
+                    new_on = True
+                schedule.set_value(self.coordinator.data[self.unique_id])
+                raw = schedule.change_event(
+                    start=calendar_event.start_datetime_local,
+                    end=calendar_event.end_datetime_local,
+                    on=on,
+                    new_start=new_start,
+                    new_end=new_end,
+                    new_on=new_on
+                )
+                self.hass.loop.create_task(
+                    self.coordinator.schedule_update(
+                        schedule_id=self._attr_unique_id,
+                        raw=raw
+                    )
+                )
+                return
+        _LOGGER.error("No event found for %s", uid)
 
     def _update_events(self) -> None:
         """Retrieve our data from the co-ordinator and convert to events."""
@@ -194,38 +298,31 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
         current_event = None
         now = dt_util.now()
         tzinfo = dt_util.get_default_time_zone()
-        raw = self.coordinator.data[self.unique_id]
 
-        if self.calendar == OPT_CALENDAR_BASE:
-            _LOGGER.debug("Getting base events from %s", raw.hex())
-            sscp_class = sscp_schedule_basetpg
-            sscp_string = "base_"
-        if self.calendar == OPT_CALENDAR_EXCEPTIONS:
-            _LOGGER.debug("Getting exception events from %s", raw.hex())
-            sscp_class = sscp_schedule_exceptions
-            sscp_string ="exceptions_"
+        _LOGGER.debug("Getting %s events from %s", self.calendar, self.coordinator.data[self.unique_id].hex())
 
-        schedule = sscp_class(
+        schedule = self.sscp_class(
             uid=self.sscp_uid,
             offset=self.sscp_offset,
             length=self.sscp_length,
             type=self.sscp_type
         )
-        schedule.set_value(raw)
+        schedule.set_value(self.coordinator.data[self.unique_id])
 
-        for i, sscp_event in enumerate(schedule.to_events()):
-            _LOGGER.error("event %s - %s : %s", sscp_event.start, sscp_event.end, sscp_event.name)
-            calendar_string = sscp_string + str(i)
-            if sscp_event.name == "1":
+        for sscp_event in schedule.to_events():
+            _LOGGER.debug("event %s : %s - %s : %s", sscp_event.id, sscp_event.start, sscp_event.end, sscp_event.on)
+            if sscp_event.on is True:
                 description = self.on
+                summary = "1"
             else:
                 description = self.off
+                summary = "0"
             calendar_event = CalendarEvent(
                 start=sscp_event.start.replace(tzinfo=tzinfo),
                 end=sscp_event.end.replace(tzinfo=tzinfo),
-                summary=sscp_event.name,
+                summary=summary,
                 description=description,
-                uid=calendar_string
+                uid=sscp_event.id
             )
             calendar_events.append(calendar_event)
             if calendar_event.start_datetime_local <= now < calendar_event.end_datetime_local:
