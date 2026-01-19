@@ -396,11 +396,13 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         _LOGGER.debug("User input: %s", user_input)
         # Create variables list from user input
         # Our entity ID's are uid-offset-length of the variable
-        uid = user_input.get(OPT_UID)  # One UID for all variables?
+        dev_uid = user_input.get(OPT_UID)  # One UID for all variables?
         for section_name, config in configs.items():
             sect = user_input.get(section_name)
-            if uid is None:
+            if dev_uid is None:
                 uid = sect.get(OPT_UID)
+            else:
+                uid = dev_uid
             if uid != 0:
                 variables.append(
                     sscp_variable(uid=uid, offset=config["offset"], length=config["length"], type=config["type"])
@@ -485,11 +487,13 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                 else:
                     if data_dict is not None:
                         new_dict = {}
-                    uid = user_input.get(OPT_UID)  # One UID for all variables?
+                    dev_uid = user_input.get(OPT_UID)  # One UID for all variables?
                     for section_name, config in configs.items():
                         sect = user_input.get(section_name)
-                        if uid is None:
+                        if dev_uid is None:
                             uid = sect.get(OPT_UID)
+                        else:
+                            uid = dev_uid
                         if uid != 0:
                             entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["length"])
                             config["uid"] = uid
