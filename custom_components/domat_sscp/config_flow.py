@@ -392,10 +392,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         dev_uid = user_input.get(OPT_UID)  # One UID for all variables?
         for section_name, config in configs.items():
             sect = user_input.get(section_name)
-            if dev_uid is None:
-                uid = sect.get(OPT_UID)
-            else:
-                uid = dev_uid
+            uid = sect.get(OPT_UID, dev_uid)
             if uid != 0:
                 variables.append(
                     sscp_variable(uid=uid, offset=config["offset"], length=config["length"], type=config["type"])
@@ -438,11 +435,13 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                 errors["base"] = "variable_error"
                 var_str = ""
                 err_str = "UID Already Exists"
+                if user_input.get(OPT_UID) in err_info["variables"]:
+                    var_str += str(user_input.get(OPT_UID)) + " "
                 for section_name in configs:
                     sect = user_input.get(section_name)
                     if sect.get(OPT_UID) in err_info["variables"]:
                         errors[section_name] = "variable_error"
-                        var_str += str(sect.get(OPT_UID)) + " "
+                        var_str += str(user_input.get(OPT_UID)) + " "
                 description_placeholders = {
                     "error": err_str,
                     "variables": var_str,
@@ -465,12 +464,14 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             else:
                 # No exception, so either generate an error or return
                 if info["error_code"] != 0:
+                    errors["base"] = "variable_error"
                     err_str = SSCP_ERRORS.get(info["error_code"], "unknown")
                     var_str = ""
+                    if user_input.get(OPT_UID) in info["error_variables"]:
+                        var_str += str(user_input.get(OPT_UID)) + " "
                     for section_name in configs:
                         sect = user_input.get(section_name)
                         if sect.get(OPT_UID) in info["error_variables"]:
-                            errors["base"] = "variable_error"
                             errors[section_name] = "variable_error"
                             var_str += str(sect.get(OPT_UID)) + " "
                     description_placeholders = {
@@ -481,10 +482,7 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                     dev_uid = user_input.get(OPT_UID)  # One UID for all variables?
                     for section_name, config in configs.items():
                         sect = user_input.get(section_name)
-                        if dev_uid is None:
-                            uid = sect.get(OPT_UID)
-                        else:
-                            uid = dev_uid
+                        uid = sect.get(OPT_UID, dev_uid)
                         if uid != 0:
                             entity_id = str(uid) + "-" + str(config["offset"]) + "-" + str(config["length"])
                             config["uid"] = uid
