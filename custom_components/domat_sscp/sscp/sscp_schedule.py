@@ -354,7 +354,7 @@ class sscp_schedule_basetpg(sscp_variable):
         if self.raw is None:
             raise ValueError("No existing events")
 
-        _LOGGER.debug("Removing %s %s", start, end)
+        _LOGGER.error("Removing %s %s", start, end)
         start_raw, end_raw = _scheduler_base_event_to_time(start=start, end=end)
 
         # Remove start/end times from the list and append empty times
@@ -520,20 +520,33 @@ class sscp_schedule_exceptions(sscp_variable):
 
         return events
 
-    def add_event(self, start: datetime, end: datetime, on: bool):
-        """Add an event."""
+    def add_event(self, start: datetime, end: datetime, on: bool) -> bytearray:
+        """Add an event, converting start and end times."""
 
+        _LOGGER.error("Adding %s %s %s", start, end, on)
+        # TODO: ignore tzinfo
         return
 
-    def remove_event(self, start: datetime, end: datetime):
+    def remove_event(self, start: datetime, end: datetime, on: bool) -> bytearray:
         """Remove an event."""
 
+        _LOGGER.error("Adding %s %s %s", start, end, on)
+        # TODO: match start, end, and on
         return
 
-    def change_event(self, start: datetime, end: datetime, on: bool):
-        """Change an event, moving both start and end times."""
+    def change_event(
+        self,
+        start: datetime,
+        end: datetime,
+        on: bool,
+        new_start: datetime,
+        new_end: datetime,
+        new_on:bool
+    ):
+        """Change an event."""
 
-        return
+        self.remove_event(start=start, end=end, on=on)
+        return self.add_event(start=new_start, end=new_end, on=new_on)
 
 
 def _scheduler_base_hex_to_time(byte2) -> list[int]:
@@ -556,12 +569,25 @@ def _scheduler_base_hex_to_time(byte2) -> list[int]:
 def _scheduler_base_event_to_time(start: datetime, end: datetime) -> tuple[bytes, bytes]:
     """Convert events to base hex."""
 
+    # Assume times are without timezone
+    start=datetime(year=start.year,
+        month=start.month,
+        day=start.day,
+        hour=start.hour,
+        minute=start.minute
+    )
+    end=datetime(year=end.year,
+        month=end.month,
+        day=end.day,
+        hour=end.hour,
+        minute=end.minute
+    )
     now = datetime.now()
     mon = now - timedelta(days=now.weekday())
     mon00 = datetime(year=mon.year, month=mon.month, day=mon.day)
     sun = now + timedelta(days=6 - now.weekday())
-    sun24 = datetime(year=sun.year, month=sun.month, day=sun.day)
-    _LOGGER.debug("Base time range: %s - %s", mon00, sun24)
+    sun24 = datetime(year=sun.year, month=sun.month, day=sun.day, hour=23, minute=59)
+    _LOGGER.error("Base time range: %s - %s", mon00, sun24)
 
     # Move the event to this week and check the end
     week_delta = timedelta(days=7)
