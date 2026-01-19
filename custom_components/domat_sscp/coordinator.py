@@ -203,6 +203,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             length = var.get("length")
             type = var.get("type")
             value = var.get("value")
+            raw = var.get("raw")
             uids += str(uid) + " "
             _LOGGER.debug("Entity write: %s %s %s %s = %s", uid, offset, length, type, value)
 
@@ -217,7 +218,10 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                 states=var.get("states"),
                 perm="rw",
             )
-            sscp_var.change_value(new=value)
+            if value is not None:
+                sscp_var.change_value(new=value)
+            else:
+                sscp_var.set_value(raw=raw)
             sscp_vars.append(sscp_var)
 
         since = datetime.now(tz=None) - self.last_connect
@@ -287,7 +291,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         self.async_set_updated_data(self.data)
 
     async def schedule_update(self, schedule_id: str, raw: bytearray) -> None:
-        """A schedule has changed: write base and exceptions together."""
+        """A schedule has changed: we must write base and exceptions together."""
 
         _LOGGER.error("Schedule update for %s", schedule_id)
 
@@ -328,17 +332,17 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             "length": self.config_entry.options[base]["length"],
             "offset": self.config_entry.options[base]["offset"],
             "type": self.config_entry.options[base]["type"],
-            "value": base_raw
+            "raw": base_raw
         }
         exceptions_var: dict[str:Any] = {
             "uid": self.config_entry.options[exceptions]["uid"],
             "length": self.config_entry.options[exceptions]["length"],
             "offset": self.config_entry.options[exceptions]["offset"],
             "type": self.config_entry.options[exceptions]["type"],
-            "value": exceptions_raw
+            "raw": exceptions_raw
         }
         vars: list[dict[str:Any]] = [base_var, exceptions_var]
-        # await self.entity_update(vars=vars)
+        await self.entity_update(vars=vars)
 
     @callback
     def set_last_connect(self):
