@@ -21,7 +21,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import DomatSSCPConfigEntry
-from .const import DOMAIN, OPT_CALENDAR_BASE, OPT_CALENDAR_EXCEPTIONS, OPT_SCHEDULES
+from .const import DOMAIN, OPT_CALENDAR_BASE, OPT_CALENDAR_EXCEPTIONS
 from .coordinator import DomatSSCPCoordinator
 from .sscp.sscp_schedule import sscp_schedule_basetpg, sscp_schedule_exceptions
 
@@ -45,20 +45,18 @@ async def async_setup_entry(
 
     # Add calendars (class) with their initialisation data
     calendars: list[CalendarEntity] = []
-
-    if OPT_SCHEDULES in config_entry.options:
-        for opt in config_entry.options[OPT_SCHEDULES]:
-            if (
-                "entity" in config_entry.options[OPT_SCHEDULES][opt]
-                and config_entry.options[OPT_SCHEDULES][opt]["entity"] == Platform.CALENDAR
-            ):
-                _LOGGER.debug("Adding calendar %s: %s", opt, config_entry.options[OPT_SCHEDULES][opt])
-                calendars.append(
-                    DomatSSCPCalendar(
-                        coordinator=coordinator,
-                        entity_id=opt,
-                        entity_data=config_entry.options[OPT_SCHEDULES][opt],
-                    )
+    for opt in config_entry.options:
+        if (
+            "entity" in config_entry.options[opt]
+            and config_entry.options[opt]["entity"] == Platform.CALENDAR
+        ):
+            _LOGGER.debug("Adding calendar %s: %s", opt, config_entry.options[opt])
+            calendars.append(
+                DomatSSCPCalendar(
+                    coordinator=coordinator,
+                    entity_id=opt,
+                    entity_data=config_entry.options[opt],
+                )
                 )
     async_add_entities(calendars)
 
@@ -144,6 +142,28 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
         end_date: datetime.datetime,
     ) -> list[CalendarEvent]:
         """Return calendar events within a datetime range."""
+
+        # Make base events repeat each week
+        if self.calendar == OPT_CALENDAR_BASE:
+            weeks_before = 0
+            weeks_after = 0
+            events: list[CalendarEvent] = []
+            week_delta = datetime.timedelta(days=7)
+
+            _LOGGER.error("Start = %s", self._events[0].start_datetime_local)
+            _LOGGER.error("From: %s", start_date)
+            _LOGGER.error("To: %s", end_date)
+            start = self._events[0].start_datetime_local
+            while start > start_date:
+                weeks_before -= 1
+                start -= week_delta
+            start = self._events[0].start_datetime_local
+            while start < end_date:
+                weeks_after += 1
+                start += week_delta
+
+            for offset in range(weeks_before, weeks_after + 1):
+                _LOGGER.error("Adding weeks %s", offset)
 
         return [x for x in self._events if start_date <= x.start_datetime_local < end_date or start_date <= x.end_datetime_local < end_date]
 
