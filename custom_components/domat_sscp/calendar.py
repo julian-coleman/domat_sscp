@@ -8,7 +8,6 @@ from homeassistant.components.calendar import (
     EVENT_END,
     EVENT_START,
     EVENT_SUMMARY,
-    EVENT_UID,
     CalendarEntity,
     CalendarEntityFeature,
     CalendarEvent,
@@ -143,16 +142,15 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
     ) -> list[CalendarEvent]:
         """Return calendar events within a datetime range."""
 
-        # Make base events repeat each week
+        # Make base events repeat across the whole request range
+        # Find the first and last weeks
+        # Create new events that fall between the start and end date/time
         if self.calendar == OPT_CALENDAR_BASE:
             weeks_before = 0
             weeks_after = 0
             events: list[CalendarEvent] = []
             week_delta = datetime.timedelta(days=7)
 
-            _LOGGER.error("Start = %s", self._events[0].start_datetime_local)
-            _LOGGER.error("From: %s", start_date)
-            _LOGGER.error("To: %s", end_date)
             start = self._events[0].start_datetime_local
             while start > start_date:
                 weeks_before -= 1
@@ -161,10 +159,25 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
             while start < end_date:
                 weeks_after += 1
                 start += week_delta
+            _LOGGER.debug("Repeating base: %d - %d : %s - %s", weeks_before, weeks_after, start_date, end_date)
 
             for offset in range(weeks_before, weeks_after + 1):
-                _LOGGER.error("Adding weeks %s", offset)
+                offset_delta = datetime.timedelta(days=7 * offset)
+                for event in self._events:
+                    offset_start = event.start_datetime_local + offset_delta
+                    offset_end = event.end_datetime_local + offset_delta
+                    if start_date <= offset_start < end_date or start_date <= offset_end < end_date:
+                        base_event = CalendarEvent(
+                            start=offset_start,
+                            end=offset_end,
+                            summary=event.summary,
+                            description=event.description,
+                            uid=event.uid
+                        )
+                        events.append(base_event)
+            return events
 
+        # Exceptions events have a fixed date/time
         return [x for x in self._events if start_date <= x.start_datetime_local < end_date or start_date <= x.end_datetime_local < end_date]
 
     async def async_create_event(self, **kwargs: Any) -> None:
