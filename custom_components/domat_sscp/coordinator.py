@@ -22,10 +22,13 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_WRITE_RETRIES,
     DOMAIN,
+    OPT_CALENDAR_BASE,
+    OPT_CALENDAR_EXCEPTIONS,
     OPT_FAST_COUNT,
     OPT_FAST_INTERVAL,
     OPT_POLLING,
     OPT_SCAN_INTERVAL,
+    OPT_SCHEDULES,
     OPT_WRITE_RETRIES,
 )
 from .sscp.sscp_connection import sscp_connection
@@ -155,6 +158,16 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             )
             for opt_var in self.config_entry.options if "uid" in self.config_entry.options[opt_var]
         )
+        if OPT_SCHEDULES in self.config_entry.options:
+            sscp_vars.extend(
+                sscp_variable(
+                    uid=self.config_entry.options[OPT_SCHEDULES][opt_var]["uid"],
+                    offset=self.config_entry.options[OPT_SCHEDULES][opt_var]["offset"],
+                    length=self.config_entry.options[OPT_SCHEDULES][opt_var]["length"],
+                    type=self.config_entry.options[OPT_SCHEDULES][opt_var]["type"],
+                )
+                for opt_var in self.config_entry.options[OPT_SCHEDULES]
+            )
         try:
             error_vars, _error_codes = await conn.sscp_read_variables(sscp_vars)
         except TimeoutError:
@@ -281,6 +294,60 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         with suppress(UpdateFailed):
             await self._async_update_data()
         self.async_set_updated_data(self.data)
+
+    async def schedule_update(self, schedule_id: str, raw: bytearray) -> None:
+        """A schedule has changed: write base and exceptions together."""
+
+        _LOGGER.error("Schedule update for %s", schedule_id)
+
+        # Find the base and exceptions schedule entities, and match "schedule_id"
+        # Set the values (matched from raw, other from data)
+        # Create a vars list and call update
+        base = None
+        exceptions = None
+        base_raw = None
+        exceptions_raw = None
+        for entity_id in self.config_entry.options[OPT_SCHEDULES]:
+            if self.config_entry.options[OPT_SCHEDULES][entity_id]["calendar"] == OPT_CALENDAR_BASE:
+                base = entity_id
+                base_raw = self.data.get(entity_id)
+            if self.config_entry.options[OPT_SCHEDULES][entity_id]["calendar"] == OPT_CALENDAR_EXCEPTIONS:
+                exceptions = entity_id
+                exceptions_raw = self.data.get(entity_id)
+        if base is None or exceptions is None:
+            _LOGGER.error("Schedule base or exceptions not configured")
+            return
+        if base_raw is None or exceptions_raw is None:
+            _LOGGER.error("Schedule base or exceptions not in data")
+            return
+
+        if schedule_id == base:
+            base_raw = raw
+            _LOGGER.error("set base: %s", base_raw.hex())
+            exceptions_raw = self.data[exceptions]
+            _LOGGER.error("using exceptions: %s", exceptions_raw.hex())
+        elif schedule_id == exceptions:
+            base_raw = self.data[base]
+            _LOGGER.error("using base: %s", base_raw.hex())
+            exceptions_raw = raw
+            _LOGGER.error("set exceptions: %s", exceptions_raw.hex())
+
+        base_var: dict[str:Any] = {
+            "uid": self.config_entry.options[OPT_SCHEDULES][base]["uid"],
+            "length": self.config_entry.options[OPT_SCHEDULES][base]["length"],
+            "offset": self.config_entry.options[OPT_SCHEDULES][base]["offset"],
+            "type": self.config_entry.options[OPT_SCHEDULES][base]["type"],
+            "value": base_raw
+        }
+        exceptions_var: dict[str:Any] = {
+            "uid": self.config_entry.options[OPT_SCHEDULES][exceptions]["uid"],
+            "length": self.config_entry.options[OPT_SCHEDULES][exceptions]["length"],
+            "offset": self.config_entry.options[OPT_SCHEDULES][exceptions]["offset"],
+            "type": self.config_entry.options[OPT_SCHEDULES][exceptions]["type"],
+            "value": exceptions_raw
+        }
+        vars: list[dict[str:Any]] = [base_var, exceptions_var]
+        # await self.entity_update(vars=vars)
 
     @callback
     def set_last_connect(self):
