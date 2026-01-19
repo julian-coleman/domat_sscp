@@ -66,7 +66,6 @@ async def async_remove_config_entry_device(
     """Allow devices to be deleted from the UI."""
 
     data: dict[str, Any] = config_entry.options.copy()
-    devices: list = []
     remove: list = []
 
     # Remove entities for these devices from our options
@@ -76,12 +75,9 @@ async def async_remove_config_entry_device(
             "Removing entities with device: %s",
             device_entry.identifiers,
         )
-        devices.append(device)
     for opt, val in data.items():
-        if "device" in val:
-            for device in devices:
-                if val["device"] == device:
-                    remove.append(opt)
+        if val.get("device") == device:
+            remove.append(opt)
     for opt in remove:
         _LOGGER.debug("Removing entity: %s", opt)
         data.pop(opt, None)
