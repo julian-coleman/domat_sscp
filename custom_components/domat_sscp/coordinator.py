@@ -196,12 +196,14 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         """An entity has changed a setting: write and update using fast polling."""
 
         sscp_vars: list[sscp_variable] = []
+        uids: str = ""
         for var in vars:
             uid = var.get("uid")
             offset = var.get("offset")
             length = var.get("length")
             type = var.get("type")
             value = var.get("value")
+            uids += str(uid) + " "
             _LOGGER.debug("Entity write: %s %s %s %s = %s", uid, offset, length, type, value)
 
             sscp_var = sscp_variable(
@@ -227,7 +229,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         while retry < self.write_retries:
             if retry > 0:
                 await sleep(self.fast_interval)
-                _LOGGER.debug("Retrying write for %s %s", uid, value)
+                _LOGGER.debug("Retrying write for %s", uids)
             retry += 1
             self.set_last_connect()
             try:
@@ -275,7 +277,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             break
 
         if success is not True:
-            _LOGGER.error("Entity write failed: %s %s", uid, value)
+            _LOGGER.error("Entity write failed: %s", uids)
             return
 
         # Re-read our data using fast polling and send updates to our platforms
@@ -297,10 +299,10 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         base_raw = None
         exceptions_raw = None
         for entity_id in self.config_entry.options:
-            if self.config_entry.options[entity_id]["calendar"] == OPT_CALENDAR_BASE:
+            if self.config_entry.options[entity_id].get("calendar") == OPT_CALENDAR_BASE:
                 base = entity_id
                 base_raw = self.data.get(entity_id)
-            if self.config_entry.options[entity_id]["calendar"] == OPT_CALENDAR_EXCEPTIONS:
+            if self.config_entry.options[entity_id].get("calendar") == OPT_CALENDAR_EXCEPTIONS:
                 exceptions = entity_id
                 exceptions_raw = self.data.get(entity_id)
         if base is None or exceptions is None:
