@@ -53,6 +53,7 @@ from .const import (
     OPT_FAST_INTERVAL,
     OPT_POLLING,
     OPT_SCAN_INTERVAL,
+    OPT_SCHEDULES,
     OPT_UID,
     OPT_WRITE_RETRIES,
 )
@@ -287,7 +288,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             step=step,
             user_input=user_input,
             configs=configs,
-            schema=schema
+            schema=schema,
+            data_dict=None
         )
 
     async def async_step_insady_apartment(
@@ -307,7 +309,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             step=step,
             user_input=user_input,
             configs=configs,
-            schema=schema
+            schema=schema,
+            data_dict=None
         )
 
     async def async_step_insady_energy(
@@ -327,7 +330,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             step=step,
             user_input=user_input,
             configs=configs,
-            schema=schema
+            schema=schema,
+            data_dict=None
         )
 
     async def async_step_insady_air(
@@ -347,7 +351,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             step=step,
             user_input=user_input,
             configs=configs,
-            schema=schema
+            schema=schema,
+            data_dict=None
         )
 
     async def async_step_insady_calendar(
@@ -367,7 +372,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
             step=step,
             user_input=user_input,
             configs=configs,
-            schema=schema
+            schema=schema,
+            data_dict=OPT_SCHEDULES
         )
 
     async def _step_insady_common(
@@ -375,7 +381,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         step: str,
         user_input: dict[str, Any],
         configs: dict[str, Any],
-        schema: vol.Schema
+        schema: vol.Schema,
+        data_dict: str
     ) -> ConfigFlowResult:
         """Common options flow for InSady flows."""
 
@@ -476,6 +483,8 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                         "variables": var_str,
                     }
                 else:
+                    if data_dict is not None:
+                        new_dict = {}
                     uid = user_input.get(OPT_UID)  # One UID for all variables?
                     for section_name, config in configs.items():
                         sect = user_input.get(section_name)
@@ -486,8 +495,14 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
                             config["uid"] = uid
                             config["name"] = sect.get("name")
                             config["device"] = user_input.get("device")
-                            data.update({entity_id: config})
+                            if data_dict is not None:
+                                new_dict.update({entity_id: config})
+                            else:
+                                data.update({entity_id: config})
 
+                    if data_dict is not None:
+                        data.update({data_dict: new_dict})
+                        _LOGGER.debug("Data update: %s: %s", data_dict, data[data_dict])
                     return self.async_create_entry(data=data)
 
         # There was some validation problem - previous input as defaults

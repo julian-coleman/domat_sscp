@@ -18,6 +18,8 @@ DEFAULT_SSCP_PORT = 12346
 DEFAULT_SSCP_ADDRESS = 1
 
 # Options flow constants
+OPT_VARIABLES = "variables"
+OPT_SCHEDULES = "schedules"
 OPT_POLLING = "polling"
 OPT_SCAN_INTERVAL = "scan_interval"
 OPT_FAST_INTERVAL = "fast_interval"
