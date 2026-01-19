@@ -28,7 +28,6 @@ from .const import (
     OPT_FAST_INTERVAL,
     OPT_POLLING,
     OPT_SCAN_INTERVAL,
-    OPT_SCHEDULES,
     OPT_WRITE_RETRIES,
 )
 from .sscp.sscp_connection import sscp_connection
@@ -158,16 +157,6 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             )
             for opt_var in self.config_entry.options if "uid" in self.config_entry.options[opt_var]
         )
-        if OPT_SCHEDULES in self.config_entry.options:
-            sscp_vars.extend(
-                sscp_variable(
-                    uid=self.config_entry.options[OPT_SCHEDULES][opt_var]["uid"],
-                    offset=self.config_entry.options[OPT_SCHEDULES][opt_var]["offset"],
-                    length=self.config_entry.options[OPT_SCHEDULES][opt_var]["length"],
-                    type=self.config_entry.options[OPT_SCHEDULES][opt_var]["type"],
-                )
-                for opt_var in self.config_entry.options[OPT_SCHEDULES]
-            )
         try:
             error_vars, _error_codes = await conn.sscp_read_variables(sscp_vars)
         except TimeoutError:
@@ -307,11 +296,11 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         exceptions = None
         base_raw = None
         exceptions_raw = None
-        for entity_id in self.config_entry.options[OPT_SCHEDULES]:
-            if self.config_entry.options[OPT_SCHEDULES][entity_id]["calendar"] == OPT_CALENDAR_BASE:
+        for entity_id in self.config_entry.options:
+            if self.config_entry.options[entity_id]["calendar"] == OPT_CALENDAR_BASE:
                 base = entity_id
                 base_raw = self.data.get(entity_id)
-            if self.config_entry.options[OPT_SCHEDULES][entity_id]["calendar"] == OPT_CALENDAR_EXCEPTIONS:
+            if self.config_entry.options[entity_id]["calendar"] == OPT_CALENDAR_EXCEPTIONS:
                 exceptions = entity_id
                 exceptions_raw = self.data.get(entity_id)
         if base is None or exceptions is None:
@@ -333,17 +322,17 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             _LOGGER.error("set exceptions: %s", exceptions_raw.hex())
 
         base_var: dict[str:Any] = {
-            "uid": self.config_entry.options[OPT_SCHEDULES][base]["uid"],
-            "length": self.config_entry.options[OPT_SCHEDULES][base]["length"],
-            "offset": self.config_entry.options[OPT_SCHEDULES][base]["offset"],
-            "type": self.config_entry.options[OPT_SCHEDULES][base]["type"],
+            "uid": self.config_entry.options[base]["uid"],
+            "length": self.config_entry.options[base]["length"],
+            "offset": self.config_entry.options[base]["offset"],
+            "type": self.config_entry.options[base]["type"],
             "value": base_raw
         }
         exceptions_var: dict[str:Any] = {
-            "uid": self.config_entry.options[OPT_SCHEDULES][exceptions]["uid"],
-            "length": self.config_entry.options[OPT_SCHEDULES][exceptions]["length"],
-            "offset": self.config_entry.options[OPT_SCHEDULES][exceptions]["offset"],
-            "type": self.config_entry.options[OPT_SCHEDULES][exceptions]["type"],
+            "uid": self.config_entry.options[exceptions]["uid"],
+            "length": self.config_entry.options[exceptions]["length"],
+            "offset": self.config_entry.options[exceptions]["offset"],
+            "type": self.config_entry.options[exceptions]["type"],
             "value": exceptions_raw
         }
         vars: list[dict[str:Any]] = [base_var, exceptions_var]
