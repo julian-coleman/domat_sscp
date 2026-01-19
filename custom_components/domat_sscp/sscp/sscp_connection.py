@@ -418,6 +418,9 @@ class sscp_connection:
             data += var.offset_bytes
             data += var.length_bytes
         for var in vars:
+            if var.raw is None:
+                msg = f"No value to write for: {var.uid}"
+                raise ValueError(msg)
             data += var.raw
         data_len = len(data)
         if data_len > send_max:

@@ -75,7 +75,7 @@ class sscp_variable:
         self.uid_bytes = self.uid.to_bytes(4, SSCP_DATA_ORDER)
         self.length_bytes = self.length.to_bytes(4, SSCP_DATA_ORDER)
         self.offset_bytes = self.offset.to_bytes(4, SSCP_DATA_ORDER)
-        self.raw = bytearray("\x00", encoding="iso-8859-1")
+        self.raw = None
         self.val = None
         self.state = "unknown"
 
@@ -128,7 +128,7 @@ class sscp_variable:
         """Return a string representation of the variable."""
 
         # We haven't read the value yet
-        if self.val is None:
+        if self.raw is None:
             return None
 
         if self.type in {13, 2, 0}:
