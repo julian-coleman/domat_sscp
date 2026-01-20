@@ -183,7 +183,7 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
     async def async_create_event(self, **kwargs: Any) -> None:
         """Add a new event to calendar."""
 
-        _LOGGER.error("create event: %s", kwargs)
+        _LOGGER.debug("create event: %s", kwargs)
 
         start = kwargs[EVENT_START]
         end = kwargs[EVENT_END]
@@ -228,7 +228,7 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
     ) -> None:
         """Delete an event on the calendar."""
 
-        _LOGGER.error("delete event: %s", uid)
+        _LOGGER.debug("delete event: %s", uid)
 
         for calendar_event in self._events:
             if calendar_event.uid == uid:
@@ -267,7 +267,7 @@ class DomatSSCPCalendar(CoordinatorEntity, CalendarEntity):
     ) -> None:
         """Update an event on the calendar."""
 
-        _LOGGER.error("update event: %s %s", uid, event)
+        _LOGGER.debug("update event: %s %s", uid, event)
 
         new_start = event[EVENT_START]
         new_end = event[EVENT_END]

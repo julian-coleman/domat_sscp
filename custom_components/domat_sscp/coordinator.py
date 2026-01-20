@@ -293,7 +293,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
     async def schedule_update(self, schedule_id: str, raw: bytearray) -> None:
         """A schedule has changed: we must write base and exceptions together."""
 
-        _LOGGER.error("Schedule update for %s", schedule_id)
+        _LOGGER.debug("Schedule update for %s", schedule_id)
 
         # Find the base and exceptions schedule entities, and match "schedule_id"
         # Set the values (matched from raw, other from data)
@@ -318,14 +318,14 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
 
         if schedule_id == base:
             base_raw = raw
-            _LOGGER.error("set base: %s", base_raw.hex())
+            _LOGGER.debug("set base: %s", base_raw.hex())
             exceptions_raw = self.data[exceptions]
-            _LOGGER.error("using exceptions: %s", exceptions_raw.hex())
+            _LOGGER.debug("using exceptions: %s", exceptions_raw.hex())
         elif schedule_id == exceptions:
             base_raw = self.data[base]
-            _LOGGER.error("using base: %s", base_raw.hex())
+            _LOGGER.debug("using base: %s", base_raw.hex())
             exceptions_raw = raw
-            _LOGGER.error("set exceptions: %s", exceptions_raw.hex())
+            _LOGGER.debug("set exceptions: %s", exceptions_raw.hex())
 
         base_var: dict[str:Any] = {
             "uid": self.config_entry.options[base]["uid"],
