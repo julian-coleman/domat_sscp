@@ -599,7 +599,10 @@ class DomatSSCPOptionsFlowHandler(OptionsFlow):
         _LOGGER.setLevel(logging.INFO)
         _LOGGER.info("Co-ordinator name: %s", coordinator.name)
         _LOGGER.info("Configuration data: %s", conf_data)
-        _LOGGER.info("Options: %s", self.config_entry.options)
+        _LOGGER.info("Options: {")
+        for option, value in self.config_entry.options.items():
+            _LOGGER.info("  %s: %s,", option, value)
+        _LOGGER.info("}")
         _LOGGER.setLevel(level)
         return self.async_abort(reason="info_written")
 
