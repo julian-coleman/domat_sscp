@@ -1,5 +1,8 @@
 """InSady, Brno constants for the Domat SSCP integration."""
 
+# Option names
+
+# Apartment heating/cooling/holiday values
 OPT_APARTMENT_MODE = "apartment_mode"
 OPT_APARTMENT_ACTUAL = "apartment_actual"
 OPT_HOLIDAY_SETTING = "holiday_setting"
@@ -8,6 +11,7 @@ OPT_APARTMENT_STATE = "apartment_state"
 OPT_APARTMENT_HEATING = "apartment_heating"
 OPT_APARTMENT_COOLING = "apartment_cooling"
 
+# Room values
 OPT_TEMPERATURE = "temperature"
 OPT_HUMIDITY = "humidity"
 OPT_TEMPERATURE_SETTING = "temperature_setting"
@@ -21,12 +25,14 @@ OPT_COOLING_SPEED = "cooling_speed"
 OPT_COOLING_SETTING = "cooling_setting"
 OPT_COOLING_SPEED_SETTING = "cooling_speed_setting"
 
+# Energy measurements
 OPT_METER_ELECTRICITY = "meter_electricity"
 OPT_METER_WATER_COLD = "meter_water_cold"
 OPT_METER_WATER_HOT = "meter_water_hot"
 OPT_CALORIMETER_HOT = "calorimeter_hot"
 OPT_CALORIMETER_COLD = "calorimeter_cold"
 
+# Ventilation system
 OPT_VENTILATION_ERROR = "ventilator_error"
 OPT_VENTILATION_FILTER = "ventilator_filter"
 OPT_VENTILATION_STATE = "ventilator_state"
@@ -38,6 +44,8 @@ OPT_VENTILATION_OUT = "ventilator_out"
 OPT_VENTILATION_FLOW_SETTING = "ventilator_flow_setting"
 
 # Variable defaults
+
+# Temperature-related parameters
 OPT_TEMPERATURE_SETTING_MINIMUM = 16
 OPT_TEMPERATURE_SETTING_MAXIMUM = 30
 OPT_TEMPERATURE_SETTING_STEP = 0.5
@@ -49,10 +57,12 @@ OPT_HOLIDAY_SETTING_MINIMUM = 12
 OPT_HOLIDAY_SETTING_MAXIMUM = 26
 OPT_HOLIDAY_SETTING_STEP = 0.5
 
+# Ventilation system parameters
 OPT_VENTILATION_FLOW_MINIMUM = 80
 OPT_VENTILATION_FLOW_MAXIMUM = 200
 OPT_VENTILATION_FLOW_STEP = 10
 
+# Air-conditioning parameters
 OPT_FAN_MINIMUM = 0
 OPT_FAN_MAXIMUM = 100
 OPT_FAN_SPEEDS = 6
