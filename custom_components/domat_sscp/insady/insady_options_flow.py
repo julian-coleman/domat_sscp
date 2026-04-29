@@ -150,6 +150,11 @@ from .insady_const import (
     OPT_VENTILATION_ERROR,
     OPT_VENTILATION_ERROR_NAME_CS,
     OPT_VENTILATION_ERROR_NAME_EN,
+    OPT_VENTILATION_FAST,
+    OPT_VENTILATION_FAST_MAXIMUM,
+    OPT_VENTILATION_FAST_MINIMUM,
+    OPT_VENTILATION_FAST_NAME_CS,
+    OPT_VENTILATION_FAST_NAME_EN,
     OPT_VENTILATION_FILTER,
     OPT_VENTILATION_FILTER_NAME_CS,
     OPT_VENTILATION_FILTER_NAME_EN,
@@ -1172,6 +1177,21 @@ def get_air_configs() -> dict[str, dict]:
             "device": None,
             "icon": "mdi:speedometer",
         },
+        OPT_VENTILATION_FAST: {
+            "name": None,
+            "uid": None,
+            "offset": 0,
+            "length": 4,
+            "type": 13,
+            "max": OPT_VENTILATION_FAST_MAXIMUM,
+            "min": OPT_VENTILATION_FAST_MINIMUM,
+            "step": OPT_VENTILATION_FLOW_STEP,
+            "class": NumberDeviceClass.VOLUME_FLOW_RATE,
+            "unit": UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR,
+            "entity": Platform.NUMBER,
+            "device": None,
+            "icon": "mdi:speedometer",
+        },
     }
 
 
@@ -1194,6 +1214,7 @@ def get_air_schema(
         default_ventilation_in_name = OPT_VENTILATION_IN_NAME_EN
         default_ventilation_out_name = OPT_VENTILATION_OUT_NAME_EN
         default_ventilation_flow_setting_name = OPT_VENTILATION_FLOW_SETTING_NAME_EN
+        default_ventilation_fast_name = OPT_VENTILATION_FAST_NAME_EN
     if lang == "cs":
         default_device = OPT_VENTILATION_NAME_CS
         default_ventilation_error_name = OPT_VENTILATION_ERROR_NAME_CS
@@ -1205,12 +1226,14 @@ def get_air_schema(
         default_ventilation_in_name = OPT_VENTILATION_IN_NAME_CS
         default_ventilation_out_name = OPT_VENTILATION_OUT_NAME_CS
         default_ventilation_flow_setting_name = OPT_VENTILATION_FLOW_SETTING_NAME_CS
+        default_ventilation_fast_name = OPT_VENTILATION_FAST_NAME_CS
     default_ventilation_error_uid = 0
     default_ventilation_filter_uid = default_ventilation_state_uid = 0
     default_co2_target_uid = default_co2_actual_uid = 0
     default_ventilation_flow_target_uid = 0
     default_ventilation_in_uid = default_ventilation_out_uid = 0
     default_ventilation_flow_setting_uid = 0
+    default_ventilation_fast_uid = 0
     default_existing_device = False
     if input_data is not None:
         default_device = input_data.get(OPT_DEVICE, default_device)
@@ -1245,6 +1268,10 @@ def get_air_schema(
         default_ventilation_flow_setting = input_data.get(OPT_VENTILATION_FLOW_SETTING)
         default_ventilation_flow_setting_uid = default_ventilation_flow_setting.get(
             OPT_UID, default_ventilation_flow_setting_uid
+        )
+        default_ventilation_fast = input_data.get(OPT_VENTILATION_FAST)
+        default_ventilation_fast_uid = default_ventilation_fast.get(
+            OPT_UID, default_ventilation_fast_uid
         )
         existing_device = input_data.get(OPT_EXISTING_DEVICE)
         default_existing_device = existing_device.get(OPT_EXISTING_DEVICE, False)
@@ -1359,6 +1386,19 @@ def get_air_schema(
                         ): str,
                         vol.Optional(
                             OPT_UID, default=default_ventilation_flow_setting_uid
+                        ): _UID_SELECTOR,
+                    }
+                ),
+                {"collapsed": True},
+            ),
+            vol.Optional(OPT_VENTILATION_FAST): section(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            OPT_NAME, default=default_ventilation_fast_name
+                        ): str,
+                        vol.Optional(
+                            OPT_UID, default=default_ventilation_fast_uid
                         ): _UID_SELECTOR,
                     }
                 ),

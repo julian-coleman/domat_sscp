@@ -328,6 +328,13 @@
               "uid": "UID"
             }
           },
+          "ventilator_fast_setting": {
+            "name": "Set Fast Ventilation:",
+            "data": {
+              "name": "Name",
+              "uid": "UID"
+            }
+          },
           "existing_device": {
             "name": "Add to existing device:",
             "data": {

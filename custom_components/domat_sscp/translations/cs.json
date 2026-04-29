@@ -328,6 +328,13 @@
               "uid": "UID"
             }
           },
+          "ventilator_fast_setting": {
+            "name": "Rychlý průtok - nastavení:",
+            "data": {
+              "name": "Název",
+              "uid": "UID"
+            }
+          },
           "existing_device": {
             "name": "Přidat do stávajícího zařízení:",
             "data": {
