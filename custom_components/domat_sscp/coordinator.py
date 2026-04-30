@@ -235,7 +235,6 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                 await sleep(self.fast_interval)
                 _LOGGER.debug("Retrying write for %s", uids)
             retry += 1
-            self.set_last_connect()
             try:
                 conn = sscp_connection(
                     name=self.config_entry.data[CONF_CONNECTION_NAME],
@@ -275,6 +274,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                 continue
             finally:
                 await conn.logout()
+                self.set_last_connect()
 
             # No exception when writing
             success = True
