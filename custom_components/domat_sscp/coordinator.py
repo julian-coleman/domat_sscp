@@ -183,18 +183,18 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         self.data = data
         return self.data
 
-    async def entity_update(self, vars: list[dict[str:Any]]) -> None:
+    async def entity_update(self, vars: list[dict[str, Any]]) -> None:
         """An entity has changed a setting: write and update using fast polling."""
 
         sscp_vars: list[sscp_variable] = []
         uids: str = ""
         for var in vars:
-            uid = var.get("uid")
-            offset = var.get("offset")
-            length = var.get("length")
-            type = var.get("type")
-            value = var.get("value")
-            raw = var.get("raw")
+            uid: int = var.get("uid")
+            offset: int = var.get("offset")
+            length: int = var.get("length")
+            type: int = var.get("type")
+            value: Any = var.get("value")
+            raw: str = var.get("raw")
             uids += str(uid) + " "
             _LOGGER.debug("Entity write: %s %s %s %s = %s", uid, offset, length, type, value)
 
@@ -318,21 +318,21 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             exceptions_raw = raw
             _LOGGER.debug("set exceptions: %s", exceptions_raw.hex())
 
-        base_var: dict[str:Any] = {
+        base_var: dict[str, Any] = {
             "uid": self.config_entry.options[base]["uid"],
             "length": self.config_entry.options[base]["length"],
             "offset": self.config_entry.options[base]["offset"],
             "type": self.config_entry.options[base]["type"],
             "raw": base_raw
         }
-        exceptions_var: dict[str:Any] = {
+        exceptions_var: dict[str, Any] = {
             "uid": self.config_entry.options[exceptions]["uid"],
             "length": self.config_entry.options[exceptions]["length"],
             "offset": self.config_entry.options[exceptions]["offset"],
             "type": self.config_entry.options[exceptions]["type"],
             "raw": exceptions_raw
         }
-        vars: list[dict[str:Any]] = [base_var, exceptions_var]
+        vars: list[dict[str, Any]] = [base_var, exceptions_var]
         await self.entity_update(vars=vars)
 
     @callback

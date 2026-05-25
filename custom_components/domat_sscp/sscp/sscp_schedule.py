@@ -66,11 +66,11 @@ class sscp_schedule(sscp_variable):
         length: int,
         offset: int,
         type: int,
-        base: dict[str: Any],
-        exceptions: dict[str: Any],
+        base: dict[str, Any],
+        exceptions: dict[str, Any],
         format: str | None = None,
-        default: dict[str: Any] | None = None,
-        out: dict[str: Any] | None = None
+        default: dict[str, Any] | None = None,
+        out: dict[str, Any] | None = None
     ) -> None:
         """Configure the SSCP schedule with individual parameters."""
 

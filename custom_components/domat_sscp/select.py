@@ -128,7 +128,7 @@ class DomatSSCPSelect(CoordinatorEntity, SelectEntity):
                 new_value = int(value)
                 break
         _LOGGER.debug("Updated %s: %d %s", self.unique_id, new_value, option)
-        var: dict[str:Any] = {
+        var: dict[str, Any] = {
             "uid": self.sscp_uid,
             "offset": self.sscp_offset,
             "length": self.sscp_length,

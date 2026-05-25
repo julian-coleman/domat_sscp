@@ -132,7 +132,7 @@ class DomatSSCPWaterHeater(CoordinatorEntity, WaterHeaterEntity):
 
         new_value = float(temperature)
         _LOGGER.debug("Updated %s: %f", self.unique_id, new_value)
-        var: dict[str:Any] = {
+        var: dict[str, Any] = {
             "uid": self.sscp_uid,
             "offset": self.sscp_offset,
             "length": self.sscp_length,

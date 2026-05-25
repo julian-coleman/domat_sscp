@@ -146,7 +146,7 @@ class DomatSSCPNumber(CoordinatorEntity, NumberEntity):
         else:
             new_value = value
         _LOGGER.debug("Updated %s: %d", self.unique_id, new_value)
-        var: dict[str:Any] = {
+        var: dict[str, Any] = {
             "uid": self.sscp_uid,
             "offset": self.sscp_offset,
             "length": self.sscp_length,
