@@ -538,7 +538,7 @@ class sscp_connection:
         return reply
 
 
-def _sscp_read_variables_generator(vars: sscp_variable, send_max: int, recv_max: int):
+def _sscp_read_variables_generator(vars: list[sscp_variable], send_max: int, recv_max: int):
     """Split a request so that we don't exceed maximum variables, request length or reply length."""
     var_start = 0
     var_end = 0
