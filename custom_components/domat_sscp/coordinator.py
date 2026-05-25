@@ -55,7 +55,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             name=f"{DOMAIN} {config_entry.data[CONF_CONNECTION_NAME]} ({config_entry.unique_id})",
         )
 
-        self.data: dict[str, Any] = {}
+        self.data = {}
 
         if OPT_POLLING in self.config_entry.options:
             polling = self.config_entry.options[OPT_POLLING]
