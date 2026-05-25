@@ -130,10 +130,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                 sscp_address=self.config_entry.data[CONF_SSCP_ADDRESS],
             )
         except ValueError as error:
-            _LOGGER.error(
-                "Fetching data: could not create a connection for %s", self.name
-            )
-            raise UpdateFailed from error
+            raise UpdateFailed(f"Fetching data: could not create a connection for {self.name}") from error
 
         try:
             await conn.login()
@@ -144,8 +141,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Fetching data: login timeout for %s", self.name)
             raise ConfigEntryAuthFailed from None
         except (ValueError, OSError):
-            _LOGGER.error("Fetching data: login connection error for %s", self.name)
-            raise UpdateFailed from None
+            raise UpdateFailed(f"Fetching data: login connection error for {self.name}") from None
 
         sscp_vars: list[sscp_variable] = []
         sscp_vars.extend(
@@ -160,19 +156,14 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         try:
             error_vars, _error_codes = await conn.sscp_read_variables(sscp_vars)
         except TimeoutError:
-            _LOGGER.error("Fetching data: read variables timeout for %s", self.name)
-            raise UpdateFailed from None
+            raise UpdateFailed(f"Fetching data: read variables timeout for {self.name}") from None
         except (ValueError, OSError):
-            _LOGGER.error("Fetching data: read variables failed for %s", self.name)
-            raise UpdateFailed from None
+            raise UpdateFailed(f"Fetching data: read variables failed for {self.name}") from None
         finally:
             await conn.logout()
 
         if len(error_vars) > 0:
-            _LOGGER.error(
-                "Fetching data: read variable errors for %s: %s", self.name, error_vars
-            )
-            raise UpdateFailed from None
+            raise UpdateFailed(f"Fetching data: read variable errors for {self.name}: {error_vars}") from None
 
         # Update variables with converted data
         for sscp_var in sscp_vars:
