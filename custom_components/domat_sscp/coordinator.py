@@ -135,11 +135,9 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         try:
             await conn.login()
             if conn.socket is None:
-                _LOGGER.error("Fetching data: login failed for %s", self.name)
-                raise ConfigEntryAuthFailed from None
+                raise ConfigEntryAuthFailed(f"Fetching data: login failed for {self.name}") from None
         except TimeoutError:
-            _LOGGER.error("Fetching data: login timeout for %s", self.name)
-            raise ConfigEntryAuthFailed from None
+            raise ConfigEntryAuthFailed(f"Fetching data: login timeout for {self.name}") from None
         except (ValueError, OSError):
             raise UpdateFailed(f"Fetching data: login connection error for {self.name}") from None
 
