@@ -130,16 +130,16 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
                 sscp_address=self.config_entry.data[CONF_SSCP_ADDRESS],
             )
         except ValueError as error:
-            raise UpdateFailed(f"Fetching data: could not create a connection for {self.name}") from error
+            raise UpdateFailed("could not create a connection") from error
 
         try:
             await conn.login()
             if conn.socket is None:
-                raise ConfigEntryAuthFailed(f"Fetching data: login failed for {self.name}") from None
+                raise ConfigEntryAuthFailed("login failed") from None
         except TimeoutError:
-            raise ConfigEntryAuthFailed(f"Fetching data: login timeout for {self.name}") from None
+            raise ConfigEntryAuthFailed("login timeout") from None
         except (ValueError, OSError):
-            raise UpdateFailed(f"Fetching data: login connection error for {self.name}") from None
+            raise UpdateFailed("login connection error") from None
 
         sscp_vars: list[sscp_variable] = []
         sscp_vars.extend(
@@ -154,14 +154,14 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         try:
             error_vars, _error_codes = await conn.sscp_read_variables(sscp_vars)
         except TimeoutError:
-            raise UpdateFailed(f"Fetching data: read variables timeout for {self.name}") from None
+            raise UpdateFailed("read variables timeout") from None
         except (ValueError, OSError):
-            raise UpdateFailed(f"Fetching data: read variables failed for {self.name}") from None
+            raise UpdateFailed("read variables failed") from None
         finally:
             await conn.logout()
 
         if len(error_vars) > 0:
-            raise UpdateFailed(f"Fetching data: read variable errors for {self.name}: {error_vars}") from None
+            raise UpdateFailed("read variable errors for {error_vars}") from None
 
         # Update variables with converted data
         for sscp_var in sscp_vars:
