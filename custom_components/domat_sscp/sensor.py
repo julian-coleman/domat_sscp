@@ -131,7 +131,7 @@ class DomatSSCPSensor(CoordinatorEntity, SensorEntity):
                     return state
 
             _LOGGER.error("Unexpected value: %s = %s", self.unique_id, new_value)
-            return ""
+            return None
 
         # Not an enum, return the value directly
         new_value = self.coordinator.data[self.unique_id]

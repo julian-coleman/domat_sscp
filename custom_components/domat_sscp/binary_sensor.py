@@ -106,7 +106,7 @@ class DomatSSCPBinarySensor(CoordinatorEntity, BinarySensorEntity):
             return True
         return False
 
-    def _update_value(self) -> bool:
+    def _update_value(self) -> bool | None:
         """Retrieve our value from the co-ordinator."""
 
         if self.unique_id not in self.coordinator.data:
