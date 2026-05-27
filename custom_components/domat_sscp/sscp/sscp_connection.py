@@ -438,9 +438,9 @@ class sscp_connection:
         reply = await self._sscp_sendrecv(request, prefix="Write")
 
         if reply[SSCP_STATUS_START:SSCP_STATUS_END] != SSCP_WRITE_DATA_SUCCESS:
-            msg = f"Variable write failed {var.uid}"
-            msg = msg + f"0x{reply[SSCP_ERROR_CODE_START:SSCP_ERROR_CODE_END].hex():4}"
-            msg = msg + f"0x{reply[SSCP_ERROR_VARS_START:SSCP_ERROR_VARS_END].hex():8}"
+            msg = "Variable write failed"
+            msg = msg + f" 0x{reply[SSCP_ERROR_CODE_START:SSCP_ERROR_CODE_END].hex():4}"
+            msg = msg + f" 0x{reply[SSCP_ERROR_VARS_START:SSCP_ERROR_VARS_END].hex():8}"
             raise ValueError(msg)
 
     async def _sscp_sendrecv(
