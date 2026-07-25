@@ -48,7 +48,6 @@ async def async_setup_entry(
     return True
 
 
-# TODO: Remove update listener and use OptionsFlowWithReload
 async def _async_update_listener(hass: HomeAssistant, config_entry: ConfigEntry):
     """Handle config options update.
 

@@ -216,12 +216,12 @@ class DomatSSCPConfigFlow(ConfigFlow, domain=DOMAIN):
             if self.source in (SOURCE_RECONFIGURE, SOURCE_REAUTH):
                 # Don't abort on unique ID mismatch, in case the PLC has a new serial number
                 # self._abort_if_unique_id_mismatch(reason="wrong_plc")
-                return self.async_update_reload_and_abort(
+                return self.async_update_and_abort(
                     entry,
                     data_updates=user_input,
                 )
             # user
-            self._abort_if_unique_id_configured()
+            self._abort_if_unique_id_configured(reload_on_update=False)
             return self.async_create_entry(title=info["title"], data=user_input)
 
         # There was some validation problem - previous input as defaults
