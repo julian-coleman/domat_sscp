@@ -87,6 +87,7 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
             self.write_retries
         )
         self.last_connect: datetime = datetime.now(tz=None)
+        self.login_fail = 0
 
     async def _async_update_data(self):
         """Fetch entity data from the server/PLC."""
@@ -132,15 +133,18 @@ class DomatSSCPCoordinator(DataUpdateCoordinator):
         except ValueError as error:
             raise UpdateFailed("could not create a connection") from error
 
+        # Don't raise ConfigEntryAuthFailed because we can't reliably detect auth problems
+        # We might get failures if the network disconnects during login
         try:
             await conn.login()
             if conn.socket is None:
-                raise ConfigEntryAuthFailed("login failed") from None
+                raise UpdateFailed("login failed") from None
         except TimeoutError:
-            raise ConfigEntryAuthFailed("login timeout") from None
+            raise UpdateFailed("login timed out") from None
         except (ValueError, OSError):
             raise UpdateFailed("login connection error") from None
 
+        self.login_fail = 0
         sscp_vars: list[sscp_variable] = []
         sscp_vars.extend(
             sscp_variable(
